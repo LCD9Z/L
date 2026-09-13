@@ -3,7 +3,7 @@
 import math,statistics
 from backtest_engine import Costs,_trade_cost,_is_unbuyable_limit,_is_unsellable_limit
 from walk_forward import score_history
-from liquidity import is_liquid,dynamic_slippage
+from risk.liquidity import is_liquid,dynamic_slippage
 from typing import Any, Dict, List
 
 def _by_date(bars): return {str(b['date']):b for b in bars if b.get('date')}

@@ -35,10 +35,10 @@ from datetime import datetime
 
 from data_fetcher import fetch_kline
 from market_regime import get_market_regime
-from a_share_risk import position_plan
+from risk.a_share_risk import position_plan
 import tracking
 
-from runtime_env import (
+from runtime.runtime_env import (
     CANDIDATE_FILE,
     CONFIG_FILE,
     LOG_FILE,

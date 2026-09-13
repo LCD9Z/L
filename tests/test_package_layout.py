@@ -2,8 +2,7 @@
 """目录分层的防回退守卫测试。
 
 背景：仓库曾把 188 个 `.py` 全部平铺在根目录，其中 76 个并非库代码。
-1.0 分两轮下沉：测试/脚本 → `tests/` `scripts/`；五个低耦合库模块家族 →
-`pit/` `tdx/` `corporate/` `factors/` `ashare/`。
+1.0 分两轮下沉：测试/脚本 → `tests/` `scripts/`；低耦合库模块家族 → 子包。
 
 这类重构最怕**静默回退**——有人为了省事把模块挪回根目录，或在别处补一个
 同名的平铺副本，两套导入路径并存，最后谁都不知道该改哪个文件。
@@ -14,6 +13,10 @@
 3. 全仓库**不存在**裸的旧顶层导入（``from pit_integrity import ...``）；
 4. 子包内的同族引用使用相对导入（``from .pit_event_master import ...``）；
 5. 每个子包及其模块都能被真实导入（防止目录建了、import 断了）。
+
+关于第 2/3 条的实现方式：早期版本按**文件名前缀**判定（``pit_`` ``ashare_`` 等），
+但 `risk/` 这类包里的模块并无共同前缀（`a_share_risk` / `liquidity` / `risk_engine`），
+前缀法会漏检。现改为按**模块名精确匹配**，由 PACKAGES 单一来源推导。
 """
 import ast
 import importlib
@@ -26,7 +29,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# 子包 -> 该包应包含的模块名（不含 __init__）
+# 子包 -> 该包应包含的模块名（不含 __init__）。这是分层约定的**唯一来源**，
+# 其余断言（平铺副本、裸导入、相对导入）全部由此推导，避免多处维护。
 PACKAGES = {
     "pit": [
         "pit_integrity", "pit_universe_builder", "pit_event_master",
@@ -42,13 +46,17 @@ PACKAGES = {
         "ashare_market", "ashare_factor_engine", "ashare_cross_section",
         "ashare_event_engine", "ashare_flow_engine", "ashare_universe",
     ],
+    "reporting": ["report_generator", "report_markdown", "report_styles"],
+    "runtime": ["runtime_env", "runtime_profile"],
+    "risk": ["a_share_risk", "risk_engine", "risk_budget", "liquidity"],
+    "validation": [
+        "validation_suite", "performance", "phase13_risk", "robustness",
+        "strategy_validation", "benchmark", "stress_test", "health_monitor",
+    ],
 }
 
-# 包名 -> 该家族模块的文件名前缀（用于检测平铺回根目录）
-PREFIXES = ("pit_", "tdx_", "corporate_", "factor_", "ashare_")
-
-# 允许留在根目录的同前缀例外（不属于任何已下沉家族）
-ROOT_PREFIX_ALLOWLIST: tuple = ()
+# 已下沉的模块名全集：出现在根目录即为平铺副本复活
+MOVED_MODULES = frozenset(m for mods in PACKAGES.values() for m in mods)
 
 SKIP_DIRS = {
     ".git", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache",
@@ -101,8 +109,7 @@ def test_no_flattened_copies_in_root():
     运行时却可能命中根目录的旧副本，且两者都不会报错。
     """
     offenders = sorted(
-        p.name for p in (ROOT).glob("*.py")
-        if p.name.startswith(PREFIXES) and p.name not in ROOT_PREFIX_ALLOWLIST
+        p.name for p in ROOT.glob("*.py") if p.stem in MOVED_MODULES
     )
     assert offenders == [], f"以下模块应位于子包内，不应平铺在根目录: {offenders}"
 
@@ -113,7 +120,8 @@ def test_no_bare_legacy_imports():
     模块一旦下沉为包，裸导入在任何环境都会 ImportError；这里提前兜住，
     避免只在「恰好没被执行的分支」里才暴露。
     """
-    pattern = re.compile(r"^\s*(?:from|import)\s+(" + "|".join(PREFIXES) + r"[\w.]*)", re.M)
+    names = "|".join(sorted(map(re.escape, MOVED_MODULES), key=len, reverse=True))
+    pattern = re.compile(rf"^\s*(?:from|import)\s+({names})\b", re.M)
     offenders = []
     for path in _iter_py(ROOT):
         try:
@@ -128,6 +136,7 @@ def test_no_bare_legacy_imports():
 @pytest.mark.parametrize("pkg", sorted(PACKAGES))
 def test_intra_package_imports_are_relative(pkg):
     """同族引用用相对导入，使整包可以整体改名/移动而不必改内部 import。"""
+    members = set(PACKAGES[pkg])
     offenders = []
     for path in sorted((ROOT / pkg).glob("*.py")):
         if path.stem == "__init__":
@@ -135,7 +144,7 @@ def test_intra_package_imports_are_relative(pkg):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
-                if node.level == 0 and node.module in PACKAGES[pkg]:
+                if node.level == 0 and node.module in members:
                     offenders.append(f"{path.name}:{node.lineno}: from {node.module} import ...")
     assert offenders == [], f"{pkg}/ 内应改用相对导入:\n" + "\n".join(offenders)
 
@@ -158,10 +167,9 @@ def test_package_modules_are_importable(pkg):
         try:
             importlib.import_module(f"{pkg}.{mod}")
         except ImportError as exc:
-            # 仅第三方可选依赖缺失时跳过；项目自身模块缺失必须报错
             failed.append(f"{pkg}.{mod}: {exc}")
-    # 过滤掉确属第三方依赖缺失的情况（这些模块本身是零依赖的，理论上不会命中）
-    real = [f for f in failed if "No module named" in f and not _is_third_party(f)]
+    # 仅第三方可选依赖缺失可容忍；项目自身模块缺失必须报错
+    real = [f for f in failed if not _is_third_party(f)]
     assert real == [], "以下包内模块无法导入:\n" + "\n".join(real)
 
 
@@ -171,7 +179,7 @@ def _is_third_party(msg: str) -> bool:
     if not m:
         return False
     top = m.group(1).split(".")[0]
-    return top not in PACKAGES and not top.startswith(PREFIXES)
+    return top not in PACKAGES and top not in MOVED_MODULES
 
 
 def test_agents_family_stays_flat():

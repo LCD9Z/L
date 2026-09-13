@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from orchestrator import WorkflowOrchestrator, create_workflow
-from report_generator import HTMLReportGenerator
+from reporting.report_generator import HTMLReportGenerator
 from feishu_notifier import send_analysis_summary, is_configured
 
 

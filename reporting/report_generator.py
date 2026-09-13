@@ -12,8 +12,8 @@ import os
 from typing import Optional
 
 from orchestrator import AnalysisSession
-from report_markdown import markdown_to_html
-from report_styles import REPORT_CSS
+from .report_markdown import markdown_to_html
+from .report_styles import REPORT_CSS
 
 
 class HTMLReportGenerator:

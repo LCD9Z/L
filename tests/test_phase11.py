@@ -1,6 +1,6 @@
-from liquidity import dynamic_slippage,is_liquid
+from risk.liquidity import dynamic_slippage,is_liquid
 from exchange_rules import limit_prices
-from robustness import is_stable
+from validation.robustness import is_stable
 
 def test_limit_prices():
     assert limit_prices(10,'600000')==(11.0,9.0)

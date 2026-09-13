@@ -1,5 +1,5 @@
 import unittest
-from runtime_profile import get_profile
+from runtime.runtime_profile import get_profile
 
 class TestRuntimeProfile(unittest.TestCase):
     def test_balanced_is_8gb_friendly(self):

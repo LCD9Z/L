@@ -1,7 +1,7 @@
 import unittest
 from data_quality import validate_bars
 from research_integrity import build_manifest, assert_manifest_match
-from validation_suite import validate_strategy
+from validation.validation_suite import validate_strategy
 
 class TestPhase14(unittest.TestCase):
     def test_invalid_date_rejected(self):

@@ -1,7 +1,7 @@
 import unittest
 from data_quality import validate_bars
-from risk_engine import evaluate_portfolio
-from performance import metrics
+from risk.risk_engine import evaluate_portfolio
+from validation.performance import metrics
 from point_in_time import load_universe
 import tempfile, json, os
 class TestPhase12(unittest.TestCase):

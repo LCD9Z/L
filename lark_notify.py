@@ -12,7 +12,7 @@ import subprocess
 import time
 from datetime import datetime
 
-from runtime_env import WORK_DIR, load_config, log
+from runtime.runtime_env import WORK_DIR, load_config, log
 
 
 def run_lark_cmd_list(args, retries=4):

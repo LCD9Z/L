@@ -8,7 +8,7 @@
 """
 from data_fetcher import fetch_kline
 from industry_strength import rank_industries, stock_industry_bonus
-from runtime_env import log
+from runtime.runtime_env import log
 
 
 def _industry_from_item(item):

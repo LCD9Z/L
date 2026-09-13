@@ -10,7 +10,7 @@ Cycle of Price Action 阶段 / 市场环境统一风控。
 from datetime import datetime
 
 from data_fetcher import fetch_kline, fetch_quote
-from a_share_risk import regime_adjustment
+from risk.a_share_risk import regime_adjustment
 from cycle_price_action import _STAGE_RISK, _STAGE_SCORE, locate_cycle_phase
 
 

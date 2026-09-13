@@ -64,6 +64,10 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 ├── corporate/          公司行为与复权因子（事件模型 / 数据源 / 摄入审计）
 ├── factors/            因子研究（注册 / 准入 / 验证 / IC 检验 / 盲测）
 ├── ashare/             A 股市场结构与确定性特征（板块 / 因子 / 横截面 / 事件 / 资金流 / 候选池）
+├── reporting/          HTML 研究报告（样式 / Markdown 转换 / 生成器本体）
+├── runtime/            运行环境与资源画像（刻意不依赖项目内其他模块）
+├── risk/               风险与可执行性（A 股风控 / 组合引擎 / 仓位预算 / 流动性）
+├── validation/         回测结果验证（绩效 / 基准 / bootstrap / 稳健性 / 压力 / 红队 / 健康度）
 ├── scripts/run_*.py    可执行脚本（研究 / 评估 / 日常运行）
 ├── tests/test_*.py     测试（pytest 自动发现）
 ├── docs/               归档的阶段文档
@@ -76,6 +80,10 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 * **第二轮**把五个低耦合的**库模块家族**（共 23 个模块）下沉为子包，根目录
   114 → **91**。子包内用相对导入，包外一律用绝对导入
   （`from pit.pit_integrity import audit_pit_rows`）。
+* **第三轮**再下沉四个家族（`reporting` / `runtime` / `risk` / `validation`，
+  共 17 个模块），根目录 91 → **74**。
+  至此九个家族共 40 个模块已入包，根目录剩下的是入口、核心编排与被广泛
+  引用的基础模块。
 
 `agents_*` 保持不动：根目录已有门面模块 `agents.py`，若再建 `agents/` 包
 会出现同名冲突，收益不抵风险。
@@ -93,7 +101,7 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 | `agents_base.py` | Agent 基类 / `DATA_RULES` / `pack_data` / `AnalysisResult` |
 | `agents_analysts.py` · `agents_researchers.py` · `agents_decision.py` | 分析师 / 研究员 / 决策三组角色定义 |
 | `orchestrator.py` | 工作流编排器，管理分析进度 |
-| `report_generator.py` | HTML报告生成器（样式见 `report_styles.py`，Markdown 转换见 `report_markdown.py`） |
+| `reporting/report_generator.py` | HTML报告生成器（样式见 `reporting/report_styles.py`，Markdown 转换见 `reporting/report_markdown.py`） |
 | `scripts/run_daily_screening.py` | 每日选股执行脚本（写飞书表格 + 推送） |
 | `daily_stock_pick.py` | 每日选股主流程（打分见 `stock_scoring.py`，池维护见 `pool_manager.py`） |
 | `stock_god.py` | 快速入口脚本 |
@@ -165,8 +173,8 @@ python credential_scan.py       # 凭据扫描通过：已扫描 254 个文件
 | 原文件 | 拆分后 |
 |--------|--------|
 | `agents.py` (658 行) | `agents_base` / `agents_analysts` / `agents_researchers` / `agents_decision` + 门面 |
-| `daily_stock_pick.py` (664 行) | `runtime_env` / `stock_scoring` / `pool_manager` / `industry_context` / `lark_notify` + 编排 |
-| `report_generator.py` (1029 行) | `report_styles` / `report_markdown` + 生成器本体 |
+| `daily_stock_pick.py` (664 行) | `runtime.runtime_env` / `stock_scoring` / `pool_manager` / `industry_context` / `lark_notify` + 编排 |
+| `report_generator.py` (1029 行) | `reporting.report_styles` / `reporting.report_markdown` + 生成器本体 |
 
 `agents.py` 仍重新导出全部历史符号，`from agents import FundamentalAnalyst` 等既有写法完全不变。
 
@@ -641,7 +649,7 @@ Phase 6 保留并升级了飞书功能。每日选股仍可写入飞书多维表
 - 飞书推送模块继续保留；生产环境请仅使用环境变量保存凭据。
 
 ## Phase 13 validation additions
-See `docs/archive/PHASE13_AUDIT_AND_UPGRADE_REPORT.md`. New modules: `benchmark.py`, `strategy_validation.py`, and `health_monitor.py`. Portfolio backtests optionally accept `universe_snapshot_map` for point-in-time candidate filtering.
+See `docs/archive/PHASE13_AUDIT_AND_UPGRADE_REPORT.md`. New modules: `validation/benchmark.py`, `validation/strategy_validation.py`, and `validation/health_monitor.py`. Portfolio backtests optionally accept `universe_snapshot_map` for point-in-time candidate filtering.
 
 
 ## Phase 14–20

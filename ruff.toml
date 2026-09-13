@@ -98,11 +98,10 @@ known-first-party = [
     "data_fetcher", "tracking", "agents", "orchestrator", "prompt_engine",
     # agents.py 拆分（1.0）
     "agents_base", "agents_analysts", "agents_researchers", "agents_decision",
-    # daily_stock_pick.py 拆分（1.0）
-    "runtime_env", "stock_scoring", "pool_manager", "industry_context", "lark_notify",
-    # report_generator.py 拆分（1.0）
-    "report_styles", "report_markdown",
-    "log_utils", "runtime_profile", "screen_pipeline", "stage2_enrichment",
+    # daily_stock_pick.py 拆分（1.0）；其中 runtime_env 已迁入 runtime/
+    "stock_scoring", "pool_manager", "industry_context", "lark_notify",
+    # report_generator.py 拆分（1.0）：三块现均在 reporting/
+    "log_utils", "screen_pipeline", "stage2_enrichment",
     "stage2_scoring", "stage2_ablation",
     # --- 已迁入子包的模块：isort 只需认顶层包名 ---
     # pit/    <- pit_integrity, pit_universe_builder, pit_event_master,
@@ -113,22 +112,27 @@ known-first-party = [
     #             factor_ic_lab, factor_blind_test
     # ashare/ <- ashare_factor_engine, ashare_cross_section, ashare_event_engine,
     #            ashare_flow_engine, ashare_market, ashare_universe
+    # reporting/ <- report_generator, report_markdown, report_styles
+    # runtime/  <- runtime_env, runtime_profile
+    # risk/     <- a_share_risk, risk_engine, risk_budget, liquidity
+    # validation/ <- validation_suite, performance, phase13_risk, robustness,
+    #                strategy_validation, benchmark, stress_test, health_monitor
     "pit", "tdx", "corporate", "factors", "ashare",
+    "reporting", "runtime", "risk", "validation",
     "cycle_price_action", "daily_csv_adapter", "market_regime",
-    "market_universe_provider", "a_share_risk", "backtest_engine",
-    "walk_forward", "report_generator", "llm_client", "feishu_notifier",
+    "market_universe_provider", "backtest_engine",
+    "walk_forward", "llm_client", "feishu_notifier",
     "data_contracts", "data_quality", "exchange_rules", "execution_rules",
-    "liquidity", "industry_strength", "candidate_prefilter",
-    "health_monitor", "performance", "point_in_time",
-    "release_gate", "research_integrity", "risk_budget", "risk_engine",
-    "robustness", "stress_test", "strategy_validation", "validation_suite",
+    "industry_strength", "candidate_prefilter",
+    "point_in_time",
+    "release_gate", "research_integrity",
     "professional_audit", "professional_committee", "provider_router",
     "quant_skill_router", "real_alpha_pipeline", "real_data_collector",
     "real_data_integrity", "real_data_registry", "regime_backtest_report",
     "regime_validation", "historical_universe", "paper_trading",
-    "phase13_risk", "phase15_governance", "phase22_alpha_runner",
+    "phase15_governance", "phase22_alpha_runner",
     "phase41_data_workbench", "recon_price_factor_lab", "streaming_topk",
     "v3_data_bus", "alpha_survival_lab", "alpha_experiment",
-    "preregistered_alpha_experiment", "benchmark",
+    "preregistered_alpha_experiment",
 ]
 combine-as-imports = true

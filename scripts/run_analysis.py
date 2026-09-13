@@ -169,7 +169,7 @@ def run_auto(code, company="", news_limit=5, horizon=5, track=True,
     from llm_client import chat, extract_json
     from data_fetcher import build_fact_sheet, fact_sheet_to_text
     from prompt_engine import STAGES, RESULT_FILES, get_stage_prompt
-    from runtime_profile import get_profile
+    from runtime.runtime_profile import get_profile
 
     rp = get_profile(profile)
     news_limit = min(news_limit, rp.news_limit) if news_limit is not None else rp.news_limit

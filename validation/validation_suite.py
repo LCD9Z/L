@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Phase 13 validation suite: quality, sample adequacy, risk and red-team checks."""
 from data_quality import validate_bars
-from performance import metrics
-from phase13_risk import audit_trades
+from .performance import metrics
+from .phase13_risk import audit_trades
 
 def validate_strategy(result, bars=None, min_trades=30):
     issues=[]

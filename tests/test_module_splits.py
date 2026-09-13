@@ -122,7 +122,8 @@ def test_daily_stock_pick_facade_reexports():
 
 def test_runtime_env_has_no_project_dependency():
     """runtime_env 是拆分的公共底座，不得反向依赖项目内其他模块。"""
-    with open("runtime_env.py", encoding="utf-8") as f:
+    from runtime import runtime_env as _runtime_env
+    with open(_runtime_env.__file__, encoding="utf-8") as f:
         src = f.read()
     forbidden = ["data_fetcher", "stock_scoring", "pool_manager",
                  "industry_context", "lark_notify", "daily_stock_pick"]
@@ -144,21 +145,22 @@ def test_scoring_has_no_io_side_effects():
 
 def test_report_styles_is_the_single_css_source():
     """CSS 必须只存在于 report_styles，避免两处维护。"""
-    import report_styles
+    from reporting import report_styles
 
     css = report_styles.REPORT_CSS
     assert css.startswith("<style>")
     assert css.rstrip().endswith("</style>")
     assert len(css) > 10_000, "CSS 长度异常，可能抽取不完整"
 
-    with open("report_generator.py", encoding="utf-8") as f:
+    from reporting import report_generator as _report_generator
+    with open(_report_generator.__file__, encoding="utf-8") as f:
         gen_src = f.read()
     assert ":root {" not in gen_src, "report_generator 仍内嵌 CSS"
 
 
 def test_markdown_to_html_is_pure_function():
     """markdown_to_html 不依赖实例状态，可直接调用。"""
-    from report_markdown import markdown_to_html
+    from reporting.report_markdown import markdown_to_html
 
     assert markdown_to_html("") == ""
     assert "<strong>" in markdown_to_html("**加粗**")
@@ -168,14 +170,14 @@ def test_markdown_to_html_is_pure_function():
 
 def test_report_generator_delegates_to_extracted_modules():
     """HTMLReportGenerator 应委托给抽出的模块，而非自行实现。"""
-    import report_styles
+    from reporting import report_styles
     from orchestrator import create_workflow
-    from report_generator import HTMLReportGenerator
+    from reporting.report_generator import HTMLReportGenerator
 
     gen = HTMLReportGenerator(create_workflow("600519", "贵州茅台").session)
     assert gen._generate_styles() == report_styles.REPORT_CSS
 
-    from report_markdown import markdown_to_html
+    from reporting.report_markdown import markdown_to_html
     assert gen._markdown_to_html("**x**") == markdown_to_html("**x**")
 
 
@@ -190,7 +192,7 @@ def test_save_report_accepts_bare_filename(tmp_path, monkeypatch):
     抛 FileNotFoundError —— 模块自带的 __main__ 演示就会触发该问题。
     """
     from orchestrator import create_workflow
-    from report_generator import HTMLReportGenerator
+    from reporting.report_generator import HTMLReportGenerator
 
     monkeypatch.chdir(tmp_path)
     gen = HTMLReportGenerator(create_workflow("600519", "贵州茅台").session)
@@ -216,7 +218,7 @@ def test_save_session_accepts_bare_filename(tmp_path, monkeypatch):
 def test_save_creates_nested_directories(tmp_path, monkeypatch):
     """含多级目录的路径应被自动创建（原有行为不得回退）。"""
     from orchestrator import create_workflow
-    from report_generator import HTMLReportGenerator
+    from reporting.report_generator import HTMLReportGenerator
 
     monkeypatch.chdir(tmp_path)
     gen = HTMLReportGenerator(create_workflow("600519", "贵州茅台").session)
@@ -311,7 +313,7 @@ def test_split_modules_are_importable_standalone():
     import importlib
 
     for mod in ["agents_base", "agents_analysts", "agents_researchers",
-                "agents_decision", "runtime_env", "stock_scoring",
+                "agents_decision", "runtime.runtime_env", "stock_scoring",
                 "pool_manager", "industry_context", "lark_notify",
-                "report_styles", "report_markdown"]:
+                "reporting.report_styles", "reporting.report_markdown"]:
         importlib.import_module(mod)

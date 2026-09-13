@@ -9,7 +9,7 @@
 """
 import json
 
-from runtime_env import (
+from runtime.runtime_env import (
     CANDIDATE_FILE,
     POOL_STATE_FILE,
     WATCHLIST_FILE,

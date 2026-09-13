@@ -41,7 +41,7 @@ def stubbed_env(tmp_path, monkeypatch):
     monkeypatch.setattr(data_fetcher, "fetch_quote", fake_quote, raising=True)
 
     import market_regime
-    import a_share_risk
+    from risk import a_share_risk
     monkeypatch.setattr(market_regime, "get_market_regime",
                         lambda: {"regime": "RANGE", "note": "测试"}, raising=True)
     monkeypatch.setattr(a_share_risk, "position_plan",
@@ -62,7 +62,7 @@ def stubbed_env(tmp_path, monkeypatch):
         "top_n_deep": 0, "push_enabled": False,
     }, ensure_ascii=False), encoding="utf-8")
 
-    import runtime_env
+    from runtime import runtime_env
     monkeypatch.setattr(runtime_env, "WATCHLIST_FILE", str(wl), raising=True)
     monkeypatch.setattr(runtime_env, "STATE_DIR", str(tmp_path), raising=True)
     monkeypatch.setattr(runtime_env, "CANDIDATE_FILE",

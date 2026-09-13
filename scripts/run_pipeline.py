@@ -22,7 +22,7 @@ import argparse, os
 from datetime import datetime
 from log_utils import get_logger
 from market_universe_provider import iter_jsonl
-from runtime_profile import get_profile
+from runtime.runtime_profile import get_profile
 from screen_pipeline import ScreenConfig, run_screen
 from stage2_enrichment import enrich_candidate
 
