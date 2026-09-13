@@ -72,7 +72,7 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 ├── alpha/              Alpha 假设实验与存活实验室
 ├── phase62/            PHASE62 TDX 指数 / 序列接入（v4.9 移植）
 ├── regime/             市场状态识别与回测验证
-├── tushare/            TuShare 数据接入（可选依赖，Token 走环境变量）
+├── tushare_client/     TuShare 数据接入（刻意不命名 tushare/：避免遮蔽第三方 tushare 库）
 ├── notify/             通知通道（飞书 / Lark）
 ├── router/             数据 / 技能路由层
 ├── scripts/run_*.py    可执行脚本（研究 / 评估 / 日常运行）
@@ -90,7 +90,7 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 * **第三轮**再下沉四个家族（`reporting` / `runtime` / `risk` / `validation`，
   共 17 个模块），根目录 91 → **74**。
 * **第四轮**再下沉七个家族（`stage2` / `alpha` / `phase62` / `regime` /
-  `tushare` / `notify` / `router`，共 15 个模块），根目录 74 → **59**。
+  `tushare_client` / `notify` / `router`，共 15 个模块），根目录 74 → **59**。
   至此十六个家族共 55 个模块已入包，根目录剩下的是入口、核心编排与被广泛
   引用的基础模块（`data_fetcher` / `agents` / `real_*` / `daily_*` 等刻意留根）。
 

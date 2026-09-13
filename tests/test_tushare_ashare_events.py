@@ -1,5 +1,5 @@
 import unittest
-from tushare.tushare_ashare_events import TuShareEventProvider
+from tushare_client.tushare_ashare_events import TuShareEventProvider
 
 class FakeClient:
     def moneyflow(self, **kwargs): return [{'ts_code':kwargs['ts_code'],'net_mf_amount':10}]

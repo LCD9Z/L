@@ -59,7 +59,7 @@ PACKAGES = {
     "alpha": ["alpha_experiment", "alpha_survival_lab"],
     "phase62": ["phase62_series", "phase62_tdx_index"],
     "regime": ["regime_backtest_report", "regime_validation"],
-    "tushare": ["tushare_provider", "tushare_ashare_events"],
+    "tushare_client": ["tushare_provider", "tushare_ashare_events"],
     "notify": ["feishu_notifier", "lark_notify"],
     "router": ["provider_router", "quant_skill_router"],
 }
@@ -209,3 +209,35 @@ def test_scripts_and_tests_directories_exist():
     gate_tools = {"run_ci.py", "credential_scan.py"}
     missing = [n for n in gate_tools if not (ROOT / n).is_file()]
     assert not missing, f"门禁工具应保留在根目录: {missing}"
+
+
+def test_no_bare_import_of_package_names():
+    """不得对本项目包名做裸 `import <pkg>` —— 那意味着遮蔽了同名第三方模块。
+
+    子包是"模块的命名空间"，`__init__.py` 不重新导出任何东西，因此
+    `import <pkg>` 名下拿不到任何有用属性。若代码里出现这种导入，几乎可以
+    断定作者本意是**第三方同名模块**，于是发生遮蔽：
+
+        import tushare as ts      # 本意是第三方 tushare 库
+        ts.pro_api(token)         # 实际命中本项目的空包 → AttributeError
+
+    该缺陷 pytest 抓不到（惰性导入 + 只在调用时触发），是 mypy 在远端 CI 上
+    `Module has no attribute "pro_api"` 报出来的。故固化为守卫。
+    """
+    offenders = []
+    for path in _iter_py(ROOT):
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        except (OSError, UnicodeDecodeError, SyntaxError):
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name.split(".")[0] in PACKAGES:
+                        offenders.append(
+                            f"{path.relative_to(ROOT)}:{node.lineno}: import {alias.name}"
+                        )
+    assert offenders == [], (
+        "发现对本项目包名的裸 import（疑似遮蔽第三方同名模块）:\n"
+        + "\n".join(offenders)
+    )

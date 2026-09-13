@@ -389,7 +389,7 @@ Windows 克隆仍会产出 CRLF 使该守卫失败。用 `.gitattributes` 从仓
 | `alpha/` | 2 | 0 | alpha 实验 + 存活实验室 |
 | `phase62/` | 2 | 0 | v4.9 移植的 PHASE62 TDX 指数 |
 | `regime/` | 2 | 0 | 市场状态回测报告 / 验证 |
-| `tushare/` | 2 | 0 | TuShare 接入 |
+| `tushare_client/` | 2 | 0 | TuShare 接入（原名 `tushare/`，因遮蔽第三方库已改名） |
 | `notify/` | 2 | 0 | 飞书 / Lark 通知 |
 | `router/` | 2 | 0 | provider / quant_skill 路由 |
 
@@ -412,6 +412,7 @@ Windows 克隆仍会产出 CRLF 使该守卫失败。用 `.gitattributes` 从仓
 | # | 缺陷 | 发现方式 | 处置 |
 |---|------|---------|------|
 | 1 | `tests/test_module_splits.py` 用 `importlib.import_module("lark_notify")` 动态加载，`notify/` 改名后裸名失效 | 全量 pytest（ModuleNotFoundError） | 改为 `import_module("notify.lark_notify")`，`forbidden` 列表同步更新 |
+| 2 | **【严重】新建 `tushare/` 包遮蔽了第三方 `tushare` 库**：`import tushare as ts; ts.pro_api()` 解析到本项目空包而非真实依赖 → 运行期 `AttributeError`。影响 3 个文件（含 `corporate/corporate_action_provider.py`，说明遮蔽是全局生效的） | **远端 CI 的 mypy**（本机当时未装 mypy；pytest 与守卫测试均未捕获——惰性导入且只在调用时触发） | 包重命名为 `tushare_client/`；新增守卫 `test_no_bare_import_of_package_names` |
 
 **剩余的风险点（刻意未动）**
 
@@ -429,8 +430,12 @@ Windows 克隆仍会产出 CRLF 使该守卫失败。用 `.gitattributes` 从仓
 | 脚本 `--help` 冒烟 | 16/16 | **16/16** |
 | 本地 CI | ruff/mypy 本机未装，由远端 CI 覆盖 | 同左 |
 
-> 备注：本机仅装有 pytest，ruff / mypy 由 GitHub Actions 远端 CI 跑通（py3.10~3.13 + 凭据扫描）。
-> 导入重写已通过 `test_package_layout` 守卫与全量 pytest 验证；`py_compile` 全量语法零错误。
+> **备注（本轮最重要教训）**：本机隔离 venv（`~/.workbuddy/binaries/python/envs/default`）
+> 内**已装有 ruff / mypy**，分包这类改动必须在本地跑完整 CI 再推送。
+> 本轮最初只跑了 pytest 与 `py_compile` 就推送，结果 `tushare/` 遮蔽第三方库的缺陷
+> （见缺陷 #2）是**远端 CI 的 mypy** 抓出来的 —— 白跑一轮 CI，且该缺陷是运行期
+> `AttributeError`，pytest 根本抓不到。
+> 现已补守卫 `test_no_bare_import_of_package_names`，并恢复本地 mypy/ruff 校验。
 
 ---
 

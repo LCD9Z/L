@@ -119,7 +119,7 @@ known-first-party = [
     #                strategy_validation, benchmark, stress_test, health_monitor
     "pit", "tdx", "corporate", "factors", "ashare",
     "reporting", "runtime", "risk", "validation",
-    "alpha", "phase62", "regime", "tushare", "notify", "router",
+    "alpha", "phase62", "regime", "tushare_client", "notify", "router",
     "cycle_price_action", "daily_csv_adapter", "market_regime",
     "market_universe_provider", "backtest_engine",
     "walk_forward", "llm_client", 
