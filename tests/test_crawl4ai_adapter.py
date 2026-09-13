@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch
 
 import data_fetcher
+from fetch import news
 from crawl4ai_fetcher import _before_cutoff, _dedupe_news
 
 
@@ -22,7 +23,7 @@ class TestCrawl4AIAdapter(unittest.TestCase):
 
     def test_data_fetcher_falls_back_when_crawl4ai_unavailable(self):
         rows = [{"date":"2026-09-06", "title":"A", "media":"M", "url":"https://x/a"}]
-        with patch.object(data_fetcher, "_crawl4ai_fetch_news_sync", None):
+        with patch.object(news, "_crawl4ai_fetch_news_sync", None):
             out = data_fetcher._news_with_crawl4ai(rows, "000001", enabled=True)
         self.assertEqual(out, rows)
 
@@ -45,7 +46,7 @@ def test_enabled_path_prefers_crawled_title_media_and_content():
         "published_at": "2026-09-05T10:00:00+00:00", "crawled_at": "2026-09-06T00:00:00+00:00",
         "content": "正文A", "summary": "摘要A", "content_hash": "h" * 64,
     }]
-    with patch.object(data_fetcher, "_crawl4ai_fetch_news_sync", lambda urls, **kw: crawled):
+    with patch.object(news, "_crawl4ai_fetch_news_sync", lambda urls, **kw: crawled):
         out = data_fetcher._news_with_crawl4ai(_original_rows(), "000001", enabled=True)
 
     assert len(out) == 2
@@ -65,13 +66,13 @@ def test_enabled_path_falls_back_when_crawler_raises():
     def boom(urls, **kw):
         raise RuntimeError("browser crashed")
 
-    with patch.object(data_fetcher, "_crawl4ai_fetch_news_sync", boom):
+    with patch.object(news, "_crawl4ai_fetch_news_sync", boom):
         out = data_fetcher._news_with_crawl4ai(_original_rows(), "000001", enabled=True)
     assert out == _original_rows()
 
 
 def test_enabled_path_falls_back_on_empty_crawl_result():
-    with patch.object(data_fetcher, "_crawl4ai_fetch_news_sync", lambda urls, **kw: []):
+    with patch.object(news, "_crawl4ai_fetch_news_sync", lambda urls, **kw: []):
         out = data_fetcher._news_with_crawl4ai(_original_rows(), "000001", enabled=True)
     assert out == _original_rows()
 
@@ -84,7 +85,7 @@ def test_rows_without_url_short_circuit_without_launching_crawler():
         return []
 
     rows = [{"date": "2026-09-06", "title": "无链接", "media": "M"}]
-    with patch.object(data_fetcher, "_crawl4ai_fetch_news_sync", spy):
+    with patch.object(news, "_crawl4ai_fetch_news_sync", spy):
         out = data_fetcher._news_with_crawl4ai(rows, "000001", enabled=True)
     assert out == rows
     assert called == [], "无 URL 时不应启动浏览器"
@@ -99,12 +100,12 @@ def test_enabled_flag_reads_environment(monkeypatch):
         return []
 
     monkeypatch.delenv("CRAWL4AI_ENABLED", raising=False)
-    with patch.object(data_fetcher, "_crawl4ai_fetch_news_sync", spy):
+    with patch.object(news, "_crawl4ai_fetch_news_sync", spy):
         data_fetcher._news_with_crawl4ai(_original_rows(), "000001")
     assert seen == [], "环境变量未开启时不应调用抓取器"
 
     monkeypatch.setenv("CRAWL4AI_ENABLED", "1")
-    with patch.object(data_fetcher, "_crawl4ai_fetch_news_sync", spy):
+    with patch.object(news, "_crawl4ai_fetch_news_sync", spy):
         data_fetcher._news_with_crawl4ai(_original_rows(), "000001")
     assert seen == [["https://x/a", "https://x/b"]]
 
@@ -117,7 +118,7 @@ def test_cutoff_time_is_passed_through_to_crawler():
         received.update(kw)
         return []
 
-    with patch.object(data_fetcher, "_crawl4ai_fetch_news_sync", spy):
+    with patch.object(news, "_crawl4ai_fetch_news_sync", spy):
         data_fetcher._news_with_crawl4ai(
             _original_rows(), "000001", cutoff_time="2026-09-06T00:00:00+00:00", enabled=True)
     assert received.get("cutoff_time") == "2026-09-06T00:00:00+00:00"

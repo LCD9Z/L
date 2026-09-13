@@ -439,6 +439,45 @@ Windows 克隆仍会产出 CRLF 使该守卫失败。用 `.gitattributes` 从仓
 
 ---
 
+## 巨石拆分 · `data_fetcher.py`（807 行）→ `fetch/` 包 + 门面
+
+延续 1.0 对 `agents.py`(658) / `daily_stock_pick.py`(664) / `report_generator.py`(1029)
+的既有门面拆分模式，处理最后一个巨石 `data_fetcher.py`（807 行，全项目入边最多）。
+
+| 子模块 | 职责 | 行数 |
+|--------|------|-----:|
+| `fetch/transport.py` | HTTP 传输：SSL 复用 / 内存缓存 / 令牌桶限流 / 统一 GET | 141 |
+| `fetch/common.py` | 公共常量与纯函数（字段表、代码规范化、数值解析、日期工具） | 132 |
+| `fetch/quote.py` | 实时行情（东财 + 腾讯兜底） | 148 |
+| `fetch/kline.py` | 历史日K（东财 / 腾讯 / 通达信本地，不复权） | 264 |
+| `fetch/news.py` | 新闻与事实数据包（含 Crawl4AI 可选增强） | 249 |
+| `fetch/cli.py` | 命令行入口 | 47 |
+| `data_fetcher.py` | **门面**，重新导出 29 个符号 | 102 |
+
+**依赖方向无环**：`transport`/`common` → `quote`/`kline` → `news` → `cli`。
+
+**做法（保证可审计）**
+- 用 AST 行区间**机械抽取**，不手工誊抄 —— 实现代码字节级不变。
+- 跨组依赖由**实际引用**推导（不是"全部互导"），因此不成环。
+- 各子模块先带上完整导入，再由 `ruff --select F401 --fix` 裁掉未使用项（共裁 82 处）。
+
+**等价性验证**
+- 顶层符号 34 个：**无重复、无丢失**（脚本对比拆分前备份）。
+- 对外 API：12 个公开名全部可达，关键函数签名逐一比对一致。
+- ruff 全通过；mypy **214 文件零错误**；pytest **457 passed**（exit 0）；CLI 冒烟通过。
+
+**唯一需要适配的地方（门面拆分的固有代价）**
+`tests/test_crawl4ai_adapter.py` 原先用 `patch.object(data_fetcher, "_crawl4ai_fetch_news_sync", ...)`
+打补丁。拆分后该实现位于 `fetch/news.py`，函数从**自己模块**的全局读取该名字，
+因此补丁必须打到实现所在模块 —— 已改为 `patch.object(news, "_crawl4ai_fetch_news_sync", ...)`。
+> 教训：**monkeypatch 要打在"名字被查找的那个模块"上**。门面只能保证
+> `from data_fetcher import X` / `data_fetcher.X` 仍然可用，不能让补丁穿透到子模块内部。
+
+**新增**：`DIRECTORY_LAYOUT.md` —— 由 `gen_layout_doc.py` 从真实仓库状态生成
+（17 个包 / 61 个入包模块 / 根目录 59 个的分类与留根理由），避免文档与结构漂移。
+
+---
+
 ## 1.0 — 综合版本（2026-09-11）
 
 由 `4.3`（功能基线，内部 v3.7）与 `v3.4_work`（工程优化）合并而成。详见 [MERGE_1.0_REPORT.md](MERGE_1.0_REPORT.md)。

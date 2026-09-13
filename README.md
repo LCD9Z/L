@@ -75,6 +75,7 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 ├── tushare_client/     TuShare 数据接入（刻意不命名 tushare/：避免遮蔽第三方 tushare 库）
 ├── notify/             通知通道（飞书 / Lark）
 ├── router/             数据 / 技能路由层
+├── fetch/              L2 数据管道实现层（`data_fetcher.py` 门面背后，勿直接依赖）
 ├── scripts/run_*.py    可执行脚本（研究 / 评估 / 日常运行）
 ├── tests/test_*.py     测试（pytest 自动发现）
 ├── docs/               归档的阶段文档
@@ -91,8 +92,12 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
   共 17 个模块），根目录 91 → **74**。
 * **第四轮**再下沉七个家族（`stage2` / `alpha` / `phase62` / `regime` /
   `tushare_client` / `notify` / `router`，共 15 个模块），根目录 74 → **59**。
-  至此十六个家族共 55 个模块已入包，根目录剩下的是入口、核心编排与被广泛
-  引用的基础模块（`data_fetcher` / `agents` / `real_*` / `daily_*` 等刻意留根）。
+  至此十七个包共 61 个模块已入包（含 `fetch/` 的 6 个），根目录剩下的是入口、
+  核心编排与被广泛引用的基础模块（`data_fetcher` / `agents` / `real_*` /
+  `daily_*` 等刻意留根）。
+* **巨石拆分**：`data_fetcher.py`（807 行）按职责拆为 `fetch/` 包
+  （`transport` / `common` / `quote` / `kline` / `news` / `cli`），
+  原文件保留为**门面**重新导出全部符号 —— **对外 API 完全不变**。
 
 `agents_*` 保持不动：根目录已有门面模块 `agents.py`，若再建 `agents/` 包
 会出现同名冲突，收益不抵风险。
@@ -103,6 +108,9 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 > ⚠️ 从 `scripts/` 运行脚本时，Python 只把 `scripts/` 加入 `sys.path`，
 > 因此每个脚本开头都有一段把项目根目录加入导入路径的引导代码。
 > 新增脚本时务必保留它，否则会出现 `ModuleNotFoundError`。
+
+> 完整的目录全景（各包模块、行数、红线说明）见
+> [`DIRECTORY_LAYOUT.md`](DIRECTORY_LAYOUT.md)（由脚本从真实仓库状态生成）。
 
 | 文件 | 说明 |
 |------|------|
