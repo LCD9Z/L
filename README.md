@@ -114,6 +114,8 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 
 > 完整的目录全景（各包模块、行数、红线说明）见
 > [`DIRECTORY_LAYOUT.md`](DIRECTORY_LAYOUT.md)（由脚本从真实仓库状态生成）。
+> 本次工程改造记录与接手指南：
+> [`WORKLOG.md`](WORKLOG.md) · [`HANDOVER.md`](HANDOVER.md)
 
 | 文件 | 说明 |
 |------|------|

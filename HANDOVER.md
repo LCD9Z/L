@@ -1,0 +1,156 @@
+# 工作交接文档
+
+> **项目**：AI股神团队 1.0 · A股多 Agent 智能分析系统
+> **仓库**：`https://github.com/LCD9Z/L.git`（**私有**）　**分支**：`main`　**HEAD**：`393b352`
+> **交接范围**：2026-09-13 ~ 2026-09-14 的工程改造（目录分层 4 轮 + 巨石拆分 2 次）
+> **配套阅读**：[`WORKLOG.md`](WORKLOG.md)（做了什么）· [`CHANGELOG.md`](CHANGELOG.md)（版本演进）· [`DIRECTORY_LAYOUT.md`](DIRECTORY_LAYOUT.md)（结构全景）
+
+---
+
+## 一、一句话现状
+
+仓库已从「188 个 `.py` 全部平铺在根目录」重构为 **18 个子包 / 65 个入包模块 / 根目录仅 59 个**；
+`data_fetcher.py`(807 行) 与 `tracking.py`(308 行) 两个巨石已用**门面模式**拆解，对外 API 零变更。
+**质量门禁全绿**：ruff 全通过 · mypy 219 文件零错误 · pytest 470 passed + 1 skipped · 远端 CI 5/5。
+
+---
+
+## 二、环境准备（本机已验证）
+
+| 用途 | 路径 / 命令 |
+|------|-------------|
+| 项目根 | `C:\Users\T430\Desktop\1.0` |
+| 运行 / pytest 用 Python | `C:\Users\T430\AppData\Local\Programs\Python\Python313\python.exe` |
+| **ruff / mypy 在隔离 venv 内**（系统 python 里没有） | `C:\Users\T430\.workbuddy\binaries\python\envs\default\Scripts\` |
+| 完整本地 CI | `python run_ci.py`（syntax → ruff → mypy → compat → pytest → credentials） |
+| 凭据扫描 | `python credential_scan.py`（与 CI 共用同一实现） |
+| 推送（绕过失效代理 + GCM 静默失败） | `python <skill>/git_auth_run.py push --remote origin --branch main --no-proxy` |
+
+> ⚠️ **分包这类改动必须在本地跑完 ruff + mypy 再推送**。曾只跑 pytest 就推，
+> 结果 `tushare/` 遮蔽第三方库的缺陷是远端 CI 的 mypy 抓出来的，白跑一轮。
+
+---
+
+## 三、目录与导入约定（改动前必读）
+
+```
+项目根/
+├── *.py          59 个：入口 / 门面 / 核心编排 / 门禁工具 / 未成族单例
+├── <18 个子包>/   每个都有 __init__.py（写「管什么 + 共同红线」）
+├── scripts/       run_*.py（16 个）
+├── tests/         test_*.py（61 个）
+└── conftest.py    把项目根 + scripts/ 加入 sys.path
+```
+
+- **子包内**同族引用用**相对导入**（`from .schema import ...`）；**包外**一律**绝对导入**（`from track.store import ...`）。
+- 文件名**保留族前缀**（`pit/pit_integrity.py`）—— 为 `git mv` 可追溯，改动机械易审。
+- 门面包（`fetch/`、`track/`）**不要直接依赖**，请继续用 `from data_fetcher import ...` / `import tracking`。
+- **防回退守卫**：`tests/test_package_layout.py`，由 `PACKAGES` 单一来源推导，新增子包时**只需往 `PACKAGES` 加一行**，其余断言（无根目录平铺副本、无裸旧导入、包内相对导入、真实可导入）自动覆盖。
+
+---
+
+## 四、已完成改造（快速索引）
+
+| 类别 | 内容 | 提交 |
+|------|------|------|
+| 目录分层 | 第一轮：测试/脚本迁出（188→114） | `7c0198e` |
+| 目录分层 | 第二轮：5 个低耦合家族入包（→91） | `9a59516` |
+| 目录分层 | 第三轮：reporting/runtime/risk/validation（→74） | `98074b5` |
+| 目录分层 | 第四轮：7 个内部闭合家族入包（→59） | `4ec6386` |
+| 缺陷修复 | `tushare/` 包遮蔽第三方库 | `f92c4ef` |
+| 巨石拆分 | `data_fetcher.py` → `fetch/` + 门面 | `9df28ea` |
+| 巨石拆分 | `tracking.py` → `track/` + 门面 | `393b352` |
+| 文档 | `DIRECTORY_LAYOUT.md`（脚本生成，防漂移） | `9df28ea` |
+
+---
+
+## 五、待办事项（按优先级）
+
+| 优先级 | 事项 | 说明 |
+|:---:|------|------|
+| 1 | `crawl4ai_fetcher.py`（370 行）拆分评估 | 叶子模块、测试覆盖好（`test_crawl4ai_adapter`），风险低 |
+| 2 | `main.py`（402 行）拆分评估 | 入口，无测试覆盖，验证手段弱；需先补冒烟 |
+| 3 | 缓存备份处置 | 9.06 MB 已移出到 `_1.0_cache_backup_20260914-071155/`（**用户决定先观察，暂不删**） |
+| 4 | 外部集成真实凭据验收 | 飞书 / 付费模型，需用户提供凭据 |
+| 5 | 真实 Alpha 结论 | 需认证过的全市场 PIT 数据；当前 TDX 数据有**幸存者偏差**与**不复权**两项缺陷 |
+| — | `orchestrator.py`（312 行） | **建议不拆**：核心是 278 行类，拆需 mixin，1.0 已评估「收益递减」 |
+
+---
+
+## 六、踩坑清单（最有价值的部分，务必先看）
+
+1. **包名绝不能与第三方/标准库顶层模块同名**
+   曾建 `tushare/` 包 → `import tushare as ts; ts.pro_api()` 命中自己的空包 → 运行期 `AttributeError`。
+   pytest 抓不到（惰性导入），靠 mypy + 守卫 `test_no_bare_import_of_package_names`。
+   同理，`crawl4ai_fetcher` 若拆包**不能叫 `crawl4ai/`**。
+
+2. **monkeypatch 必须打在「名字被查找的那个模块」上**
+   门面只保证 `from data_fetcher import X` / `data_fetcher.X` 可达，**不能**让补丁穿透到子模块内部。
+   `test_crawl4ai_adapter` 的补丁已从 `data_fetcher` 改指 `fetch.news`。
+
+3. **拆分前先全局搜 `__file__` / 相对路径派生的资源**
+   `tracking._DB_PATH` 曾会静默迁到 `<root>/track/tracking.db`（旧记录"消失"且不报错）。
+   已加守卫 `test_db_path_stays_at_project_root`。
+
+4. **字符串动态引用是重命名的隐形地雷**
+   `open("x.py")`、`import_module("x")`、`importorskip("x")` 不会被普通 import 扫描发现。
+   每次改名都要额外搜一遍（已踩 3 次）。
+
+5. **跨组依赖按「实际引用」推导，别全量互导**
+   第一版给每个子模块全量互导，直接制造 `transport ↔ quote` **循环导入**。
+
+6. **本机跑全量 pytest 时 `exit=1` 可能是假信号**
+   WorkBuddy 的 `safe-delete` 钩子清理临时目录超时会污染退出码并吞掉摘要。
+   判断真过：**看进度条点号数**，或单独跑一个文件看 `exit=0`。
+
+7. **Edit 工具偶发「返回成功但内容未落盘」**
+   关键改动请改用脚本做精确替换 + **回读校验**，不要只信返回值。
+
+8. **PowerShell 特性**
+   无 heredoc（`git commit -F -` 不可用，先写文件再 `-F <path>`）；
+   `Set-Content -Encoding UTF8` 会加 **BOM + CRLF**（用 Write 工具代替）。
+
+9. **推送链路**
+   `.git/config` 里的 `http.proxy=127.0.0.1:10808` 常失效但**直连可用**；
+   git ↔ GCM 在私有仓库上会**静默退出 128 且零输出** → 用 `git_auth_run.py --no-proxy` 注入认证头绕过。
+   **避免使用 `git rebase`**（曾观测到异常退出后 `.git` 目录消失）。
+
+10. **目录体积疑云**
+    「10 MB」里约 8.3 MB 是工具缓存（`.mypy_cache` 占 7.5 MB），**项目真实内容仅 1.11 MB / 284 文件**。
+    判断方法：`git ls-files` 统计受控文件体积 = 真实大小，差额即被忽略的本地产物。
+
+---
+
+## 七、交接验收清单（接手后先跑一遍）
+
+```powershell
+# 1) 静态检查
+C:\Users\T430\.workbuddy\binaries\python\envs\default\Scripts\ruff.exe check .        # 期望 All checks passed
+C:\Users\T430\.workbuddy\binaries\python\envs\default\Scripts\mypy.exe --config-file mypy.ini .   # 期望 219 文件零错误
+
+# 2) 测试
+python -m pytest -q                 # 期望 470 passed, 1 skipped
+
+# 3) 完整本地 CI
+python run_ci.py                    # 期望 6/6 PASS
+
+# 4) 结构守卫
+python -m pytest tests/test_package_layout.py -q    # 覆盖全部 18 个子包
+```
+
+预期结果全部通过即表示环境与代码状态一致，可安全继续开发。
+
+---
+
+## 八、文档索引
+
+| 文档 | 用途 |
+|------|------|
+| [`README.md`](README.md) | 项目概览、目录树、快速上手 |
+| [`WORKLOG.md`](WORKLOG.md) | **本次工程改造的工作日志**（时间线、决策、缺陷、基线） |
+| [`CHANGELOG.md`](CHANGELOG.md) | 版本演进（含 PHASE1~43 归档、v4.9 移植、历次收紧） |
+| [`DIRECTORY_LAYOUT.md`](DIRECTORY_LAYOUT.md) | 目录全景（脚本生成，含各包红线与留根理由） |
+| [`AUDIT_REPORT.md`](AUDIT_REPORT.md) | 静态分析审计报告与风险项 |
+| [`MERGE_1.0_REPORT.md`](MERGE_1.0_REPORT.md) | 1.0 合并报告与遗留事项清单 |
+| `TDX_DATA_ASSESSMENT.md` / `TDX_EVALUATION_REPORT.md` | 数据性质评估与首次端到端实证 |
+| `docs/archive/` | 历史阶段文档（PHASE*） |
