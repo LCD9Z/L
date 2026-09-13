@@ -91,9 +91,9 @@ python run_pipeline.py --universe universe.jsonl --profile lite
 | `run_tail_exclusion_study.py` | 尾部剔除实验（事前设定变体 + 毛净成本对照） |
 | `run_universe_replication.py` | 多股票池独立重复验证（分位阈值在完整池上定义） |
 | `run_concentration_study.py` | 持仓分散度研究（只改集中度，测量离散度） |
-| `survivorship_guard.py` | 幸存者偏差门禁（v4.9 移植） |
+| `survivorship_guard.py` | 幸存者偏差门禁（v4.9 移植，**已接入发布路径**） |
 | `corporate_actions.py` | 除权除息调整层（v4.9 移植，向后兼容） |
-| `release_gate.py` | 发布门禁（v4.9 移植，向后兼容） |
+| `release_gate.py` | 发布门禁裁决层（v4.9 移植，向后兼容；**已接入发布路径**） |
 | `pit_event_master.py` · `pit_trading_filter.py` · `pit_research_rows.py` | PIT 事件与交易资格（v4.9 移植） |
 | `tdx_lifecycle.py` · `lifecycle_event_evidence.py` · `tdx_inventory.py` | 生命周期证据（v4.9 移植） |
 | `factor_blind_test.py` | 因子盲测（v4.9 移植） |
@@ -206,11 +206,58 @@ SurvivorshipAudit(
 是否允许 Alpha 结论: False
 ```
 
-`release_gate.evaluate_alpha_release()` 已接到发布流程，未通过时返回
-`alpha_status: INCONCLUSIVE`（而非"失败"）。
+### 门禁已接入运行时发布路径（2026-09-13）
+
+门禁不只是"有测试覆盖的模块"，而是**流水线出结论前的强制一步**：
+
+| 发布路径 | 接入位置 |
+|---------|---------|
+| `real_alpha_pipeline.run_real_alpha_pipeline` | 算出统计结论后、返回前，交门禁裁决 |
+| `run_tdx_rolling_eval`（多窗口滚动检验） | 每个窗口的 verdict 均经门禁裁决 |
+
+裁决由 `release_gate.gate_alpha_claim()` 完成，它把**统计结论**与**可发布结论**分开：
+
+```python
+# 证据不完整 —— 这正是当前 TDX 数据的真实情况
+{"statistical_verdict": "ALPHA_NOT_ESTABLISHED",   # 统计结论，原样保留
+ "verdict": "INCONCLUSIVE",                        # 可发布结论，被降级
+ "alpha_status": "INCONCLUSIVE",
+ "missing_evidence": ["lifecycle", "delisted_history", "st_history",
+                      "suspension_history", "corporate_actions"]}
+```
+
+分开是必要的：**"统计上不显著"与"证据不足无法判定"是两回事**，
+混为一谈会把"数据不够"误读成"策略不行"。
 
 > ⚠️ **门禁会主动阻断"基线策略 Alpha"类结论 —— 这是设计意图，不是故障。**
 > 它正确反映了数据证据的完备程度。
+
+### 如何提供证据
+
+证据需**显式声明**（键名见 `release_gate.EVIDENCE_KEYS`），未声明即视为缺失：
+
+```json
+{
+  "pit_universe": true,
+  "lifecycle": true,
+  "delisted_history": true,
+  "st_history": true,
+  "suspension_history": true,
+  "corporate_actions": true,
+  "source": "数据供应商", "as_of": "2026-09-13"
+}
+```
+
+```bash
+python run_tdx_evaluation.py --dataset D:/tdx_dataset \
+    --survivorship-evidence evidence.json
+python run_tdx_rolling_eval.py --dataset D:/tdx_dataset \
+    --survivorship-evidence evidence.json
+```
+
+`pit_universe` 由流水线自行校验后如实声明为已具备（否则前面已提前返回）；
+其余五项必须来自真实数据源，缺一即降级为 `INCONCLUSIVE`。
+额外的溯源字段（如 `source` / `as_of`）不影响判定，会原样保留。
 
 ### 除权调整层
 

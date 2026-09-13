@@ -90,6 +90,10 @@ def main() -> int:
                     help="参与评估的股票数（0=全部；默认 800 以控制内存）")
     ap.add_argument("--min-periods", type=int, default=252)
     ap.add_argument("--out", default="", help="结果 JSON 输出路径")
+    ap.add_argument(
+        "--survivorship-evidence", default="",
+        help="研究完整性证据清单 JSON（键名见 release_gate.EVIDENCE_KEYS）。"
+             "未提供时视为全部缺失，Alpha 结论会被门禁降级为 INCONCLUSIVE。")
     args = ap.parse_args()
 
     dataset = os.path.abspath(args.dataset)
@@ -119,6 +123,7 @@ def main() -> int:
     print(f"PIT 快照数  : {len(universe):,}")
 
     from real_alpha_pipeline import run_real_alpha_pipeline
+    from release_gate import load_survivorship_evidence
 
     print("\n运行 real_alpha_pipeline ...")
     result = run_real_alpha_pipeline(
@@ -126,6 +131,8 @@ def main() -> int:
         metadata_files=man["metas"], benchmark_metadata=bench_meta,
         min_periods=args.min_periods,
         universe_snapshot_map=universe,
+        survivorship_evidence=load_survivorship_evidence(
+            args.survivorship_evidence or None),
     )
 
     print("\n" + "=" * 78)
@@ -133,6 +140,18 @@ def main() -> int:
     if result.get("reason"):
         print(f"原因: {result['reason']}")
     print("=" * 78)
+
+    # 研究完整性门禁：把「统计结论」与「可发布结论」分开显示。
+    # 二者混为一谈会把「证据不足」误读成「策略不行」——这是最容易发生的误读。
+    if result.get("statistical_verdict"):
+        print(f"\n统计结论  : {result['statistical_verdict']}")
+        print(f"可发布结论: {result.get('verdict')}"
+              f"（alpha_status={result.get('alpha_status')}）")
+        missing = result.get("missing_evidence") or []
+        if missing:
+            print(f"尚缺证据（{len(missing)}）:")
+            for m in missing:
+                print(f"  - {m}")
 
     # 门禁失败时必须给出可定位的原因，而不是只报一个 verdict
     pre = result.get("preflight")

@@ -124,6 +124,50 @@ Windows 克隆仍会产出 CRLF 使该守卫失败。用 `.gitattributes` 从仓
 
 ---
 
+## 1.0 · 研究完整性门禁接入运行时（2026-09-13）
+
+**问题（由结构化体检发现）**：`release_gate` 与 `survivorship_guard`
+**只被测试文件引用**，没有任何可执行路径会调用它们；而 README 声称
+「已接到发布流程」。这是**文档层面的"看起来有"**——恰恰与本项目
+「结论可追溯、不许自欺」的原则相悖，且测试全绿会制造虚假安全感。
+（同类模块共 26 个、约 1,200 行仅被测试引用，本次先处理门禁这一对。）
+
+**修复**：让门禁成为流水线出结论前的强制一步。
+
+| 发布路径 | 接入位置 |
+|---------|---------|
+| `real_alpha_pipeline.run_real_alpha_pipeline` | 统计结论算出后交门禁裁决 |
+| `run_tdx_rolling_eval`（多窗口滚动检验） | 每个窗口的 verdict 均经门禁裁决 |
+
+**新增接口**（`release_gate.py`，原有 `evaluate_alpha_release` 保持不变）
+
+| 函数 | 用途 |
+|------|------|
+| `gate_alpha_claim(statistical_verdict, audit)` | 核心：返回**可发布结论**，保留 `statistical_verdict`，被阻断时给出 `missing_evidence` |
+| `build_survivorship_audit(evidence, *, pit_universe_verified=False)` | 从证据清单构造审计，**未声明即视为缺失** |
+| `load_survivorship_evidence(path)` | 读取证据清单 JSON（含 `source` / `as_of` 等溯源字段） |
+| `missing_evidence(audit)` | 列出尚缺证据项 |
+
+两个评估脚本新增 `--survivorship-evidence <json>` 参数。
+
+**设计取舍**：统计结论与可发布结论**必须分开**。
+「统计上不显著」与「证据不足无法判定」是两回事，混为一谈会把"数据不够"
+误读成"策略不行"。因此 `statistical_verdict` 字段永不改写。
+
+**当前效果**：TDX 数据缺 `lifecycle` / `delisted_history` / `st_history` /
+`suspension_history` / `corporate_actions` 五项（`pit_universe` 由流水线自行校验
+后如实声明为已具备），故所有 Alpha 结论降级为 `INCONCLUSIVE` ——
+这正是数据现状的真实反映，不是故障。
+
+**守卫**：新增 `test_alpha_release_gate.py`（26 例）。除行为测试外含**接线守卫**，
+防止再度退化成"import 了但没人调用"：
+- 断言 `run_real_alpha_pipeline` 与 `run_tdx_rolling_eval.main` 的**函数体内**
+  确实调用了 `gate_alpha_claim`（用 `inspect.getsource`）
+- 断言 `EVIDENCE_KEYS` 与 `audit_survivorship` 的参数名一致（防静默漂移）
+- 断言 `missing_evidence` 覆盖全部证据项
+
+---
+
 ## 1.0 — 综合版本（2026-09-11）
 
 由 `4.3`（功能基线，内部 v3.7）与 `v3.4_work`（工程优化）合并而成。详见 [MERGE_1.0_REPORT.md](MERGE_1.0_REPORT.md)。

@@ -38,6 +38,13 @@ DEFAULT_WINDOWS = [
     "2024-07-01", "2025-01-02", "2025-07-01",
 ]
 
+# 统计结论的措辞，与 real_alpha_pipeline 保持一致，避免两处口径漂移
+VERDICT_MAP = {
+    "SUPPORTED": "ALPHA_SUPPORTED",
+    "NOT_SUPPORTED": "ALPHA_NOT_ESTABLISHED",
+    "INCONCLUSIVE": "INCONCLUSIVE",
+}
+
 
 def _load_universe(dataset: str) -> Dict[str, List[str]]:
     with open(os.path.join(dataset, "pit_universe.json"), encoding="utf-8") as f:
@@ -71,6 +78,10 @@ def main() -> int:
     ap.add_argument("--min-periods", type=int, default=252)
     ap.add_argument("--windows", default=",".join(DEFAULT_WINDOWS))
     ap.add_argument("--out", default="")
+    ap.add_argument(
+        "--survivorship-evidence", default="",
+        help="研究完整性证据清单 JSON（键名见 release_gate.EVIDENCE_KEYS）。"
+             "未提供时视为全部缺失，Alpha 结论会被门禁降级为 INCONCLUSIVE。")
     args = ap.parse_args()
 
     dataset = os.path.abspath(args.dataset)
@@ -110,6 +121,22 @@ def main() -> int:
     from alpha_survival_lab import analyse_alpha
     from historical_universe import point_in_time_universe
     from real_alpha_pipeline import _benchmark_returns, _curve_returns
+    from release_gate import (
+        build_survivorship_audit, gate_alpha_claim, load_survivorship_evidence,
+    )
+
+    # 研究完整性门禁：本脚本自行校验了 PIT 股票池（universe 快照来自认证数据集），
+    # 其余证据必须由调用方显式声明；未声明即视为缺失，Alpha 结论会被降级。
+    survivorship_audit = build_survivorship_audit(
+        load_survivorship_evidence(args.survivorship_evidence or None),
+        pit_universe_verified=True,
+    )
+    if survivorship_audit.ok:
+        print("      研究完整性证据：完整 → Alpha 结论可作为可发布结论")
+    else:
+        from release_gate import missing_evidence
+        print("      研究完整性证据：不完整 → Alpha 结论将降级为 INCONCLUSIVE")
+        print(f"        缺失项: {', '.join(missing_evidence(survivorship_audit))}")
 
     universe = _load_universe(dataset)
     rows: List[Dict[str, Any]] = []
@@ -147,8 +174,12 @@ def main() -> int:
             a = analyse_alpha({d: s_ret[d] for d in common},
                               {d: b_ret[d] for d in common},
                               min_periods=args.min_periods)
+            statistical_verdict = VERDICT_MAP.get(a.get("verdict"), a.get("verdict"))
+            gated = gate_alpha_claim(statistical_verdict, survivorship_audit)
             rec.update({
-                "verdict": a.get("verdict"),
+                "verdict": gated["verdict"],
+                "statistical_verdict": gated["statistical_verdict"],
+                "alpha_status": gated["alpha_status"],
                 "annualized_excess": a.get("annualized_excess_estimate"),
                 "t_stat": a.get("t_stat_normal_approx"),
                 "p_value": a.get("normal_approx_pvalue"),

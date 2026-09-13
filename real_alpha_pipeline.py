@@ -23,6 +23,7 @@ from professional_audit import audit_research_evidence
 from alpha_survival_lab import analyse_alpha
 from pit_integrity import audit_pit_rows
 from historical_universe import point_in_time_universe
+from release_gate import build_survivorship_audit, gate_alpha_claim
 
 
 def _sha256(path: Path) -> str:
@@ -94,8 +95,15 @@ def run_real_alpha_pipeline(
     backtest_kwargs: Dict[str,Any] | None = None,
     min_periods: int = 252,
     universe_snapshot_map: Dict[str, List[str]] | None = None,
+    survivorship_evidence: Dict[str, Any] | None = None,
 ) -> Dict[str,Any]:
-    """Run only on SHA-verified strict datasets. Returns INCONCLUSIVE on evidence gaps."""
+    """Run only on SHA-verified strict datasets. Returns INCONCLUSIVE on evidence gaps.
+
+    ``survivorship_evidence`` 声明研究完整性证据的具备情况（键名见
+    ``release_gate.EVIDENCE_KEYS``）。**未声明即视为缺失**，
+    此时统计结论会被门禁降级为 ``INCONCLUSIVE``，但原始结论保留在
+    ``statistical_verdict`` 字段中，不会丢失信息。
+    """
     metadata_files = metadata_files or {}
     preflight=audit_research_evidence(stock_files, metadata_files, benchmark_file, benchmark_metadata, min_assets=2, min_rows_per_asset=min_periods*2)
     if preflight["verdict"] != "PASS":
@@ -168,7 +176,12 @@ def run_real_alpha_pipeline(
         min_periods=min_periods,
     )
     verdict_map={"SUPPORTED":"ALPHA_SUPPORTED","NOT_SUPPORTED":"ALPHA_NOT_ESTABLISHED","INCONCLUSIVE":"INCONCLUSIVE"}
-    analysis["verdict"]=verdict_map.get(analysis.get("verdict"),analysis.get("verdict"))
+    statistical_verdict=verdict_map.get(analysis.get("verdict"),analysis.get("verdict"))
+    # 研究完整性门禁：这是本管线唯一会「发布」Alpha 结论的位置。
+    # PIT 股票池由本流程自行校验（否则前面已提前返回），故如实声明为已具备；
+    # 其余证据一律要求调用方显式声明，未声明即视为缺失 —— 缺失证据不推断为有效。
+    survivorship_audit=build_survivorship_audit(survivorship_evidence, pit_universe_verified=True)
+    analysis.update(gate_alpha_claim(statistical_verdict, survivorship_audit))
     analysis["backtest"]=result
     analysis["aligned_periods"]=len(common)
     analysis["oos_start"]=oos_start
