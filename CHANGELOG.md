@@ -103,6 +103,25 @@ AI股神团队 · A 股多 Agent 智能分析系统的版本演进记录。
 | 凭据扫描 | 内联 grep | **254 个文件，共用实现** |
 | CI | 仅配置文件 | 配置 + **本地等价执行器** |
 
+### 远端 CI 首次通过（2026-09-13）
+
+仓库推送至 `https://github.com/LCD9Z/L`（私有）后，GitHub Actions 首次运行
+**CI #1 全部通过**：
+
+| 任务 | 结果 |
+|------|------|
+| `test (py3.10)` · `(py3.11)` · `(py3.12)` · `(py3.13)` | ✅ 全部 success |
+| `credential scan` | ✅ success |
+
+至此遗留事项 #1「CI 未在远端实际跑通」**闭环**。多版本矩阵真实执行通过，
+说明 1.0 修复的 PEP 701 语法不兼容确实生效 —— 项目在声明支持的 Python 下限
+（3.10）上可正常导入与测试。
+
+**新增 `.gitattributes`（`* text=auto eol=lf`）**：1.0 曾因 CRLF 污染引入
+`test_line_endings_are_lf` 守卫，但 Git for Windows 默认 `core.autocrlf=true`，
+Windows 克隆仍会产出 CRLF 使该守卫失败。用 `.gitattributes` 从仓库层锁死行尾，
+比要求每台机器改 `core.autocrlf` 可靠。（本机实测 `core.autocrlf` 即为 `true`。）
+
 ---
 
 ## 1.0 — 综合版本（2026-09-11）
