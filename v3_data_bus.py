@@ -2,11 +2,11 @@
 """V3 facade: legacy fetcher + normalized contract + deterministic factors."""
 from typing import Optional
 
-from ashare_factor_engine import compute_factors, score_candidate
-from ashare_market import event_flags, execution_constraints
+from ashare.ashare_factor_engine import compute_factors, score_candidate
+from ashare.ashare_market import event_flags, execution_constraints
 from candidate_prefilter import prefilter_fact_sheet
-from ashare_event_engine import build_event_risk_pack
-from ashare_flow_engine import moneyflow_features, top_list_features
+from ashare.ashare_event_engine import build_event_risk_pack
+from ashare.ashare_flow_engine import moneyflow_features, top_list_features
 from data_contracts import DataBundle, DataProvenance, MarketBar, NewsItem
 import data_fetcher
 

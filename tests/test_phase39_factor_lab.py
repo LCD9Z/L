@@ -1,5 +1,5 @@
-from factor_lab import run_factor_lab
-from ashare_factor_engine import compute_factors
+from factors.factor_lab import run_factor_lab
+from ashare.ashare_factor_engine import compute_factors
 
 
 def _bars(n=65):

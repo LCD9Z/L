@@ -1,4 +1,4 @@
-from corporate_action_provider import normalize_tushare_dividend, audit_action_coverage
+from corporate.corporate_action_provider import normalize_tushare_dividend, audit_action_coverage
 
 
 def test_normalize_tushare_cash_bonus():

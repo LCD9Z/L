@@ -11,7 +11,7 @@ from collections import defaultdict, deque
 from pathlib import Path
 from typing import Any, Dict
 
-from ashare_factor_engine import compute_factors
+from ashare.ashare_factor_engine import compute_factors
 from daily_csv_adapter import parse_row
 
 HORIZONS = (1, 3, 5, 10, 20)

@@ -13,8 +13,8 @@ import json, os, time, tempfile
 from dataclasses import dataclass, asdict
 from typing import Any, Callable, Dict, Iterable, Optional
 
-from ashare_universe import screen_row
-from ashare_cross_section import rank_candidates
+from ashare.ashare_universe import screen_row
+from ashare.ashare_cross_section import rank_candidates
 from stage2_scoring import rank_stage2_candidates
 
 

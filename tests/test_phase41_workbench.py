@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-from pit_universe_builder import build_snapshot_map, validate_snapshot_coverage
+from pit.pit_universe_builder import build_snapshot_map, validate_snapshot_coverage
 from phase41_data_workbench import build_factor_rows_for_stock
 
 

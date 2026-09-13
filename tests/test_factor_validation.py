@@ -1,4 +1,4 @@
-from factor_validation import build_forward_returns, validate_factor
+from factors.factor_validation import build_forward_returns, validate_factor
 
 
 def _fixture():

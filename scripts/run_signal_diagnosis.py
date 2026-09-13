@@ -32,7 +32,7 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from factor_ic_lab import (  # noqa: E402
+from factors.factor_ic_lab import (  # noqa: E402
     MIN_HISTORY,
     build_panel,
     compute_factors,

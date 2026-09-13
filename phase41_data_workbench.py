@@ -12,9 +12,9 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
-from ashare_factor_engine import compute_factors
+from ashare.ashare_factor_engine import compute_factors
 from historical_universe import point_in_time_universe
-from pit_integrity import audit_pit_rows
+from pit.pit_integrity import audit_pit_rows
 from real_data_integrity import verify_report
 
 

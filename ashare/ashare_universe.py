@@ -5,7 +5,7 @@
 """
 from __future__ import annotations
 from typing import Any, Dict, Iterable, List
-from ashare_market import board_of, execution_constraints
+from .ashare_market import board_of, execution_constraints
 
 
 def screen_row(row: Dict[str, Any]) -> Dict[str, Any]:

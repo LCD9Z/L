@@ -9,7 +9,7 @@ Stage-1, rather than merely making the score more complicated?
 from __future__ import annotations
 from typing import Any, Dict, Iterable, List, Sequence
 
-from factor_validation import validate_factor
+from factors.factor_validation import validate_factor
 
 
 def _num(v):

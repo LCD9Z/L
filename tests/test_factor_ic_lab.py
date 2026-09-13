@@ -7,7 +7,7 @@ import math
 
 import pytest
 
-from factor_ic_lab import (
+from factors.factor_ic_lab import (
     FACTOR_LABELS,
     PRIOR_SIGN,
     _rank,

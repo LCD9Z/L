@@ -103,16 +103,23 @@ known-first-party = [
     # report_generator.py 拆分（1.0）
     "report_styles", "report_markdown",
     "log_utils", "runtime_profile", "screen_pipeline", "stage2_enrichment",
-    "stage2_scoring", "stage2_ablation", "ashare_factor_engine",
-    "ashare_cross_section", "ashare_event_engine", "ashare_flow_engine",
-    "ashare_market", "ashare_universe", "factor_registry", "factor_gate",
-    "factor_lab", "factor_validation", "pit_integrity", "pit_universe_builder",
+    "stage2_scoring", "stage2_ablation",
+    # --- 已迁入子包的模块：isort 只需认顶层包名 ---
+    # pit/    <- pit_integrity, pit_universe_builder, pit_event_master,
+    #            pit_trading_filter, pit_research_rows
+    # tdx/    <- tdx_csv_adapter, tdx_inventory, tdx_lifecycle
+    # corporate/ <- corporate_actions, corporate_action_ingest, corporate_action_provider
+    # factors/ <- factor_registry, factor_gate, factor_lab, factor_validation,
+    #             factor_ic_lab, factor_blind_test
+    # ashare/ <- ashare_factor_engine, ashare_cross_section, ashare_event_engine,
+    #            ashare_flow_engine, ashare_market, ashare_universe
+    "pit", "tdx", "corporate", "factors", "ashare",
     "cycle_price_action", "daily_csv_adapter", "market_regime",
     "market_universe_provider", "a_share_risk", "backtest_engine",
     "walk_forward", "report_generator", "llm_client", "feishu_notifier",
     "data_contracts", "data_quality", "exchange_rules", "execution_rules",
     "liquidity", "industry_strength", "candidate_prefilter",
-    "corporate_actions", "health_monitor", "performance", "point_in_time",
+    "health_monitor", "performance", "point_in_time",
     "release_gate", "research_integrity", "risk_budget", "risk_engine",
     "robustness", "stress_test", "strategy_validation", "validation_suite",
     "professional_audit", "professional_committee", "provider_router",

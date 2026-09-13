@@ -9,7 +9,7 @@ import os
 from dataclasses import dataclass
 from typing import Any, Iterable
 
-from corporate_actions import CorporateAction
+from .corporate_actions import CorporateAction
 
 
 @dataclass(frozen=True)

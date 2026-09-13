@@ -1,4 +1,4 @@
-from pit_integrity import audit_pit_rows
+from pit.pit_integrity import audit_pit_rows
 
 
 def test_all_known_availability_fields_are_checked_against_trade_date():

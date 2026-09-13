@@ -8,7 +8,7 @@ be certified before entering the PIT factor lab.
 from __future__ import annotations
 import argparse, csv, json
 from pathlib import Path
-from corporate_action_provider import normalize_tushare_dividend, audit_action_coverage
+from .corporate_action_provider import normalize_tushare_dividend, audit_action_coverage
 
 
 def read_codes_from_tdx(path: str | Path) -> set[str]:

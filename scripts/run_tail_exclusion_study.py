@@ -36,7 +36,7 @@ from typing import Any, Dict, List, Sequence, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from factor_ic_lab import MIN_HISTORY, compute_factors  # noqa: E402
+from factors.factor_ic_lab import MIN_HISTORY, compute_factors  # noqa: E402
 
 # 变体定义：剔除哪些因子的最高分位
 VARIANTS: Dict[str, List[str]] = {

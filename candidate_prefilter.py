@@ -2,7 +2,7 @@
 """A股候选池确定性预筛：先机器硬门槛，再交给LLM做定性研究。"""
 from __future__ import annotations
 from typing import Any, Dict
-from ashare_market import execution_constraints
+from ashare.ashare_market import execution_constraints
 
 
 def prefilter_fact_sheet(fact_sheet: Dict[str, Any]) -> Dict[str, Any]:

@@ -1,4 +1,4 @@
-from tdx_lifecycle import ObservedLifecycle, load_observed_lifecycle, summarize_observed_lifecycle
+from tdx.tdx_lifecycle import ObservedLifecycle, load_observed_lifecycle, summarize_observed_lifecycle
 
 
 def test_observed_history_does_not_claim_delisting():

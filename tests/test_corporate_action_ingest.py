@@ -1,4 +1,4 @@
-from corporate_action_ingest import read_codes_from_tdx, read_tushare_csv, audit
+from corporate.corporate_action_ingest import read_codes_from_tdx, read_tushare_csv, audit
 
 
 def test_ingest_and_audit(tmp_path):

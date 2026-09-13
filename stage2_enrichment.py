@@ -7,9 +7,9 @@ bars/quote microstructure.  Missing inputs remain explicitly missing.
 """
 from __future__ import annotations
 from typing import Any, Dict
-from ashare_market import event_flags
-from ashare_flow_engine import moneyflow_features, top_list_features
-from ashare_event_engine import build_event_risk_pack
+from ashare.ashare_market import event_flags
+from ashare.ashare_flow_engine import moneyflow_features, top_list_features
+from ashare.ashare_event_engine import build_event_risk_pack
 
 
 def enrich_candidate(row: Dict[str, Any], cutoff: str | None = None) -> Dict[str, Any]:

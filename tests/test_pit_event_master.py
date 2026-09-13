@@ -1,4 +1,4 @@
-from pit_event_master import active_event_types, attach_pit_events, evidence_summary
+from pit.pit_event_master import active_event_types, attach_pit_events, evidence_summary
 
 
 def test_risk_warning_and_suspension_are_date_bounded():

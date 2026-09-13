@@ -9,7 +9,7 @@ import zipfile
 
 import pytest
 
-from tdx_csv_adapter import (
+from tdx.tdx_csv_adapter import (
     PIPELINE_COLUMNS,
     board_of,
     build_pit_universe,

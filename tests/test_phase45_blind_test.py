@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from factor_blind_test import run_blind_test
+from factors.factor_blind_test import run_blind_test
 
 
 def _write_day(root, day, rows):

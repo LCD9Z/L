@@ -21,7 +21,7 @@ from typing import Dict, List, Any
 from portfolio_backtest import portfolio_backtest
 from professional_audit import audit_research_evidence
 from alpha_survival_lab import analyse_alpha
-from pit_integrity import audit_pit_rows
+from pit.pit_integrity import audit_pit_rows
 from historical_universe import point_in_time_universe
 from release_gate import build_survivorship_audit, gate_alpha_claim
 

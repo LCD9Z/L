@@ -1,0 +1,194 @@
+# -*- coding: utf-8 -*-
+"""目录分层的防回退守卫测试。
+
+背景：仓库曾把 188 个 `.py` 全部平铺在根目录，其中 76 个并非库代码。
+1.0 分两轮下沉：测试/脚本 → `tests/` `scripts/`；五个低耦合库模块家族 →
+`pit/` `tdx/` `corporate/` `factors/` `ashare/`。
+
+这类重构最怕**静默回退**——有人为了省事把模块挪回根目录，或在别处补一个
+同名的平铺副本，两套导入路径并存，最后谁都不知道该改哪个文件。
+本测试把分层约定固化成断言：
+
+1. 每个子包存在且有 `__init__.py`；
+2. 已下沉的模块**不再**出现在根目录（防止平铺副本复活）；
+3. 全仓库**不存在**裸的旧顶层导入（``from pit_integrity import ...``）；
+4. 子包内的同族引用使用相对导入（``from .pit_event_master import ...``）；
+5. 每个子包及其模块都能被真实导入（防止目录建了、import 断了）。
+"""
+import ast
+import importlib
+import os
+import re
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parent.parent
+
+# 子包 -> 该包应包含的模块名（不含 __init__）
+PACKAGES = {
+    "pit": [
+        "pit_integrity", "pit_universe_builder", "pit_event_master",
+        "pit_trading_filter", "pit_research_rows",
+    ],
+    "tdx": ["tdx_csv_adapter", "tdx_inventory", "tdx_lifecycle"],
+    "corporate": ["corporate_actions", "corporate_action_provider", "corporate_action_ingest"],
+    "factors": [
+        "factor_registry", "factor_gate", "factor_validation",
+        "factor_ic_lab", "factor_lab", "factor_blind_test",
+    ],
+    "ashare": [
+        "ashare_market", "ashare_factor_engine", "ashare_cross_section",
+        "ashare_event_engine", "ashare_flow_engine", "ashare_universe",
+    ],
+}
+
+# 包名 -> 该家族模块的文件名前缀（用于检测平铺回根目录）
+PREFIXES = ("pit_", "tdx_", "corporate_", "factor_", "ashare_")
+
+# 允许留在根目录的同前缀例外（不属于任何已下沉家族）
+ROOT_PREFIX_ALLOWLIST: tuple = ()
+
+SKIP_DIRS = {
+    ".git", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache",
+    "build", "dist", ".venv", "venv", "node_modules", "docs",
+}
+
+
+def _iter_py(root: Path):
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        for fn in filenames:
+            if fn.endswith(".py"):
+                yield Path(dirpath) / fn
+
+
+def test_repository_root_is_discoverable():
+    """锚定 ROOT：README 与 conftest.py 应位于项目根。"""
+    assert (ROOT / "conftest.py").is_file(), f"ROOT 定位错误: {ROOT}"
+    assert (ROOT / "README.md").is_file(), f"ROOT 定位错误: {ROOT}"
+
+
+@pytest.mark.parametrize("pkg", sorted(PACKAGES))
+def test_package_has_init(pkg):
+    """每个子包都必须有 __init__.py，否则会被当成命名空间包而行为漂移。"""
+    init = ROOT / pkg / "__init__.py"
+    assert init.is_file(), f"缺少 {pkg}/__init__.py"
+
+
+@pytest.mark.parametrize("pkg", sorted(PACKAGES))
+def test_package_init_is_documented(pkg):
+    """包文档要说明「这个包管什么 + 共同红线」，否则分层只是把文件换个位置。"""
+    init = ROOT / pkg / "__init__.py"
+    tree = ast.parse(init.read_text(encoding="utf-8"), filename=str(init))
+    assert ast.get_docstring(tree), f"{pkg}/__init__.py 缺少包级 docstring"
+
+
+@pytest.mark.parametrize("pkg", sorted(PACKAGES))
+def test_package_contains_expected_modules(pkg):
+    """防止模块被误移出包，或包内堆积无关模块。"""
+    actual = sorted(p.stem for p in (ROOT / pkg).glob("*.py") if p.stem != "__init__")
+    assert actual == sorted(PACKAGES[pkg]), (
+        f"{pkg}/ 内容不符预期\n  实际: {actual}\n  预期: {sorted(PACKAGES[pkg])}"
+    )
+
+
+def test_no_flattened_copies_in_root():
+    """已下沉的模块不允许在根目录再留一份平铺副本。
+
+    两套导入路径并存是最难查的失效模式：改了包里的文件，
+    运行时却可能命中根目录的旧副本，且两者都不会报错。
+    """
+    offenders = sorted(
+        p.name for p in (ROOT).glob("*.py")
+        if p.name.startswith(PREFIXES) and p.name not in ROOT_PREFIX_ALLOWLIST
+    )
+    assert offenders == [], f"以下模块应位于子包内，不应平铺在根目录: {offenders}"
+
+
+def test_no_bare_legacy_imports():
+    """全仓库不应再有裸的旧顶层导入（``from pit_integrity import ...``）。
+
+    模块一旦下沉为包，裸导入在任何环境都会 ImportError；这里提前兜住，
+    避免只在「恰好没被执行的分支」里才暴露。
+    """
+    pattern = re.compile(r"^\s*(?:from|import)\s+(" + "|".join(PREFIXES) + r"[\w.]*)", re.M)
+    offenders = []
+    for path in _iter_py(ROOT):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for m in pattern.finditer(text):
+            offenders.append(f"{path.relative_to(ROOT)}: {m.group(0).strip()}")
+    assert offenders == [], "发现裸的旧顶层导入:\n" + "\n".join(offenders)
+
+
+@pytest.mark.parametrize("pkg", sorted(PACKAGES))
+def test_intra_package_imports_are_relative(pkg):
+    """同族引用用相对导入，使整包可以整体改名/移动而不必改内部 import。"""
+    offenders = []
+    for path in sorted((ROOT / pkg).glob("*.py")):
+        if path.stem == "__init__":
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                if node.level == 0 and node.module in PACKAGES[pkg]:
+                    offenders.append(f"{path.name}:{node.lineno}: from {node.module} import ...")
+    assert offenders == [], f"{pkg}/ 内应改用相对导入:\n" + "\n".join(offenders)
+
+
+@pytest.mark.parametrize("pkg", sorted(PACKAGES))
+def test_package_is_importable(pkg):
+    """子包整体可导入（只导入 __init__，不触发模块级副作用）。"""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    assert importlib.import_module(pkg) is not None
+
+
+@pytest.mark.parametrize("pkg", sorted(PACKAGES))
+def test_package_modules_are_importable(pkg):
+    """包内每个模块都能真实导入 —— 目录建了但 import 断了是最常见的假分层。"""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    failed = []
+    for mod in PACKAGES[pkg]:
+        try:
+            importlib.import_module(f"{pkg}.{mod}")
+        except ImportError as exc:
+            # 仅第三方可选依赖缺失时跳过；项目自身模块缺失必须报错
+            failed.append(f"{pkg}.{mod}: {exc}")
+    # 过滤掉确属第三方依赖缺失的情况（这些模块本身是零依赖的，理论上不会命中）
+    real = [f for f in failed if "No module named" in f and not _is_third_party(f)]
+    assert real == [], "以下包内模块无法导入:\n" + "\n".join(real)
+
+
+def _is_third_party(msg: str) -> bool:
+    """判断 ImportError 是否来自第三方包（如 pandas / tushare）。"""
+    m = re.search(r"No module named '([^']+)'", msg)
+    if not m:
+        return False
+    top = m.group(1).split(".")[0]
+    return top not in PACKAGES and not top.startswith(PREFIXES)
+
+
+def test_agents_family_stays_flat():
+    """agents_* 刻意保持平铺：根目录已有门面 agents.py，再建包会同名冲突。
+
+    这条断言把「不做某事」的原因固化下来，避免后来者误以为是遗漏。
+    """
+    assert (ROOT / "agents.py").is_file(), "agents.py 是门面模块，应保持在根目录"
+    assert not (ROOT / "agents").is_dir(), (
+        "不应建立 agents/ 包：与根目录 agents.py 同名，导入解析会产生歧义"
+    )
+
+
+def test_scripts_and_tests_directories_exist():
+    """第一轮分层的成果同样需要守卫。"""
+    assert (ROOT / "scripts").is_dir()
+    assert (ROOT / "tests").is_dir()
+    gate_tools = {"run_ci.py", "credential_scan.py"}
+    missing = [n for n in gate_tools if not (ROOT / n).is_file()]
+    assert not missing, f"门禁工具应保留在根目录: {missing}"

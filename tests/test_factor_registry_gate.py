@@ -1,5 +1,5 @@
-from factor_registry import availability, select_available
-from factor_gate import gate_factors
+from factors.factor_registry import availability, select_available
+from factors.factor_gate import gate_factors
 
 
 def test_registry_does_not_fabricate_missing_sources():

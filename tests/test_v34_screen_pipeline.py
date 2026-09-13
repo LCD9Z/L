@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict, List
 
-from ashare_cross_section import rank_candidates
+from ashare.ashare_cross_section import rank_candidates
 from screen_pipeline import ScreenConfig, run_screen
 from streaming_topk import TopK
 

@@ -59,6 +59,11 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 ```
 项目根/
 ├── *.py                库模块 —— 可按模块名直接导入（from data_fetcher import ...）
+├── pit/                PIT 研究数据子集（时点正确性：完整性 / 宇宙 / 事件 / 交易资格）
+├── tdx/                通达信本地数据集适配（CSV 读取 / 清单 / 观测生命周期）
+├── corporate/          公司行为与复权因子（事件模型 / 数据源 / 摄入审计）
+├── factors/            因子研究（注册 / 准入 / 验证 / IC 检验 / 盲测）
+├── ashare/             A 股市场结构与确定性特征（板块 / 因子 / 横截面 / 事件 / 资金流 / 候选池）
 ├── scripts/run_*.py    可执行脚本（研究 / 评估 / 日常运行）
 ├── tests/test_*.py     测试（pytest 自动发现）
 ├── docs/               归档的阶段文档
@@ -66,8 +71,14 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 ```
 
 分层前 188 个 `.py` 全部平铺在根目录，其中 76 个（40%）并非库代码。
-首轮把**测试与研究脚本**迁出，根目录降至 **114 个**；库模块仍留在根目录，
-以保证 `from data_fetcher import ...` 这类既有导入全部不变（零破坏）。
+
+* **第一轮**把**测试与研究脚本**迁出，根目录 188 → 114。
+* **第二轮**把五个低耦合的**库模块家族**（共 23 个模块）下沉为子包，根目录
+  114 → **91**。子包内用相对导入，包外一律用绝对导入
+  （`from pit.pit_integrity import audit_pit_rows`）。
+
+`agents_*` 保持不动：根目录已有门面模块 `agents.py`，若再建 `agents/` 包
+会出现同名冲突，收益不抵风险。
 
 顶层保留 `run_ci.py` 与 `credential_scan.py` —— 它们是门禁工具而非研究脚本，
 文档与测试均按顶层路径引用。
@@ -103,22 +114,22 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 | `MERGE_1.0_REPORT.md` | 1.0 合并明细（4.3 + v3.4_work） |
 | `AUDIT_REPORT.md` | 多角度代码审计报告 |
 | `log_utils.py` | 统一结构化日志（`LOG_LEVEL` / `LOG_FILE`） |
-| `tdx_csv_adapter.py` | 通达信日线 CSV 适配器（品种过滤 / code+market 消歧 / 导出契约） |
+| `tdx/tdx_csv_adapter.py` | 通达信日线 CSV 适配器（品种过滤 / code+market 消歧 / 导出契约） |
 | `build_tdx_dataset.py` | 原始 CSV → 认证数据集（清洗 + sha256 + PIT 股票池） |
-| `run_tdx_evaluation.py` | 在 TDX 数据集上运行真实 Alpha 评估（单窗口） |
-| `run_tdx_rolling_eval.py` | 多窗口滚动样本外稳健性检验（审计复用，不调参） |
-| `factor_ic_lab.py` | 横截面因子 IC 检验引擎（秩相关 / 无未来函数 / 分位组） |
-| `run_factor_study.py` | 9 个经济假设的因子检验 + 子期间稳定性 |
-| `run_signal_diagnosis.py` | 策略因子暴露诊断（因果闭环） |
-| `run_tail_exclusion_study.py` | 尾部剔除实验（事前设定变体 + 毛净成本对照） |
-| `run_universe_replication.py` | 多股票池独立重复验证（分位阈值在完整池上定义） |
-| `run_concentration_study.py` | 持仓分散度研究（只改集中度，测量离散度） |
+| `scripts/run_tdx_evaluation.py` | 在 TDX 数据集上运行真实 Alpha 评估（单窗口） |
+| `scripts/run_tdx_rolling_eval.py` | 多窗口滚动样本外稳健性检验（审计复用，不调参） |
+| `factors/factor_ic_lab.py` | 横截面因子 IC 检验引擎（秩相关 / 无未来函数 / 分位组） |
+| `scripts/run_factor_study.py` | 9 个经济假设的因子检验 + 子期间稳定性 |
+| `scripts/run_signal_diagnosis.py` | 策略因子暴露诊断（因果闭环） |
+| `scripts/run_tail_exclusion_study.py` | 尾部剔除实验（事前设定变体 + 毛净成本对照） |
+| `scripts/run_universe_replication.py` | 多股票池独立重复验证（分位阈值在完整池上定义） |
+| `scripts/run_concentration_study.py` | 持仓分散度研究（只改集中度，测量离散度） |
 | `survivorship_guard.py` | 幸存者偏差门禁（v4.9 移植，**已接入发布路径**） |
-| `corporate_actions.py` | 除权除息调整层（v4.9 移植，向后兼容） |
+| `corporate/corporate_actions.py` | 除权除息调整层（v4.9 移植，向后兼容） |
 | `release_gate.py` | 发布门禁裁决层（v4.9 移植，向后兼容；**已接入发布路径**） |
-| `pit_event_master.py` · `pit_trading_filter.py` · `pit_research_rows.py` | PIT 事件与交易资格（v4.9 移植） |
-| `tdx_lifecycle.py` · `lifecycle_event_evidence.py` · `tdx_inventory.py` | 生命周期证据（v4.9 移植） |
-| `factor_blind_test.py` | 因子盲测（v4.9 移植） |
+| `pit/pit_event_master.py` · `pit/pit_trading_filter.py` · `pit/pit_research_rows.py` | PIT 事件与交易资格（v4.9 移植） |
+| `tdx/tdx_lifecycle.py` · `lifecycle_event_evidence.py` · `tdx/tdx_inventory.py` | 生命周期证据（v4.9 移植） |
+| `factors/factor_blind_test.py` | 因子盲测（v4.9 移植） |
 | `repair_tdx_metadata.py` | 重建数据集 sha256 元数据（修复工具） |
 | `requirements.txt` · `requirements-dev.txt` | 运行依赖与开发/CI 依赖 |
 | `ruff.toml` · `mypy.ini` · `pytest.ini` | lint / 类型检查 / 测试配置 |
@@ -283,7 +294,7 @@ python scripts/run_tdx_rolling_eval.py --dataset D:/tdx_dataset \
 
 ### 除权调整层
 
-`corporate_actions.py` 提供完整公司行动处理（现金分红 / 送股 / 配股 / 拆并股），
+`corporate/corporate_actions.py` 提供完整公司行动处理（现金分红 / 送股 / 配股 / 拆并股），
 可推导后复权因子。实测（10 派 3 元 + 10 送 2 股，前收盘 100 元）：
 
 ```
@@ -295,10 +306,10 @@ python scripts/run_tdx_rolling_eval.py --dataset D:/tdx_dataset \
 
 | 模块 | 用途 |
 |------|------|
-| `pit_event_master` / `pit_trading_filter` / `pit_research_rows` | PIT 事件与交易资格 |
-| `tdx_lifecycle` / `lifecycle_event_evidence` / `tdx_inventory` | TDX 生命周期证据 |
-| `corporate_action_provider` / `corporate_action_ingest` | 公司行动数据接入 |
-| `factor_blind_test` | 因子盲测（流式，无未来函数） |
+| `pit.pit_event_master` / `pit.pit_trading_filter` / `pit.pit_research_rows` | PIT 事件与交易资格 |
+| `tdx.tdx_lifecycle` / `lifecycle_event_evidence` / `tdx.tdx_inventory` | TDX 生命周期证据 |
+| `corporate.corporate_action_provider` / `corporate.corporate_action_ingest` | 公司行动数据接入 |
+| `factors.factor_blind_test` | 因子盲测（流式，无未来函数） |
 | `public_daily_source` | 公开日线数据源 |
 
 📄 详见 [`V49_REFERENCE_ASSESSMENT.md`](V49_REFERENCE_ASSESSMENT.md)
@@ -571,7 +582,7 @@ V3 在 V2 的 Crawl4AI、PIT、A股交易规则和专业评审委员会之上，
 - `data_contracts.py`：统一行情/新闻/数据溯源契约；
 - `provider_router.py`：数据源优先级与故障降级；
 - `quant_skill_router.py`：量化技能路由；
-- `ashare_factor_engine.py`：LLM 前确定性因子计算；
+- `ashare/ashare_factor_engine.py`：LLM 前确定性因子计算；
 - `v3_data_bus.py`：把现有 V2 数据管道转换为统一 DataBundle；
 - `PHASE31_V3_QUANT_DATA_UPGRADE.md`：本轮升级说明（见 `docs/archive/`）。
 

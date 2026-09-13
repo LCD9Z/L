@@ -687,7 +687,7 @@ def build_fact_sheet(code, news_limit=5, cutoff_time=None, use_crawl4ai=None, fa
         kline = fut_kline.result()
     name = q.get("name")
     try:
-        from ashare_market import board_of
+        from ashare.ashare_market import board_of
         q["board"] = board_of(std)
     except Exception:
         q["board"] = "未知"
@@ -697,7 +697,7 @@ def build_fact_sheet(code, news_limit=5, cutoff_time=None, use_crawl4ai=None, fa
         news, stock_code=std, cutoff_time=cutoff_time, enabled=use_crawl4ai
     )
     try:
-        from ashare_factor_engine import compute_factors, score_candidate
+        from ashare.ashare_factor_engine import compute_factors, score_candidate
         factor_pack = compute_factors(kline)
         factor_score = score_candidate(factor_pack)
     except Exception as _factor_exc:  # factor layer must never break core data collection

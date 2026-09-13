@@ -136,6 +136,20 @@ def main():
 
     # 从命令行参数或环境变量读取股票数据
     # 实际使用时，由TRAE AI分析完成后生成数据传入
+    #
+    # 注意：本脚本历史上把 argv[1] 直接当作股票 JSON，因此 `--help` 会被
+    # 当成数据去 json.loads，报「STOCKS_DATA 不是合法 JSON」。这里显式先处理
+    # 帮助参数，其余行为保持原样（定时任务的调用方式不受影响）。
+    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+        print(__doc__.strip())
+        print()
+        print("用法:")
+        print("  run_daily_screening.py '<股票JSON数组>'")
+        print("  STOCKS_DATA='<股票JSON数组>' run_daily_screening.py")
+        print()
+        print("拒绝演示/静态示例数据：未提供真实数据时直接退出（非 0）。")
+        return
+
     if len(sys.argv) > 1:
         stocks_json = sys.argv[1]
     else:

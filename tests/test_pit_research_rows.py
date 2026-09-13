@@ -1,7 +1,7 @@
 import unittest
 from typing import Any, Dict, List
 
-from pit_research_rows import filter_pit_research_rows, attach_research_price
+from pit.pit_research_rows import filter_pit_research_rows, attach_research_price
 
 class TestPITResearchRows(unittest.TestCase):
     def test_strict_requires_explicit_true(self):

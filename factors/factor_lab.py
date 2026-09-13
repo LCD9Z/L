@@ -12,9 +12,9 @@ import argparse, csv, json
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
-from factor_gate import gate_factors
-from factor_registry import availability, select_available
-from factor_validation import validate_factor
+from .factor_gate import gate_factors
+from .factor_registry import availability, select_available
+from .factor_validation import validate_factor
 
 
 def _load_rows(path: str) -> List[Dict[str, Any]]:

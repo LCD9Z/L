@@ -1,7 +1,7 @@
 # AI股神团队 1.0 - Python 依赖声明
 #
-# 核心数据管道 (data_fetcher, tracking, screen_pipeline, ashare_*, factor_*,
-# pit_* 等) 纯标准库实现，零第三方依赖。
+# 核心数据管道 (data_fetcher, tracking, screen_pipeline, ashare/*, factors/*,
+# pit/* 等) 纯标准库实现，零第三方依赖。
 # 以下均为可选依赖：仅在使用对应功能时才需要安装。
 
 # Python >= 3.10

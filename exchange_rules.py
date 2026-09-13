@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """集中管理A股交易规则；优先使用数据源提供的逐日状态。"""
 from decimal import Decimal, ROUND_HALF_UP
-from ashare_market import default_limit_ratio
+from ashare.ashare_market import default_limit_ratio
 
 def limit_ratio(code, bar=None):
     if bar:

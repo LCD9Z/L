@@ -15,7 +15,7 @@ from collections import defaultdict, deque
 from pathlib import Path
 from typing import Any, Dict, List
 
-from ashare_factor_engine import compute_factors
+from ashare.ashare_factor_engine import compute_factors
 
 
 def _day_files(root: Path) -> List[Path]:

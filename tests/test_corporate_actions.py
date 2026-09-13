@@ -1,4 +1,4 @@
-from corporate_actions import CorporateAction, build_back_adjustment_factors, evidence_summary
+from corporate.corporate_actions import CorporateAction, build_back_adjustment_factors, evidence_summary
 
 
 def test_cash_dividend_factor():

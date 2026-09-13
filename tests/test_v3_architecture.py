@@ -1,5 +1,5 @@
 import unittest
-from ashare_factor_engine import compute_factors, score_candidate
+from ashare.ashare_factor_engine import compute_factors, score_candidate
 from data_contracts import DataProvenance, NewsItem
 from provider_router import Provider, ProviderRouter
 from quant_skill_router import route

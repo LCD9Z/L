@@ -30,7 +30,7 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from tdx_csv_adapter import (  # noqa: E402
+from tdx.tdx_csv_adapter import (  # noqa: E402
     PIPELINE_COLUMNS,
     build_pit_universe,
     export_stock_csvs,

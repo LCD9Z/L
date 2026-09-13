@@ -1,5 +1,5 @@
-from pit_event_master import verified_events
-from pit_trading_filter import annotate_rows, filter_snapshot, trading_eligible
+from pit.pit_event_master import verified_events
+from pit.pit_trading_filter import annotate_rows, filter_snapshot, trading_eligible
 
 
 def test_suspension_removes_from_trading_universe():

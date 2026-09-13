@@ -1,7 +1,7 @@
 import unittest
-from ashare_event_engine import normalize_events, build_event_risk_pack, normalize_forecast, normalize_float_event
-from ashare_flow_engine import moneyflow_features, top_list_features
-from ashare_universe import screen_row, rank_candidates
+from ashare.ashare_event_engine import normalize_events, build_event_risk_pack, normalize_forecast, normalize_float_event
+from ashare.ashare_flow_engine import moneyflow_features, top_list_features
+from ashare.ashare_universe import screen_row, rank_candidates
 
 class TestV32Ashare(unittest.TestCase):
     def test_pit_event_filter(self):

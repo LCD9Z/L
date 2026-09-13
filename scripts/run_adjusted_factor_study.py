@@ -38,7 +38,7 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from factor_ic_lab import (  # noqa: E402
+from factors.factor_ic_lab import (  # noqa: E402
     FACTOR_LABELS,
     quintile_returns,
     run_ic_study,
@@ -49,7 +49,7 @@ OHLC = ("open", "high", "low", "close")
 
 def load_actions(path: str) -> Dict[str, List[Any]]:
     """读入公司行动 CSV，按股票代码分组为 CorporateAction 列表。"""
-    from corporate_action_provider import normalize_tushare_dividend
+    from corporate.corporate_action_provider import normalize_tushare_dividend
     out: Dict[str, List[Any]] = {}
     with open(path, encoding="utf-8-sig", newline="") as f:
         for row in csv.DictReader(f):
@@ -67,7 +67,7 @@ def adjust_bars(bars: List[Dict[str, Any]], actions: List[Any]) -> List[Dict[str
     open/high/low，保证 OHLC 内部一致（否则 high/low 与 close 会失配，
     污染依赖区间位置的因子）。
     """
-    from corporate_actions import build_back_adjustment_factors
+    from corporate.corporate_actions import build_back_adjustment_factors
     if not actions:
         return bars
     tagged = build_back_adjustment_factors(bars, actions)

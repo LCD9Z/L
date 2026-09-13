@@ -1,5 +1,5 @@
 import unittest
-from ashare_market import board_of, default_limit_ratio, event_flags
+from ashare.ashare_market import board_of, default_limit_ratio, event_flags
 from candidate_prefilter import prefilter_fact_sheet
 from exchange_rules import limit_prices
 

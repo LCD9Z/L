@@ -7,7 +7,7 @@ never becomes a synthetic suspension/ST flag.
 from __future__ import annotations
 from typing import Any, Dict, Iterable, List
 
-from pit_event_master import active_event_types
+from .pit_event_master import active_event_types
 
 
 def trading_eligible(

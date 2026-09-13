@@ -1,5 +1,5 @@
 import unittest
-from pit_integrity import audit_pit_rows
+from pit.pit_integrity import audit_pit_rows
 from real_alpha_pipeline import run_real_alpha_pipeline
 from portfolio_backtest import portfolio_backtest
 
