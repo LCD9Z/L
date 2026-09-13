@@ -478,6 +478,42 @@ Windows 克隆仍会产出 CRLF 使该守卫失败。用 `.gitattributes` 从仓
 
 ---
 
+## 巨石拆分 · `tracking.py`（308 行）→ `track/` 包 + 门面
+
+高耦合核心中下一个可安全分解的目标（`import tracking` + `tracking.X(...)` 被
+`daily_stock_pick` / `run_analysis` / `run_tracking` / 测试广泛使用）。
+
+| 子模块 | 职责 | 行数 |
+|--------|------|-----:|
+| `track/costs.py` | 交易成本模型（TrackingCosts）与净收益率换算 | 69 |
+| `track/schema.py` | 常量与表结构（默认库路径、建表语句、立场映射） | 50 |
+| `track/store.py` | SQLite 持久化（连接 / 建表 / 写入 / 查重 / 列举） | 72 |
+| `track/stats.py` | 校准统计（命中判定 / 回填 / 胜率与平均收益） | 167 |
+| `tracking.py` | **门面**，重新导出 17 个符号 | 74 |
+
+依赖无环：`costs`/`schema` → `store` → `stats`。
+
+**本轮最重要的坑：`_DB_PATH` 会静默搬家**
+`_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tracking.db")`
+—— 一旦实现下沉到子包，`__file__` 变成 `<root>/track/schema.py`，数据库路径会
+悄悄从 `<root>/tracking.db` 迁到 `<root>/track/tracking.db`。
+**后果是旧记录"消失"且不报任何错**，属典型静默失败。
+处置：表达式改为取两层父目录（包位于项目根下一层），并新增守卫
+`test_db_path_stays_at_project_root` 断言其仍指向项目根。
+> 教训：拆分时凡是用 `__file__` / 相对路径定位资源（数据库、配置、数据目录）的
+> 常量，都必须重新核对落点并加守卫 —— 这类问题类型检查和测试通常都抓不到。
+
+**验证**
+- 顶层符号 17 个经门面全部可达；`_DB_PATH` 实测仍为 `<root>/tracking.db`。
+- ruff All checks passed / mypy **219 文件零错误** / pytest **470 passed**（exit 0）。
+- 全景图重新生成：18 个包 / 65 个入包模块 / 根目录 59 个。
+
+**刻意未动**：`orchestrator.py`（312 行）—— 其核心是**一个 278 行的类**，
+拆类需改为 mixin 组合；1.0 对 `report_generator.py` 做过同类评估，结论是
+「收益递减」（只是把方法换个文件，认知负担未降），故本轮不拆。
+
+---
+
 ## 1.0 — 综合版本（2026-09-11）
 
 由 `4.3`（功能基线，内部 v3.7）与 `v3.4_work`（工程优化）合并而成。详见 [MERGE_1.0_REPORT.md](MERGE_1.0_REPORT.md)。

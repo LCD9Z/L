@@ -121,6 +121,7 @@ known-first-party = [
     "reporting", "runtime", "risk", "validation",
     "alpha", "phase62", "regime", "tushare_client", "notify", "router",
     "fetch",
+    "track",
     "cycle_price_action", "daily_csv_adapter", "market_regime",
     "market_universe_provider", "backtest_engine",
     "walk_forward", "llm_client", 

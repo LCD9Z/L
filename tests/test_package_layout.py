@@ -63,6 +63,7 @@ PACKAGES = {
     "notify": ["feishu_notifier", "lark_notify"],
     "router": ["provider_router", "quant_skill_router"],
     "fetch": ["transport", "common", "quote", "kline", "news", "cli"],
+    "track": ["costs", "schema", "store", "stats"],
 }
 
 # 已下沉的模块名全集：出现在根目录即为平铺副本复活

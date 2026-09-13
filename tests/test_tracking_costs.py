@@ -220,3 +220,18 @@ def test_backfill_handles_empty_kline(monkeypatch):
     done, still = tracking.backfill_pending(conn, today="2026-01-12")
     assert done == 0 and still == 1
     conn.close()
+
+
+def test_db_path_stays_at_project_root():
+    """拆分后 `_DB_PATH` 必须仍指向项目根目录的 tracking.db。
+
+    `_DB_PATH` 由 `__file__` 推导，实现一旦下沉到 `track/` 子包，
+    若不调整表达式，数据库会静默迁到 `<root>/track/tracking.db`
+    —— 旧记录"消失"且不报错，属于典型的静默失败，故固化为守卫。
+    """
+    import os
+
+    import tracking
+
+    project_root = os.path.dirname(os.path.abspath(tracking.__file__))
+    assert os.path.dirname(os.path.abspath(tracking._DB_PATH)) == project_root

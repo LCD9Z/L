@@ -7,9 +7,9 @@
 
 | 指标 | 值 |
 |------|----|
-| 子包数 | **17** |
-| 已入包模块 | **61**（约 5,937 行） |
-| 根目录 `.py` | **59**（约 6,648 行） |
+| 子包数 | **18** |
+| 已入包模块 | **65**（约 6,280 行） |
+| 根目录 `.py` | **59**（约 6,414 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -533,6 +533,42 @@ Stage-2 Alpha 重排 / 富集 / 消融实验。
 | `tdx/tdx_inventory.py` | 22 |
 | `tdx/tdx_lifecycle.py` | 82 |
 
+### `track/`　（4 模块，约 343 行）
+
+**职责**：L3 回测闭环 · 实现层（由 tracking.py 拆分）。
+
+<details><summary>包级说明与红线（点击展开）</summary>
+
+```
+L3 回测闭环 · 实现层（由 tracking.py 拆分）。
+
+对外请继续使用 `import tracking` / `from tracking import ...`；
+`tracking.py` 是门面，重新导出全部符号，故拆分对下游零影响。
+
+| 模块 | 职责 |
+|------|------|
+| `costs`  | 交易成本模型与净收益率换算 |
+| `schema` | 常量与表结构（默认库路径、建表语句、立场映射） |
+| `store`  | SQLite 持久化（连接 / 建表 / 写入 / 查重 / 列举） |
+| `stats`  | 校准统计（命中判定 / 回填 / 胜率与平均收益） |
+
+依赖方向（无环）：`costs`/`schema` → `store` → `stats`
+
+共同红线：
+1. 零第三方依赖（仅标准库 sqlite3 / dataclasses）。
+2. **缺失数据不补造**：回填不到真实收盘价的记录保持 pending，不猜价格。
+3. 胜率口径固定：看多 >0 命中、看空 <0 命中、中性不参与胜率。
+```
+
+</details>
+
+| 模块 | 行数 |
+|------|-----:|
+| `track/costs.py` | 65 |
+| `track/schema.py` | 46 |
+| `track/stats.py` | 163 |
+| `track/store.py` | 69 |
+
 ### `tushare_client/`　（2 模块，约 121 行）
 
 **职责**：TuShare 数据接入（可选依赖）。
@@ -626,7 +662,7 @@ TuShare 数据接入（可选依赖）。
 | `build_tdx_dataset.py` | 215 | 0 | 0 |
 | `conftest.py` | 23 | 0 | 0 |
 | `credential_scan.py` | 192 | 0 | 0 |
-| `data_fetcher.py` | 101 | 9 | 0 |
+| `data_fetcher.py` | 101 | 8 | 0 |
 | `fetch_corporate_actions.py` | 205 | 0 | 0 |
 | `main.py` | 402 | 0 | 1 |
 | `paper_trading.py` | 16 | 0 | 0 |
@@ -661,7 +697,6 @@ TuShare 数据接入（可选依赖）。
 | `real_data_collector.py` | 115 | 0 | 1 |
 | `release_gate.py` | 156 | 1 | 1 |
 | `stock_scoring.py` | 173 | 2 | 2 |
-| `tracking.py` | 308 | 1 | 1 |
 | `v3_data_bus.py` | 65 | 0 | 3 |
 | `walk_forward.py` | 96 | 1 | 3 |
 
@@ -692,6 +727,7 @@ TuShare 数据接入（可选依赖）。
 | `screen_pipeline.py` | 155 | 0 | 0 |
 | `streaming_topk.py` | 31 | 0 | 0 |
 | `survivorship_guard.py` | 78 | 1 | 0 |
+| `tracking.py` | 74 | 1 | 0 |
 
 ## 为什么这些留在根目录
 
