@@ -15,7 +15,7 @@ from typing import Any, Callable, Dict, Iterable, Optional
 
 from ashare.ashare_universe import screen_row
 from ashare.ashare_cross_section import rank_candidates
-from stage2_scoring import rank_stage2_candidates
+from stage2.stage2_scoring import rank_stage2_candidates
 
 
 @dataclass

@@ -1,6 +1,6 @@
 import unittest
 from portfolio_backtest import portfolio_backtest
-from alpha_survival_lab import analyse_alpha
+from alpha.alpha_survival_lab import analyse_alpha
 
 class TestPipelineInvariants(unittest.TestCase):
     def bars(self, n=320, code='300750'):

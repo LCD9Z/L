@@ -8,7 +8,7 @@ import argparse,json
 from data_fetcher import fetch_kline
 from historical_universe import load_codes
 from portfolio_backtest import portfolio_backtest
-from regime_backtest_report import evaluate_backtest
+from regime.regime_backtest_report import evaluate_backtest
 p=argparse.ArgumentParser(); p.add_argument('universe_json'); p.add_argument('--limit',type=int,default=500); p.add_argument('--top-n',type=int,default=5); p.add_argument('--threshold',type=float,default=70); p.add_argument('--horizon',type=int,default=5); p.add_argument('--out'); a=p.parse_args()
 data={}
 for c in load_codes(a.universe_json):

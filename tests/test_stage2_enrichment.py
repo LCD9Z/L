@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-from stage2_enrichment import enrich_candidate
+from stage2.stage2_enrichment import enrich_candidate
 
 
 def test_stage2_enrichment_is_deterministic_and_no_fake_data():
@@ -24,7 +24,7 @@ def test_stage2_enrichment_is_deterministic_and_no_fake_data():
 
 
 def test_stage2_scoring_uses_flow_and_risk_overlay():
-    from stage2_scoring import rank_stage2_candidates
+    from stage2.stage2_scoring import rank_stage2_candidates
     rows = [
         {"code": "A", "cross_section_score": 70, "moneyflow": {"net_flow_mean": 10, "net_flow_positive_ratio": 1},
          "top_list": {"net_buy_total": 10, "net_buy_positive_ratio": 1},
@@ -41,7 +41,7 @@ def test_stage2_scoring_uses_flow_and_risk_overlay():
 
 
 def test_stage2_ablation_runs_and_reports_incremental_delta():
-    from stage2_ablation import run_stage2_ablation
+    from stage2.stage2_ablation import run_stage2_ablation
     rows: List[Dict[str, Any]] = []
     for day in range(1, 7):
         for i in range(30):

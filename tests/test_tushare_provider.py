@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from tushare_provider import TuShareProvider, TuShareProviderError
+from tushare.tushare_provider import TuShareProvider, TuShareProviderError
 
 
 class FakeDataFrame:

@@ -54,7 +54,7 @@ from runtime.runtime_env import (
 from stock_scoring import score_stock
 from pool_manager import update_watchlist
 from industry_context import apply_industry_context, build_industry_context
-from lark_notify import add_records_to_base, send_push
+from notify.lark_notify import add_records_to_base, send_push
 
 __all__ = [
     "CANDIDATE_FILE",

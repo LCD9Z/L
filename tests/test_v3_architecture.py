@@ -1,8 +1,8 @@
 import unittest
 from ashare.ashare_factor_engine import compute_factors, score_candidate
 from data_contracts import DataProvenance, NewsItem
-from provider_router import Provider, ProviderRouter
-from quant_skill_router import route
+from router.provider_router import Provider, ProviderRouter
+from router.quant_skill_router import route
 
 
 class TestV3Architecture(unittest.TestCase):

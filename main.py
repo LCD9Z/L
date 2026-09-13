@@ -15,7 +15,7 @@ from typing import List, Optional
 
 from orchestrator import WorkflowOrchestrator, create_workflow
 from reporting.report_generator import HTMLReportGenerator
-from feishu_notifier import send_analysis_summary, is_configured
+from notify.feishu_notifier import send_analysis_summary, is_configured
 
 
 class Colors:

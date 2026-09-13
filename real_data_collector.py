@@ -61,7 +61,7 @@ def _audit(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str]]
 def _tushare_rows(symbol: str, start: str, end: str) -> list[dict[str,Any]]:
     token=os.getenv('TUSHARE_TOKEN','').strip()
     if not token: raise RuntimeError('TUSHARE_TOKEN not configured')
-    from tushare_provider import TuShareProvider
+    from tushare.tushare_provider import TuShareProvider
     suffix='.SH' if symbol.startswith(('6','9')) else '.SZ'
     df=TuShareProvider(token).daily(symbol+suffix,start,end)
     if df is None or len(df)==0: return []

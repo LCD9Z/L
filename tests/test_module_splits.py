@@ -126,7 +126,7 @@ def test_runtime_env_has_no_project_dependency():
     with open(_runtime_env.__file__, encoding="utf-8") as f:
         src = f.read()
     forbidden = ["data_fetcher", "stock_scoring", "pool_manager",
-                 "industry_context", "lark_notify", "daily_stock_pick"]
+                 "industry_context", "notify.lark_notify", "daily_stock_pick"]
     hits = [m for m in forbidden if f"import {m}" in src or f"from {m}" in src]
     assert hits == [], f"runtime_env 不应依赖: {hits}"
 
@@ -314,6 +314,6 @@ def test_split_modules_are_importable_standalone():
 
     for mod in ["agents_base", "agents_analysts", "agents_researchers",
                 "agents_decision", "runtime.runtime_env", "stock_scoring",
-                "pool_manager", "industry_context", "lark_notify",
+                "pool_manager", "industry_context", "notify.lark_notify",
                 "reporting.report_styles", "reporting.report_markdown"]:
         importlib.import_module(mod)

@@ -1,5 +1,5 @@
 import unittest
-from alpha_survival_lab import analyse_alpha, alpha_survival_gate, block_bootstrap_mean_ci
+from alpha.alpha_survival_lab import analyse_alpha, alpha_survival_gate, block_bootstrap_mean_ci
 
 class TestAlphaSurvivalLab(unittest.TestCase):
     def test_insufficient_data_is_inconclusive(self):

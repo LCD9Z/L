@@ -68,6 +68,13 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 ├── runtime/            运行环境与资源画像（刻意不依赖项目内其他模块）
 ├── risk/               风险与可执行性（A 股风控 / 组合引擎 / 仓位预算 / 流动性）
 ├── validation/         回测结果验证（绩效 / 基准 / bootstrap / 稳健性 / 压力 / 红队 / 健康度）
+├── stage2/             Stage-2 Alpha 重排 / 富集 / 消融实验
+├── alpha/              Alpha 假设实验与存活实验室
+├── phase62/            PHASE62 TDX 指数 / 序列接入（v4.9 移植）
+├── regime/             市场状态识别与回测验证
+├── tushare/            TuShare 数据接入（可选依赖，Token 走环境变量）
+├── notify/             通知通道（飞书 / Lark）
+├── router/             数据 / 技能路由层
 ├── scripts/run_*.py    可执行脚本（研究 / 评估 / 日常运行）
 ├── tests/test_*.py     测试（pytest 自动发现）
 ├── docs/               归档的阶段文档
@@ -82,8 +89,10 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
   （`from pit.pit_integrity import audit_pit_rows`）。
 * **第三轮**再下沉四个家族（`reporting` / `runtime` / `risk` / `validation`，
   共 17 个模块），根目录 91 → **74**。
-  至此九个家族共 40 个模块已入包，根目录剩下的是入口、核心编排与被广泛
-  引用的基础模块。
+* **第四轮**再下沉七个家族（`stage2` / `alpha` / `phase62` / `regime` /
+  `tushare` / `notify` / `router`，共 15 个模块），根目录 74 → **59**。
+  至此十六个家族共 55 个模块已入包，根目录剩下的是入口、核心编排与被广泛
+  引用的基础模块（`data_fetcher` / `agents` / `real_*` / `daily_*` 等刻意留根）。
 
 `agents_*` 保持不动：根目录已有门面模块 `agents.py`，若再建 `agents/` 包
 会出现同名冲突，收益不抵风险。
@@ -158,7 +167,7 @@ python run_ci.py                # 一条命令跑完全部 6 项检查（与 CI 
 
 ```bash
 ruff check .                    # All checks passed
-mypy . --config-file mypy.ini   # Success: no issues found in 188 source files
+mypy . --config-file mypy.ini   # Success: no issues found in 200 source files
 pytest                          # 329 passed, 1 skipped
 python credential_scan.py       # 凭据扫描通过：已扫描 254 个文件
 ```

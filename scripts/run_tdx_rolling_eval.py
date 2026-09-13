@@ -118,7 +118,7 @@ def main() -> int:
     # ---- 逐窗口评估 ----
     print(f"[3/3] 逐窗口评估（{len(windows)} 个窗口）...\n")
     from portfolio_backtest import portfolio_backtest
-    from alpha_survival_lab import analyse_alpha
+    from alpha.alpha_survival_lab import analyse_alpha
     from historical_universe import point_in_time_universe
     from real_alpha_pipeline import _benchmark_returns, _curve_returns
     from release_gate import (

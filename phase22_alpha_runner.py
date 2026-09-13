@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Run an Alpha gate only after data and preregistration integrity checks."""
-from alpha_survival_lab import alpha_survival_gate
+from alpha.alpha_survival_lab import alpha_survival_gate
 from real_data_registry import audit_price_dataset
 from preregistered_alpha_experiment import load_and_verify
 

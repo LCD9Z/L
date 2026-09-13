@@ -2,8 +2,8 @@ import tempfile, os
 from data_quality import audit_bars, require_pit_asof
 from corporate.corporate_actions import adjust_execution_price
 from risk.risk_budget import inverse_vol_weights, concentration_hhi
-from regime_validation import classify_return_regime, summarize_by_regime
-from alpha_experiment import compare_variants
+from regime.regime_validation import classify_return_regime, summarize_by_regime
+from alpha.alpha_experiment import compare_variants
 from paper_trading import append_event, load_events
 from release_gate import evaluate_release
 

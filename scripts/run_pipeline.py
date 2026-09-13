@@ -24,7 +24,7 @@ from log_utils import get_logger
 from market_universe_provider import iter_jsonl
 from runtime.runtime_profile import get_profile
 from screen_pipeline import ScreenConfig, run_screen
-from stage2_enrichment import enrich_candidate
+from stage2.stage2_enrichment import enrich_candidate
 
 log = get_logger("pipeline")
 

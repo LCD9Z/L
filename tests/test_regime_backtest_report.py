@@ -1,5 +1,5 @@
 import unittest
-from regime_backtest_report import evaluate_backtest
+from regime.regime_backtest_report import evaluate_backtest
 class T(unittest.TestCase):
  def test_metrics(self):
   r={'total_return_pct':10,'equity_curve':[{'date':'1','equity':100},{'date':'2','equity':105},{'date':'3','equity':110}]}

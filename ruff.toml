@@ -99,10 +99,10 @@ known-first-party = [
     # agents.py 拆分（1.0）
     "agents_base", "agents_analysts", "agents_researchers", "agents_decision",
     # daily_stock_pick.py 拆分（1.0）；其中 runtime_env 已迁入 runtime/
-    "stock_scoring", "pool_manager", "industry_context", "lark_notify",
+    "stock_scoring", "pool_manager", "industry_context", 
     # report_generator.py 拆分（1.0）：三块现均在 reporting/
-    "log_utils", "screen_pipeline", "stage2_enrichment",
-    "stage2_scoring", "stage2_ablation",
+    "log_utils", "screen_pipeline", 
+     
     # --- 已迁入子包的模块：isort 只需认顶层包名 ---
     # pit/    <- pit_integrity, pit_universe_builder, pit_event_master,
     #            pit_trading_filter, pit_research_rows
@@ -119,20 +119,21 @@ known-first-party = [
     #                strategy_validation, benchmark, stress_test, health_monitor
     "pit", "tdx", "corporate", "factors", "ashare",
     "reporting", "runtime", "risk", "validation",
+    "alpha", "phase62", "regime", "tushare", "notify", "router",
     "cycle_price_action", "daily_csv_adapter", "market_regime",
     "market_universe_provider", "backtest_engine",
-    "walk_forward", "llm_client", "feishu_notifier",
+    "walk_forward", "llm_client", 
     "data_contracts", "data_quality", "exchange_rules", "execution_rules",
     "industry_strength", "candidate_prefilter",
     "point_in_time",
     "release_gate", "research_integrity",
-    "professional_audit", "professional_committee", "provider_router",
-    "quant_skill_router", "real_alpha_pipeline", "real_data_collector",
-    "real_data_integrity", "real_data_registry", "regime_backtest_report",
-    "regime_validation", "historical_universe", "paper_trading",
+    "professional_audit", "professional_committee", 
+     "real_alpha_pipeline", "real_data_collector",
+    "real_data_integrity", "real_data_registry", 
+     "historical_universe", "paper_trading",
     "phase15_governance", "phase22_alpha_runner",
     "phase41_data_workbench", "recon_price_factor_lab", "streaming_topk",
-    "v3_data_bus", "alpha_survival_lab", "alpha_experiment",
+    "v3_data_bus",  
     "preregistered_alpha_experiment",
 ]
 combine-as-imports = true

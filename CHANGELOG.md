@@ -377,6 +377,63 @@ Windows 克隆仍会产出 CRLF 使该守卫失败。用 `.gitattributes` 从仓
 
 ---
 
+## 1.0 · 目录分层第四轮 —— 七个库模块家族下沉为子包（2026-09-13）
+
+第三轮之后根目录仍有 74 个库模块。本轮用与二/三轮相同的依赖图方法
+（AST 建 import 图，按「外部出边」排序），再找出 7 个**内部闭合**的家族下沉，
+根目录 74 → **59**（累计 188 → 59，−69%）。
+
+| 子包 | 模块数 | 外部出边（到根目录其他模块） | 说明 |
+|------|:---:|:---:|------|
+| `stage2/` | 3 | 0 | Stage-2 消融 / 富集 / 打分 |
+| `alpha/` | 2 | 0 | alpha 实验 + 存活实验室 |
+| `phase62/` | 2 | 0 | v4.9 移植的 PHASE62 TDX 指数 |
+| `regime/` | 2 | 0 | 市场状态回测报告 / 验证 |
+| `tushare/` | 2 | 0 | TuShare 接入 |
+| `notify/` | 2 | 0 | 飞书 / Lark 通知 |
+| `router/` | 2 | 0 | provider / quant_skill 路由 |
+
+「内部闭合」指这些家族的成员**不反向 import 根目录其他模块**（出边只指向已入包模块或各自包内），
+因此下沉不会制造「包 → 根」的反向依赖。
+
+**两处值得记录的处理**
+
+1. **守卫测试判定的单一来源继续生效。** `test_package_layout.py` 的
+   `PACKAGES` 增加这 7 个包后，`test_no_flattened_copies_in_root` 与
+   `test_no_bare_legacy_imports` 自动覆盖新模块——无需为它们单独写断言。
+2. **又一处字符串动态引用。** `tests/test_module_splits.py` 用
+   `importlib.import_module("lark_notify")` 动态加载，裸改名会漏。
+   本轮把 `"lark_notify"` → `"notify.lark_notify"`（同一列表里还出现在
+   `forbidden` 依赖方向断言中），并把这类 `open("x.py")` / `import_module("x")`
+   的隐式路径耦合纳入改名脚本的排查范围。
+
+**本轮发现的真实缺陷**
+
+| # | 缺陷 | 发现方式 | 处置 |
+|---|------|---------|------|
+| 1 | `tests/test_module_splits.py` 用 `importlib.import_module("lark_notify")` 动态加载，`notify/` 改名后裸名失效 | 全量 pytest（ModuleNotFoundError） | 改为 `import_module("notify.lark_notify")`，`forbidden` 列表同步更新 |
+
+**剩余的风险点（刻意未动）**
+
+`data_fetcher`（807 行，13 个生产引用方）、`agents`/`agents_*`（与门面 `agents.py` 同名冲突）、
+`real_*` / `daily_*`（出边过多）仍留在根目录——收益不抵改动风险。
+
+**质量基线**
+
+| 指标 | 本轮前 | 本轮后 |
+|------|-------|-------|
+| 根目录 `.py` | 74 | **59** |
+| 子包数 | 9 | **16**（含 55 个模块） |
+| pytest（本地） | 415 passed, 1 skipped | **456 passed, 1 skipped** |
+| 语法 / mypy 覆盖 | 200 文件 | **200 文件**（ruff/mypy 本机未装，由远端 CI 覆盖） |
+| 脚本 `--help` 冒烟 | 16/16 | **16/16** |
+| 本地 CI | ruff/mypy 本机未装，由远端 CI 覆盖 | 同左 |
+
+> 备注：本机仅装有 pytest，ruff / mypy 由 GitHub Actions 远端 CI 跑通（py3.10~3.13 + 凭据扫描）。
+> 导入重写已通过 `test_package_layout` 守卫与全量 pytest 验证；`py_compile` 全量语法零错误。
+
+---
+
 ## 1.0 — 综合版本（2026-09-11）
 
 由 `4.3`（功能基线，内部 v3.7）与 `v3.4_work`（工程优化）合并而成。详见 [MERGE_1.0_REPORT.md](MERGE_1.0_REPORT.md)。
