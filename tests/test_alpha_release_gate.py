@@ -221,8 +221,14 @@ def test_evaluate_alpha_release_still_works():
 
 
 def test_project_files_are_present():
-    """守卫本文件所依赖的模块确实存在（防止重构时静默移动文件）。"""
-    names = {"release_gate.py", "survivorship_guard.py", "real_alpha_pipeline.py",
-             "run_tdx_rolling_eval.py"}
-    found = {p.name for p in Path(release_gate.__file__).parent.glob("*.py")}
-    assert names <= found
+    """守卫本文件所依赖的模块确实存在（防止重构时静默移动文件）。
+
+    目录分层后：库模块留在根目录，可执行脚本迁入 `scripts/`。
+    """
+    root = Path(release_gate.__file__).parent
+    root_files = {p.name for p in root.glob("*.py")}
+    libs = {"release_gate.py", "survivorship_guard.py", "real_alpha_pipeline.py"}
+    assert libs <= root_files
+
+    script_files = {p.name for p in (root / "scripts").glob("*.py")}
+    assert "run_tdx_rolling_eval.py" in script_files

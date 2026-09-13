@@ -63,7 +63,7 @@ jobs:
         run: mypy . --config-file mypy.ini
 
       - name: Python 3.10 syntax compatibility guard
-        run: pytest test_python_compat.py -q
+        run: pytest tests/test_python_compat.py -q
 
       - name: Pytest
         run: pytest --cov=. --cov-report=term-missing --cov-report=xml -q

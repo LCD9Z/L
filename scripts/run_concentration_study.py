@@ -50,7 +50,7 @@ import time
 from itertools import pairwise
 from typing import Any, Dict, List, Sequence
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # (标签, top_n, max_position_pct)
 CONCENTRATION_VARIANTS: List[tuple] = [

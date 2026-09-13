@@ -168,6 +168,49 @@ Windows 克隆仍会产出 CRLF 使该守卫失败。用 `.gitattributes` 从仓
 
 ---
 
+## 1.0 · 目录分层第一轮（2026-09-13）
+
+**背景**：根目录平铺 188 个 `.py`（18,607 行），**零子目录**。其中 59 个测试
++ 17 个 `run_*` 脚本 = 76 个（40%）并非库代码。1.0 曾花大力气拆"巨石文件"，
+但目录层面从未分层。
+
+**本轮做法**：先迁出**不需要门面**的部分（测试与脚本），库模块留在根目录。
+
+| 位置 | 内容 | 数量 |
+|------|------|------|
+| 根目录 `*.py` | 库模块（导入路径完全不变） | 188 → **114** |
+| `tests/` | `test_*.py` | 60 |
+| `scripts/` | `run_*.py`（`run_ci.py` 除外） | 16 |
+
+**为什么不动库模块**：若把 `data_fetcher` 等移入子包并保留 root 门面重新导出，
+门面数量会与模块数量相当，等于没减少文件；若不留门面，则要改动上百处 import。
+两者都不是本轮该承担的风险，故留待后续按家族逐个推进。
+
+**关键约束与处理**
+
+1. **pytest 导入路径**：测试下移一层后，`sys.path` 里只有 `tests/`。
+   新增根级 `conftest.py` 把项目根加入 `sys.path`；
+   少数用例需要审视脚本本身（`test_alpha_release_gate` 检查
+   `run_tdx_rolling_eval` 是否真调用了门禁），故也把 `scripts/` 加入。
+2. **脚本的 `sys.path`**：原先位于根目录时，Python 会把脚本所在目录（即项目根）
+   加入 `sys.path`，因此"碰巧"能导入库模块；下移后失效。
+   - 8 个本就有 `sys.path.insert` 的脚本：改为指向**父目录**
+   - 8 个没有的：补上引导（其中 `run_pipeline.py` 的引导必须整体放在
+     `from __future__` 之后，否则 SyntaxError）
+   - **这一步靠测试是发现不了的**——脚本无测试覆盖。本轮用
+     「逐个 `--help` 冒烟」验证，16/16 可导入。
+3. **`run_ci.py` 自身**：`step_syntax` 原只扫根目录 `*.py`，分层后会静默缩水。
+   改为递归扫描（跳过缓存/版本库目录），覆盖面由 188 → **190**；
+   `step_compat` 的路径同步更新为 `tests/test_python_compat.py`。
+4. **CI 工作流**：`pytest test_python_compat.py` → `tests/test_python_compat.py`。
+   这一处被 `test_run_ci.py` 的漂移守卫**当场抓出**——正是当初加它的目的。
+
+**踩坑**：新建 `conftest.py` 时用了 `Set-Content -Encoding UTF8`，产出 **BOM + CRLF**，
+同时触发 `test_line_endings_are_lf` 失败与 `run_ci.py` 语法检查报 `U+FEFF`。
+已剥离 BOM 并确保 LF。
+
+---
+
 ## 1.0 — 综合版本（2026-09-11）
 
 由 `4.3`（功能基线，内部 v3.7）与 `v3.4_work`（工程优化）合并而成。详见 [MERGE_1.0_REPORT.md](MERGE_1.0_REPORT.md)。

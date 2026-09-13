@@ -36,7 +36,7 @@ import sys
 import time
 from typing import Any, Dict, List
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from factor_ic_lab import (  # noqa: E402
     FACTOR_LABELS,

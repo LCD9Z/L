@@ -38,6 +38,25 @@ from typing import Callable, Dict, List, Tuple
 
 ROOT = Path(__file__).resolve().parent
 
+#: 递归扫描时跳过的目录（缓存、版本库、虚拟环境）
+SKIP_DIRS = frozenset({
+    ".git", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache",
+    "build", "dist", ".venv", "venv", "node_modules",
+})
+
+
+def _iter_source_files() -> List[Path]:
+    """项目内全部源码文件。
+
+    目录分层后源码不再全部位于根目录：库模块在根、测试在 `tests/`、
+    可执行脚本在 `scripts/`，因此需要递归——否则分层会让语法检查的覆盖面
+    悄悄缩水（这正是本项目最警惕的那类静默失效）。
+    """
+    return sorted(
+        p for p in ROOT.rglob("*.py")
+        if not any(part in SKIP_DIRS for part in p.relative_to(ROOT).parts[:-1])
+    )
+
 
 def _run(cmd: List[str]) -> int:
     print(f"  $ {' '.join(cmd)}", flush=True)
@@ -57,12 +76,13 @@ def _module(module: str, args: List[str]) -> int:
 def step_syntax() -> int:
     """全部 .py 编译检查（等价于 CI 的 py_compile 步骤，但不落 .pyc）。"""
     failed: List[str] = []
-    files = sorted(ROOT.glob("*.py"))
+    files = _iter_source_files()
     for path in files:
+        rel = path.relative_to(ROOT)
         try:
             compile(path.read_text(encoding="utf-8"), str(path), "exec")
         except SyntaxError as exc:
-            failed.append(f"{path.name}:{exc.lineno}: {exc.msg}")
+            failed.append(f"{rel}:{exc.lineno}: {exc.msg}")
     if failed:
         for item in failed:
             print(f"  FAIL {item}")
@@ -81,7 +101,8 @@ def step_mypy() -> int:
 
 
 def step_compat() -> int:
-    return _module("pytest", ["test_python_compat.py", "-q"])
+    # 测试已迁入 tests/，路径需随之更新（否则该步骤会因找不到文件而假失败）
+    return _module("pytest", ["tests/test_python_compat.py", "-q"])
 
 
 def step_pytest() -> int:

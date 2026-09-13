@@ -64,7 +64,7 @@ def test_workflow_declares_every_check_run_ci_performs():
     for marker in (
         "ruff check",
         "mypy . --config-file mypy.ini",
-        "pytest test_python_compat.py",
+        "pytest tests/test_python_compat.py",
         "credential_scan.py",
         "py_compile",
     ):

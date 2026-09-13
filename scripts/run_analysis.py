@@ -29,6 +29,11 @@ run_analysis.py - AI股神系统 · 分析入口（L2 落地）
     阶段 key 见 prompt_engine.RESULT_FILES。
 """
 
+# 脚本位于 scripts/ 下，需把项目根目录加入导入路径
+import os as _os
+import sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+
 import os
 import sys
 import json

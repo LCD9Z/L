@@ -25,7 +25,7 @@ pip install -r requirements-dev.txt   # 可选：测试与 lint 工具
 pytest
 
 # 5) 全市场筛选
-python run_pipeline.py --universe universe.jsonl --profile lite
+python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 ```
 
 ## 🎯 三大核心功能
@@ -54,6 +54,28 @@ python run_pipeline.py --universe universe.jsonl --profile lite
 
 ## 📁 文件说明
 
+### 目录布局（2026-09-13 起分层）
+
+```
+项目根/
+├── *.py                库模块 —— 可按模块名直接导入（from data_fetcher import ...）
+├── scripts/run_*.py    可执行脚本（研究 / 评估 / 日常运行）
+├── tests/test_*.py     测试（pytest 自动发现）
+├── docs/               归档的阶段文档
+└── conftest.py         pytest 根级配置：把项目根加入 sys.path
+```
+
+分层前 188 个 `.py` 全部平铺在根目录，其中 76 个（40%）并非库代码。
+首轮把**测试与研究脚本**迁出，根目录降至 **114 个**；库模块仍留在根目录，
+以保证 `from data_fetcher import ...` 这类既有导入全部不变（零破坏）。
+
+顶层保留 `run_ci.py` 与 `credential_scan.py` —— 它们是门禁工具而非研究脚本，
+文档与测试均按顶层路径引用。
+
+> ⚠️ 从 `scripts/` 运行脚本时，Python 只把 `scripts/` 加入 `sys.path`，
+> 因此每个脚本开头都有一段把项目根目录加入导入路径的引导代码。
+> 新增脚本时务必保留它，否则会出现 `ModuleNotFoundError`。
+
 | 文件 | 说明 |
 |------|------|
 | `agents.py` | 8位Agent的定义与完整提示词（门面，实现在 `agents_*.py`） |
@@ -61,7 +83,7 @@ python run_pipeline.py --universe universe.jsonl --profile lite
 | `agents_analysts.py` · `agents_researchers.py` · `agents_decision.py` | 分析师 / 研究员 / 决策三组角色定义 |
 | `orchestrator.py` | 工作流编排器，管理分析进度 |
 | `report_generator.py` | HTML报告生成器（样式见 `report_styles.py`，Markdown 转换见 `report_markdown.py`） |
-| `run_daily_screening.py` | 每日选股执行脚本（写飞书表格 + 推送） |
+| `scripts/run_daily_screening.py` | 每日选股执行脚本（写飞书表格 + 推送） |
 | `daily_stock_pick.py` | 每日选股主流程（打分见 `stock_scoring.py`，池维护见 `pool_manager.py`） |
 | `stock_god.py` | 快速入口脚本 |
 | `main.py` | 交互式分析主程序 |
@@ -249,9 +271,9 @@ SurvivorshipAudit(
 ```
 
 ```bash
-python run_tdx_evaluation.py --dataset D:/tdx_dataset \
+python scripts/run_tdx_evaluation.py --dataset D:/tdx_dataset \
     --survivorship-evidence evidence.json
-python run_tdx_rolling_eval.py --dataset D:/tdx_dataset \
+python scripts/run_tdx_rolling_eval.py --dataset D:/tdx_dataset \
     --survivorship-evidence evidence.json
 ```
 
@@ -403,10 +425,10 @@ python build_tdx_dataset.py --src D:/tdx_daily_all.zip --out D:/tdx_dataset \
     --min-rows 600 --max-stocks 1500 --benchmark 000300
 
 # 单窗口评估
-python run_tdx_evaluation.py --dataset D:/tdx_dataset --oos-start 2024-01-01
+python scripts/run_tdx_evaluation.py --dataset D:/tdx_dataset --oos-start 2024-01-01
 
 # 多窗口稳健性检验（审计只做一次后复用数据）
-python run_tdx_rolling_eval.py --dataset D:/tdx_dataset --max-stocks 400
+python scripts/run_tdx_rolling_eval.py --dataset D:/tdx_dataset --max-stocks 400
 ```
 
 ## 🚀 L1/L2 优化用法（推荐）
@@ -424,9 +446,9 @@ python data_fetcher.py 600519          # 先取真实数据包
 ### L2 · 数据管道 + 提示词引擎
 
 ```bash
-python run_analysis.py 600519          # 自动取数 + 生成 8 阶段提示词
-python run_analysis.py 600519 --stage analyst_fundamental     # 单阶段提示词
-python run_analysis.py 600519 --stage decision_trade --results 结果.json  # 裁决阶段引用前序结果
+python scripts/run_analysis.py 600519          # 自动取数 + 生成 8 阶段提示词
+python scripts/run_analysis.py 600519 --stage analyst_fundamental     # 单阶段提示词
+python scripts/run_analysis.py 600519 --stage decision_trade --results 结果.json  # 裁决阶段引用前序结果
 ```
 
 特点：
@@ -444,26 +466,26 @@ python run_analysis.py 600519 --stage decision_trade --results 结果.json  # �
 
 ```bash
 # 手动记录一条推荐
-python run_tracking.py log --code 600519 --horizon 5 --stance 看多 --score 7 --logic "多空独立论证后看多"
+python scripts/run_tracking.py log --code 600519 --horizon 5 --stance 看多 --score 7 --logic "多空独立论证后看多"
 
 # 从风控/交易决策 JSON 自动提取（08_risk.json / 07_trade.json）
-python run_tracking.py log --json reports/xxx/08_risk.json --horizon 5
+python scripts/run_tracking.py log --json reports/xxx/08_risk.json --horizon 5
 
 # 分析入口直接落库（做完全流程后）
-python run_analysis.py 600519 --track --results reports/xxx/结果.json --horizon 5
+python scripts/run_analysis.py 600519 --track --results reports/xxx/结果.json --horizon 5
 ```
 
 ### ② 回填真实涨跌
 
 ```bash
-python run_tracking.py backfill          # 自动拉取推荐日后 N 个交易日真实收盘价
+python scripts/run_tracking.py backfill          # 自动拉取推荐日后 N 个交易日真实收盘价
 ```
 
 ### ③ 统计与校准
 
 ```bash
-python run_tracking.py stats             # 按 周期×档位 胜率 / 按 评分档 平均收益
-python run_tracking.py report --out reports/tracking_report.json   # 输出校准报告 JSON
+python scripts/run_tracking.py stats             # 按 周期×档位 胜率 / 按 评分档 平均收益
+python scripts/run_tracking.py report --out reports/tracking_report.json   # 输出校准报告 JSON
 ```
 
 数据口径：
@@ -487,13 +509,13 @@ python run_tracking.py report --out reports/tracking_report.json   # 输出校�
 
 ```bash
 # 单股全自动（取数→调模型→8阶段→落盘→决策落库）
-python run_analysis.py 600519 --auto
+python scripts/run_analysis.py 600519 --auto
 
 # 多股票并行顺序执行 + 落库
-python run_analysis.py 000017 --auto --codes 600519,000017 --horizon 5
+python scripts/run_analysis.py 000017 --auto --codes 600519,000017 --horizon 5
 
 # 不落库 / 换模型 / 调整温度
-python run_analysis.py 600519 --auto --no-track --model doubao-1-5-pro-32k-250115 --temp 0.5
+python scripts/run_analysis.py 600519 --auto --no-track --model doubao-1-5-pro-32k-250115 --temp 0.5
 ```
 
 产物：`reports/{code}_auto_{时间戳}/`（00_数据包.txt、01~08 各阶段 JSON、results.json 汇总）。

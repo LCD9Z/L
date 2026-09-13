@@ -30,7 +30,7 @@ import sys
 import time
 from typing import Any, Dict, List
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 默认滚动起点：覆盖 2023-01 ~ 2025-07，保证每窗口样本外 >= 252 个交易日
 DEFAULT_WINDOWS = [

@@ -8,7 +8,16 @@ Examples:
 The input universe is JSONL so a 5k+ market can be streamed with low RAM.
 Each row may contain quote/factors prepared by an approved provider.
 """
+
 from __future__ import annotations
+
+# 脚本位于 scripts/ 下，需把项目根目录加入导入路径。
+# 必须整体放在 from __future__ 之后 —— __future__ 导入只能是文件首条语句。
+import os as _os
+import sys as _sys
+
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+
 import argparse, os
 from datetime import datetime
 from log_utils import get_logger

@@ -18,6 +18,11 @@
     # 输出校准报告数据（JSON，供可视化与存档）
     python run_tracking.py report --out reports/tracking_report.json
 """
+
+# 脚本位于 scripts/ 下，需把项目根目录加入导入路径
+import os as _os
+import sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
 import argparse
 import json
 import os

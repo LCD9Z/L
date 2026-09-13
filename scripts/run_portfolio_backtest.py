@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+
+# 脚本位于 scripts/ 下，需把项目根目录加入导入路径
+import os as _os
+import sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
 import argparse,json
 from data_fetcher import fetch_kline
 from historical_universe import load_codes

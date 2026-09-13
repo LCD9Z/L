@@ -7,6 +7,11 @@ Daily Stock Screening Runner
 每天早上8:30由定时任务调用，执行选股分析并写入飞书表格，发送推送通知。
 """
 
+# 脚本位于 scripts/ 下，需把项目根目录加入导入路径
+import os as _os
+import sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+
 import os
 import sys
 import json

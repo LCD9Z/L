@@ -26,7 +26,7 @@ import os
 import sys
 from typing import Any, Dict, List
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def _load_manifest(dataset: str, max_stocks: int = 0) -> Dict[str, Any]:

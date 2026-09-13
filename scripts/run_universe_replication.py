@@ -33,7 +33,7 @@ import time
 from itertools import pairwise
 from typing import Any, Dict, List, Sequence
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from factor_ic_lab import MIN_HISTORY, compute_factors  # noqa: E402
 
