@@ -1,0 +1,58 @@
+{
+ "args": {
+  "dataset": "D:/tdx_dataset",
+  "oos_start": "2024-01-01",
+  "max_stocks": 800,
+  "min_periods": 252,
+  "out": "D:/tdx_dataset/eval_result.json"
+ },
+ "stats": {
+  "stocks": 800,
+  "rows": 953437,
+  "first": "2021-08-02",
+  "last": "2026-09-10"
+ },
+ "result": {
+  "verdict": "ALPHA_NOT_ESTABLISHED",
+  "periods": 652,
+  "mean_excess_daily": -0.0007708794922700518,
+  "annualized_excess_estimate": -0.19426163205205305,
+  "t_stat_normal_approx": -1.1928843554517674,
+  "normal_approx_pvalue": 0.23291466704016517,
+  "sign_flip_pvalue": 0.8972205558888222,
+  "bootstrap_mean_ci": {
+   "mean": -0.0007708794922700518,
+   "lower": -0.002061945737652082,
+   "upper": 0.0004499076626654747,
+   "reps": 2000,
+   "block_size": 5
+  },
+  "conditions": {
+   "positive_mean": false,
+   "bootstrap_ci_entirely_positive": false,
+   "both_significance_tests_pass": false
+  },
+  "warning": "Statistical support is not a guarantee of future profitability.",
+  "backtest": {
+   "initial_capital": 1000000,
+   "final_equity": 768039.88,
+   "total_return_pct": -23.196,
+   "trades": 645,
+   "win_rate_pct": 43.26,
+   "profit_factor": 0.971,
+   "max_drawdown_pct": 44.368,
+   "daily_sharpe": -0.223
+  },
+  "aligned_periods": 652,
+  "oos_start": "2024-01-01",
+  "provenance": {
+   "stocks_count": 800,
+   "benchmark": {
+    "path": "D:\\tdx_dataset\\benchmark.csv",
+    "sha256": "83dab01fc9cca8fdee40f88c3a418f4cd0860eb4c64b943ac70ca430699a60d3"
+   }
+  },
+  "generated_at_utc": "2026-09-12T04:11:51.792237+00:00"
+ },
+ "note": "TDX 数据集评估结果摘要（逐股 sha256 明细、逐笔交易与权益曲线已省略）"
+}

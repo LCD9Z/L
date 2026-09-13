@@ -1,0 +1,92 @@
+{
+ "windows": [
+  {
+   "oos_start": "2023-07-03",
+   "aligned": 776,
+   "assets": 400,
+   "verdict": "NOT_SUPPORTED",
+   "annualized_excess": -0.15126859149480762,
+   "t_stat": -1.030406264873145,
+   "p_value": 0.30281933356330626,
+   "ci_lower": -0.0016738608906244584,
+   "ci_upper": 0.0005283356416280162,
+   "benchmark_return_pct": 16.84,
+   "trades": 749,
+   "win_rate_pct": 43.26,
+   "total_return_pct": -31.485,
+   "max_drawdown_pct": 40.02
+  },
+  {
+   "oos_start": "2024-01-02",
+   "aligned": 652,
+   "assets": 400,
+   "verdict": "NOT_SUPPORTED",
+   "annualized_excess": -0.16232003444178117,
+   "t_stat": -1.076088172447194,
+   "p_value": 0.2818878247927641,
+   "ci_lower": -0.0018515085840927006,
+   "ci_upper": 0.0005815157977294335,
+   "benchmark_return_pct": 34.32,
+   "trades": 633,
+   "win_rate_pct": 43.44,
+   "total_return_pct": -15.713,
+   "max_drawdown_pct": 39.13
+  },
+  {
+   "oos_start": "2024-07-01",
+   "aligned": 535,
+   "assets": 400,
+   "verdict": "NOT_SUPPORTED",
+   "annualized_excess": -0.13211262876602484,
+   "t_stat": -0.7929689893373708,
+   "p_value": 0.4277958905124144,
+   "ci_lower": -0.0018764595450947278,
+   "ci_upper": 0.0007769233944506241,
+   "benchmark_return_pct": 30.77,
+   "trades": 523,
+   "win_rate_pct": 44.17,
+   "total_return_pct": -4.3,
+   "max_drawdown_pct": 38.257
+  },
+  {
+   "oos_start": "2025-01-02",
+   "aligned": 410,
+   "assets": 400,
+   "verdict": "NOT_SUPPORTED",
+   "annualized_excess": -0.19768924443263072,
+   "t_stat": -1.0028186078939005,
+   "p_value": 0.3159483890205559,
+   "ci_lower": -0.0022988857534803385,
+   "ci_upper": 0.0007745966519756049,
+   "benchmark_return_pct": 19.06,
+   "trades": 407,
+   "win_rate_pct": 43.49,
+   "total_return_pct": -16.142,
+   "max_drawdown_pct": 39.167
+  },
+  {
+   "oos_start": "2025-07-01",
+   "aligned": 293,
+   "assets": 400,
+   "verdict": "NOT_SUPPORTED",
+   "annualized_excess": -0.13461304439811203,
+   "t_stat": -0.5912863504244644,
+   "p_value": 0.5543285736380474,
+   "ci_lower": -0.0022664135511158436,
+   "ci_upper": 0.0012964810391096235,
+   "benchmark_return_pct": 15.36,
+   "trades": 292,
+   "win_rate_pct": 45.21,
+   "total_return_pct": -4.697,
+   "max_drawdown_pct": 38.292
+  }
+ ],
+ "args": {
+  "dataset": "D:/tdx_dataset",
+  "max_stocks": 400,
+  "min_periods": 252,
+  "windows": "2023-07-03,2024-01-02,2024-07-01,2025-01-02,2025-07-01",
+  "out": "D:/tdx_dataset/rolling_eval.json"
+ },
+ "note": "多窗口滚动样本外检验结果（未调整任何策略参数）"
+}

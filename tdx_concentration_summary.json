@@ -1,0 +1,239 @@
+{
+ "rows": [
+  {
+   "seed": 11,
+   "window": "2024-01-02",
+   "variant": "C5_top5_25pct",
+   "top_n": 5,
+   "pos_pct": 0.25,
+   "n_stocks": 300,
+   "trades": 614,
+   "win_rate_pct": 43.97,
+   "total_return_pct": -3.904,
+   "max_drawdown_pct": 31.948,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -11.12
+  },
+  {
+   "seed": 11,
+   "window": "2024-01-02",
+   "variant": "C10_top10_10pct",
+   "top_n": 10,
+   "pos_pct": 0.1,
+   "n_stocks": 300,
+   "trades": 1141,
+   "win_rate_pct": 44.0,
+   "total_return_pct": -21.598,
+   "max_drawdown_pct": 34.773,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -20.39
+  },
+  {
+   "seed": 11,
+   "window": "2024-01-02",
+   "variant": "C20_top20_5pct",
+   "top_n": 20,
+   "pos_pct": 0.05,
+   "n_stocks": 300,
+   "trades": 1897,
+   "win_rate_pct": 44.23,
+   "total_return_pct": -5.366,
+   "max_drawdown_pct": 22.043,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -13.9
+  },
+  {
+   "seed": 11,
+   "window": "2024-01-02",
+   "variant": "C30_top30_3pct",
+   "top_n": 30,
+   "pos_pct": 0.033,
+   "n_stocks": 300,
+   "trades": 2373,
+   "win_rate_pct": 45.17,
+   "total_return_pct": 1.41,
+   "max_drawdown_pct": 13.566,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -11.67
+  },
+  {
+   "seed": 22,
+   "window": "2024-01-02",
+   "variant": "C5_top5_25pct",
+   "top_n": 5,
+   "pos_pct": 0.25,
+   "n_stocks": 300,
+   "trades": 612,
+   "win_rate_pct": 42.16,
+   "total_return_pct": -47.85,
+   "max_drawdown_pct": 52.529,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -35.04
+  },
+  {
+   "seed": 22,
+   "window": "2024-01-02",
+   "variant": "C10_top10_10pct",
+   "top_n": 10,
+   "pos_pct": 0.1,
+   "n_stocks": 300,
+   "trades": 1141,
+   "win_rate_pct": 44.26,
+   "total_return_pct": -18.028,
+   "max_drawdown_pct": 28.768,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -19.07
+  },
+  {
+   "seed": 22,
+   "window": "2024-01-02",
+   "variant": "C20_top20_5pct",
+   "top_n": 20,
+   "pos_pct": 0.05,
+   "n_stocks": 300,
+   "trades": 1931,
+   "win_rate_pct": 44.23,
+   "total_return_pct": -4.985,
+   "max_drawdown_pct": 19.774,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -14.0
+  },
+  {
+   "seed": 22,
+   "window": "2024-01-02",
+   "variant": "C30_top30_3pct",
+   "top_n": 30,
+   "pos_pct": 0.033,
+   "n_stocks": 300,
+   "trades": 2427,
+   "win_rate_pct": 44.66,
+   "total_return_pct": 5.837,
+   "max_drawdown_pct": 13.417,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -10.12
+  },
+  {
+   "seed": 33,
+   "window": "2024-01-02",
+   "variant": "C5_top5_25pct",
+   "top_n": 5,
+   "pos_pct": 0.25,
+   "n_stocks": 300,
+   "trades": 611,
+   "win_rate_pct": 42.23,
+   "total_return_pct": -60.237,
+   "max_drawdown_pct": 60.714,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -45.01
+  },
+  {
+   "seed": 33,
+   "window": "2024-01-02",
+   "variant": "C10_top10_10pct",
+   "top_n": 10,
+   "pos_pct": 0.1,
+   "n_stocks": 300,
+   "trades": 1145,
+   "win_rate_pct": 44.02,
+   "total_return_pct": -24.276,
+   "max_drawdown_pct": 36.187,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -21.88
+  },
+  {
+   "seed": 33,
+   "window": "2024-01-02",
+   "variant": "C20_top20_5pct",
+   "top_n": 20,
+   "pos_pct": 0.05,
+   "n_stocks": 300,
+   "trades": 1882,
+   "win_rate_pct": 43.57,
+   "total_return_pct": -10.332,
+   "max_drawdown_pct": 23.209,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -16.14
+  },
+  {
+   "seed": 33,
+   "window": "2024-01-02",
+   "variant": "C30_top30_3pct",
+   "top_n": 30,
+   "pos_pct": 0.033,
+   "n_stocks": 300,
+   "trades": 2375,
+   "win_rate_pct": 43.16,
+   "total_return_pct": -10.462,
+   "max_drawdown_pct": 23.133,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -16.44
+  }
+ ],
+ "summary": {
+  "C5_top5_25pct|2024-01-02": {
+   "mean": -30.39,
+   "std": 14.22087432848862,
+   "range": 33.89,
+   "values": [
+    -11.12,
+    -35.04,
+    -45.01
+   ],
+   "top_n": 5,
+   "pos_pct": 0.25
+  },
+  "C10_top10_10pct|2024-01-02": {
+   "mean": -20.446666666666665,
+   "std": 1.1478772679264195,
+   "range": 2.8099999999999987,
+   "values": [
+    -20.39,
+    -19.07,
+    -21.88
+   ],
+   "top_n": 10,
+   "pos_pct": 0.1
+  },
+  "C20_top20_5pct|2024-01-02": {
+   "mean": -14.68,
+   "std": 1.033182784732047,
+   "range": 2.24,
+   "values": [
+    -13.9,
+    -14.0,
+    -16.14
+   ],
+   "top_n": 20,
+   "pos_pct": 0.05
+  },
+  "C30_top30_3pct|2024-01-02": {
+   "mean": -12.743333333333334,
+   "std": 2.6894402556831216,
+   "range": 6.320000000000002,
+   "values": [
+    -11.67,
+    -10.12,
+    -16.44
+   ],
+   "top_n": 30,
+   "pos_pct": 0.033
+  }
+ },
+ "seeds": [
+  11,
+  22,
+  33
+ ],
+ "windows": [
+  "2024-01-02"
+ ],
+ "args": {
+  "dataset": "D:/tdx_dataset",
+  "sample_size": 300,
+  "seeds": "11,22,33",
+  "windows": "2024-01-02",
+  "horizon": 5,
+  "threshold": 70.0,
+  "out": "D:/tdx_dataset/concentration_study.json"
+ }
+}

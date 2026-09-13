@@ -1,0 +1,9 @@
+# AI股神团队 1.0 - 开发与 CI 依赖
+#
+# 安装：pip install -r requirements-dev.txt
+# CI 工作流 .github/workflows/ci.yml 使用同一套工具链。
+
+pytest>=7.0
+pytest-cov>=4.0
+ruff>=0.6
+mypy>=1.10

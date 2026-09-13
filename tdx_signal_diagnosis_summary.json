@@ -1,0 +1,27 @@
+{
+ "factor_ranks": {
+  "ret_5": 0.8630406315936953,
+  "ret_20": 0.8014226104597223,
+  "vol_20": 0.4221985247274253,
+  "vol_ratio": 0.7112040086413862,
+  "max_ret_20": 0.49127649371197873,
+  "amihud_20": 0.4710386103618962,
+  "log_amount_20": 0.489191034576537,
+  "price": 0.5195932222931472
+ },
+ "universe_fwd_mean": -0.0009316370083677699,
+ "picked_fwd_mean": -0.006242951842918224,
+ "n_periods": 241,
+ "n_picked": 1162,
+ "args": {
+  "dataset": "D:/tdx_dataset",
+  "max_stocks": 1500,
+  "top_n": 5,
+  "threshold": 70.0,
+  "horizon": 5,
+  "step": 5,
+  "min_avg_amount": 100000000,
+  "lookback": 250,
+  "out": "D:/tdx_dataset/signal_diagnosis.json"
+ }
+}

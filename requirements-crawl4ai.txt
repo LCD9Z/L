@@ -1,0 +1,2 @@
+crawl4ai>=0.7.0
+beautifulsoup4>=4.12

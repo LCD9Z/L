@@ -1,0 +1,127 @@
+# -*- ruff.toml — AI股神团队 1.0 lint 配置 -*-
+#
+# 目标：捕获真实缺陷（未定义名/重定义/未使用导入等），不制造风格噪音。
+# 用法：ruff check .          （检查）
+#       ruff check . --fix    （自动修复安全项）
+#
+# 基线状态：当前配置下 `ruff check .` 零告警。
+# 已借此发现并修复的真实缺陷见 AUDIT_REPORT.md（PEP 701 版本不兼容、F821 未定义名等）。
+#
+# 规则收紧历程：
+#   · 1.0      — 首版基线，19 条规则挂入 ignore 待评审
+#   · 本次收紧 — 逐点评审完毕：9 条规则启用并修复全部告警（见下方说明），
+#                其余保留忽略并写明理由。启用规则中 F841 直接抓出一处真实缺陷
+#                （stock_scoring.pe_note 计算后被静默丢弃）。
+
+target-version = "py310"
+line-length = 120
+output-format = "grouped"
+show-fixes = true
+
+[lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes —— 未定义名/未使用导入/重定义（最高价值）
+    "I",     # isort
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear —— 常见陷阱
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+    "RUF",   # ruff-specific
+]
+
+ignore = [
+    # --- 排版/风格：与项目既有约定冲突，交由人工判断 ---
+    "W293",   # 空行含空白字符——纯排版噪音
+    "E702",   # 单行多条语句（分号）——项目大量使用紧凑写法
+    "E401",   # 一行多个 import——项目既有风格
+    "E501",   # 行过长——含大量中文注释与 URL
+    "E402",   # import 不在文件顶部——多处 sys.path.insert 后再 import 的既定模式
+    "E701",   # 单行 if——简短守卫语句，风格统一
+    "E722",   # bare except——数据管道有意用 bare except 兜底
+    "E741",   # 变量名 l/I/O——项目中常用作索引
+    "I001",   # import 排序——项目未强制 isort，重排会产生大量无关 diff
+    "W291",   # 行尾空白
+
+    # --- Python 版本兼容：项目锁定 3.10，需保留 typing.Dict / Optional 写法 ---
+    "UP006",  # list/dict 内建泛型——需 3.9+ 且与 typing 写法混用，暂不统一
+    "UP035",  # typing.Dict/List 已弃用——同上
+    "UP007",  # Optional[X] vs X | None——保留 Optional 以兼容 3.10 运行时求值
+    "UP045",  # 同上
+    "UP009",  # UTF-8 编码声明多余——`# -*- coding: utf-8 -*-` 为项目约定
+    "UP015",  # open() 冗余模式参数——显式 "r" 更直观
+    "UP031",  # % 格式化——部分中文拼接用 % 可读性更好
+
+    # --- 已逐点评审：结论为「保留忽略」（不再属于待办项）---
+    "RUF005", # 序列拼接建议改解包——纯可读性偏好
+    "SIM102", # 可合并嵌套 if——纯可读性偏好
+    "SIM105", # 建议 contextlib.suppress——纯可读性偏好
+    "SIM108", # 三元表达式替代 if/else——可读性优先，不强制
+    "UP028",  # 建议 yield from——纯可读性偏好
+    "C408",   # dict() 改字面量——纯风格偏好
+    "B008",   # 函数调用作默认参数——dataclass 字段等场景有意使用
+    "RUF100", # 未使用的 noqa 指令——命中的 6 处全部是 `# noqa: E402`，而 E402 已全局
+              # 禁用；保留这些标记是为表达「此 import 位于 sys.path 操作之后」的意图
+    "RUF001", # 中文全角标点误判
+    "RUF002", # 同上
+    "RUF003", # 同上
+]
+
+# ---------------------------------------------------------------------------
+# 本轮新启用（此前挂在「待后续迭代处理」，已逐点评审并修复全部告警）
+#
+#   B905  zip() 缺 strict=        —— 数据管线中最危险的静默 bug：长度不等时截断
+#   B007  循环变量未使用          —— 死代码
+#   F841  局部变量未使用          —— 死代码（本轮据此发现 stock_scoring.pe_note 被丢弃）
+#   RUF007 建议用 itertools.pairwise —— zip(x, x[1:]) 连续配对，语义更明确
+#   RUF059 解包变量未使用         —— 死代码
+#   SIM115 open 未用上下文管理器  —— 句柄泄漏风险
+#   RUF013 隐式 Optional          —— 与 mypy strict_optional 同源，互为防线
+#   RUF012 可变类属性             —— 实例间共享陷阱（当前 0 命中，作为回归守卫）
+#   B904  raise 缺 from 链        —— 异常链断裂（当前 0 命中，作为回归守卫）
+# ---------------------------------------------------------------------------
+
+[lint.per-file-ignores]
+# 测试文件：允许 assert / 紧凑写法 / 未使用变量
+"test_*.py" = ["B011", "B007", "B017", "F841", "F811"]
+# data_fetcher：CLI 工具，允许 bare except 与 print
+"data_fetcher.py" = ["E722", "E701", "T201"]
+# CLI 入口脚本允许 print
+"main.py" = ["T201"]
+"stock_god.py" = ["T201"]
+"daily_stock_pick.py" = ["T201"]
+"run_analysis.py" = ["T201"]
+
+[lint.isort]
+known-first-party = [
+    "data_fetcher", "tracking", "agents", "orchestrator", "prompt_engine",
+    # agents.py 拆分（1.0）
+    "agents_base", "agents_analysts", "agents_researchers", "agents_decision",
+    # daily_stock_pick.py 拆分（1.0）
+    "runtime_env", "stock_scoring", "pool_manager", "industry_context", "lark_notify",
+    # report_generator.py 拆分（1.0）
+    "report_styles", "report_markdown",
+    "log_utils", "runtime_profile", "screen_pipeline", "stage2_enrichment",
+    "stage2_scoring", "stage2_ablation", "ashare_factor_engine",
+    "ashare_cross_section", "ashare_event_engine", "ashare_flow_engine",
+    "ashare_market", "ashare_universe", "factor_registry", "factor_gate",
+    "factor_lab", "factor_validation", "pit_integrity", "pit_universe_builder",
+    "cycle_price_action", "daily_csv_adapter", "market_regime",
+    "market_universe_provider", "a_share_risk", "backtest_engine",
+    "walk_forward", "report_generator", "llm_client", "feishu_notifier",
+    "data_contracts", "data_quality", "exchange_rules", "execution_rules",
+    "liquidity", "industry_strength", "candidate_prefilter",
+    "corporate_actions", "health_monitor", "performance", "point_in_time",
+    "release_gate", "research_integrity", "risk_budget", "risk_engine",
+    "robustness", "stress_test", "strategy_validation", "validation_suite",
+    "professional_audit", "professional_committee", "provider_router",
+    "quant_skill_router", "real_alpha_pipeline", "real_data_collector",
+    "real_data_integrity", "real_data_registry", "regime_backtest_report",
+    "regime_validation", "historical_universe", "paper_trading",
+    "phase13_risk", "phase15_governance", "phase22_alpha_runner",
+    "phase41_data_workbench", "recon_price_factor_lab", "streaming_topk",
+    "v3_data_bus", "alpha_survival_lab", "alpha_experiment",
+    "preregistered_alpha_experiment", "benchmark",
+]
+combine-as-imports = true

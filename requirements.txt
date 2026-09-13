@@ -1,0 +1,25 @@
+# AI股神团队 1.0 - Python 依赖声明
+#
+# 核心数据管道 (data_fetcher, tracking, screen_pipeline, ashare_*, factor_*,
+# pit_* 等) 纯标准库实现，零第三方依赖。
+# 以下均为可选依赖：仅在使用对应功能时才需要安装。
+
+# Python >= 3.10
+#   · 代码不使用 PEP 701（f-string 嵌套同引号，需 3.12+）
+#   · 由 test_python_compat.py 在 CI 中守卫该下限
+
+# --- 可选：Crawl4AI 网页正文清洗 ---
+# 启用方式：设置环境变量 CRAWL4AI_ENABLED=1
+# 用途：把东财搜索得到的新闻 URL 交给 Crawl4AI 做正文抓取和清洗
+crawl4ai>=0.7.0
+beautifulsoup4>=4.12
+
+# --- 可选：TuShare 真实 A 股数据适配器 ---
+# 启用方式：设置环境变量 TUSHARE_TOKEN=<your_token>
+# 用途：tushare_provider.py / real_data_collector.py 使用 TuShare 获取更完整的
+#       资金流、龙虎榜、公告/业绩、解禁/股东交易、回购数据
+# 注意：tushare_provider 的测试依赖 pandas
+# tushare>=1.4.0
+# pandas>=1.5
+
+# --- 开发/CI 工具：见 requirements-dev.txt ---
