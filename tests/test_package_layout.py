@@ -4,7 +4,7 @@
 背景：仓库曾把 188 个 `.py` 全部平铺在根目录，其中 76 个并非库代码。
 1.0 分多轮下沉：测试/脚本 → `tests/` `scripts/`；低耦合库模块家族 → 子包
 （pit/tdx/corporate/ashare/factors/reporting/runtime/risk/validation/
-stage2/alpha/phase62/regime/tushare/notify/router，累计根目录 188 → 59）。
+stage2/alpha/phase62/regime/tushare_client/notify/router/console，累计根目录 188 → 59）。
 
 这类重构最怕**静默回退**——有人为了省事把模块挪回根目录，或在别处补一个
 同名的平铺副本，两套导入路径并存，最后谁都不知道该改哪个文件。
@@ -64,6 +64,7 @@ PACKAGES = {
     "router": ["provider_router", "quant_skill_router"],
     "fetch": ["transport", "common", "quote", "kline", "news", "cli"],
     "track": ["costs", "schema", "store", "stats"],
+    "console": ["display", "teams"],
 }
 
 # 已下沉的模块名全集：出现在根目录即为平铺副本复活
