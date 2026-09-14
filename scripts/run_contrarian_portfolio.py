@@ -223,6 +223,34 @@ def run_arm(data, picker, start: str, end: str, slip_mode: str = "flat") -> Dict
 COSTS = Costs()
 
 
+def load_benchmark(dataset: str):
+    """加载沪深300基准（与 run_tdx_rolling_eval 同款：benchmark.csv + 认证）。"""
+    from real_alpha_pipeline import load_certified_csv
+
+    p = os.path.join(dataset, "benchmark.csv")
+    m = os.path.join(dataset, "benchmark.metadata.json")
+    if not (os.path.exists(p) and os.path.exists(m)):
+        return None
+    return load_certified_csv(p, m)
+
+
+def bench_stats(bench, start: str, end: str) -> Optional[Dict[str, float]]:
+    """窗口内基准的总收益与年化（按 252 交易日年化，与策略口径一致）。"""
+    if not bench:
+        return None
+    bars = [b for b in bench if start <= str(b["date"]) <= end]
+    if len(bars) < 2:
+        return None
+    first, last = float(bars[0]["close"]), float(bars[-1]["close"])
+    if first <= 0:
+        return None
+    total = last / first - 1
+    years = len(bars) / 252
+    ann = ((1 + total) ** (1 / years) - 1) * 100 if years > 0 else 0.0
+    return {"days": len(bars), "total_return_pct": round(total * 100, 2),
+            "annualized_pct": round(ann, 2)}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="组合层面对照实验 A/B（事前登记）")
     ap.add_argument("--dataset", required=True)
@@ -239,41 +267,72 @@ def main() -> int:
           f"次日开盘建仓/第5日收盘平仓  含成本  滑点={args.slippage}")
 
     t0 = time.time()
-    print("[1/2] 加载数据 ...")
+    print("[1/3] 加载数据 ...")
     data = _load(args.dataset, args.max_stocks)
-    print(f"      股票 {len(data):,} 只  ({time.time()-t0:.0f}s)")
+    bench = load_benchmark(args.dataset)
+    print(f"      股票 {len(data):,} 只"
+          + (f" / 基准 {len(bench):,} 根" if bench else " / 基准：缺失")
+          + f"  ({time.time()-t0:.0f}s)")
 
-    print("[2/2] 逐窗口运行两臂 ...")
-    results = {}
+    print("[2/3] 逐窗口运行两臂 ...")
+    results: Dict[str, Dict[str, Any]] = {}
     for start, end in WINDOWS:
         a = run_arm(data, pick_baseline, start, end, args.slippage)
         b = run_arm(data, pick_contrarian, start, end, args.slippage)
-        results[f"{start}~{end}"] = {"A_baseline": a, "B_contrarian": b}
+        bm = bench_stats(bench, start, end)
+        results[f"{start}~{end}"] = {"A_baseline": a, "B_contrarian": b,
+                                     "benchmark": bm}
         print(f"\n  【窗口 {start} ~ {end}】")
+        if bm:
+            print(f"    {'基准 沪深300':<12} 年化 {bm['annualized_pct']:>+7.2f}%  "
+                  f"总收益 {bm['total_return_pct']:>+7.2f}%  ({bm['days']}个交易日)")
         for label, r in (("A 基线动量", a), ("B H-C1反转", b)):
+            ex = (r["annualized_pct"] - bm["annualized_pct"]) if bm else None
+            exs = f"  超额 {ex:>+7.2f}pp" if ex is not None else ""
             print(f"    {label:<12} 年化 {r['annualized_pct']:>+7.2f}%  "
                   f"总收益 {r['total_return_pct']:>+7.2f}%  "
                   f"回撤 {r['max_drawdown_pct']:>6.2f}%  "
-                  f"胜率 {r['win_rate_pct']:>5.1f}%  "
-                  f"交易 {r['trades']:>4}  ({r['periods']}期)")
+                  f"胜率 {r['win_rate_pct']:>5.1f}%{exs}")
 
-    # 判定（事前登记）
+    # 判定（事前登记，第三阶段含基准）
     print("\n" + "=" * 92)
-    diffs = []
+    diffs, excesses = [], []
     for k, v in results.items():
         d = v["B_contrarian"]["annualized_pct"] - v["A_baseline"]["annualized_pct"]
         diffs.append(d)
-        print(f"  {k}: B - A = {d:+.2f} pp")
-    all_better = all(d > 2 for d in diffs)
-    both_pos = all(v["B_contrarian"]["annualized_pct"] > 0 for v in results.values())
-    if all_better and both_pos:
-        verdict = "B 优于 A 且扣费后为正 → 支持「存在可实现 Alpha」（待基准指数复核）"
-    elif all_better:
-        verdict = "B 优于 A，但扣费后年化仍为负 → 仅支持「反转优于动量」，不支持「有 Alpha」"
-    elif all(d > 0 for d in diffs):
-        verdict = "B 略优于 A（差值 ≤ 2pp）→ 弱于/无显著差异"
+        bm = v["benchmark"]
+        if bm:
+            e = v["B_contrarian"]["annualized_pct"] - bm["annualized_pct"]
+            excesses.append(e)
+            print(f"  {k}: B - A = {d:+.2f} pp    B - 基准 = {e:+.2f} pp")
+        else:
+            print(f"  {k}: B - A = {d:+.2f} pp    （无基准）")
+
+    if excesses:
+        if all(e > 2 for e in excesses):
+            verdict = "B 年化超额两窗口均 > 2pp → 存在可实现 Alpha（样本内限定仍在）"
+        elif all(e > 0 for e in excesses):
+            verdict = "B 年化超额两窗口均 > 0 但 ≤ 2pp → 弱正超额"
+        elif all(e <= 0 for e in excesses):
+            verdict = "B 年化超额两窗口均 ≤ 0 → 无 Alpha（跑输基准）"
+        else:
+            verdict = "两窗口超额符号相反 → 证据不足"
     else:
-        verdict = "B 未稳定优于 A → 无差异或更差"
+        verdict = "无基准数据，仅能判定 A/B 相对优劣"
+
+    if excesses:
+        pass
+    else:
+        all_better = all(d > 2 for d in diffs)
+        both_pos = all(v["B_contrarian"]["annualized_pct"] > 0 for v in results.values())
+        if all_better and both_pos:
+            verdict = "B 优于 A 且扣费后为正 → 支持「存在可实现 Alpha」（待基准指数复核）"
+        elif all_better:
+            verdict = "B 优于 A，但扣费后年化仍为负 → 仅支持「反转优于动量」，不支持「有 Alpha」"
+        elif all(d > 0 for d in diffs):
+            verdict = "B 略优于 A（差值 ≤ 2pp）→ 弱于/无显著差异"
+        else:
+            verdict = "B 未稳定优于 A → 无差异或更差"
     print(f"\n判定：{verdict}")
     print("=" * 92)
     print(f"总耗时 {time.time()-t0:.0f}s")
