@@ -34,7 +34,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 ROOT = Path(__file__).resolve().parent
 
@@ -69,9 +69,58 @@ def _run(cmd: List[str]) -> int:
     return proc.returncode
 
 
-def _module(module: str, args: List[str]) -> int:
-    return _run([sys.executable, "-m", module, *args])
+def _has_module(module: str) -> bool:
+    """当前解释器是否装有该模块。"""
+    import importlib.util
+    try:
+        return importlib.util.find_spec(module) is not None
+    except (ImportError, ValueError):
+        return False
 
+
+#: 工具可能不在当前解释器内。本机 ruff/mypy 装在隔离 venv，
+#: 而 `python run_ci.py` 用的是系统 Python —— 直接 `-m ruff` 会报
+#: "No module named ruff"，让本地 CI 因**环境**原因假失败。
+#: 因此按顺序回退：环境变量 → 已知 venv 路径 → PATH。
+_VENV_CANDIDATES = (
+    os.environ.get("WORKBUDDY_PY_ENV", ""),
+    os.path.expanduser("~/.workbuddy/binaries/python/envs/default"),
+    os.path.expanduser("~/.workbuddy-ai/binaries/python/envs/default"),
+)
+
+
+def _find_tool_exe(module: str) -> Optional[str]:
+    """在已知 venv 与 PATH 中查找 `<module>` 可执行文件。"""
+    import shutil
+    subdir = "Scripts" if os.name == "nt" else "bin"
+    suffix = ".exe" if os.name == "nt" else ""
+    for base in _VENV_CANDIDATES:
+        if not base:
+            continue
+        candidate = Path(base) / subdir / f"{module}{suffix}"
+        if candidate.is_file():
+            return str(candidate)
+    return shutil.which(module)
+
+
+def _module(module: str, args: List[str]) -> int:
+    """运行 `python -m <module> <args>`，必要时回退到独立可执行文件。
+
+    回退存在的理由见 :data:`_VENV_CANDIDATES` 的注释。找不到工具时
+    **明确报错并返回非零** —— 静默跳过会让 CI 失去意义。
+    """
+    if _has_module(module):
+        return _run([sys.executable, "-m", module, *args])
+
+    exe = _find_tool_exe(module)
+    if exe:
+        print(f"  (回退到独立可执行文件: {exe})")
+        return _run([exe, *args])
+
+    print(f"  [FAIL] 找不到 {module}：既不在当前解释器 "
+          f"({sys.executable})，也不在已知 venv 或 PATH")
+    print("         可设置环境变量 WORKBUDDY_PY_ENV 指向装有该工具的 venv")
+    return 1
 
 def step_syntax() -> int:
     """全部 .py 编译检查（等价于 CI 的 py_compile 步骤，但不落 .pyc）。"""
