@@ -1,17 +1,18 @@
 # 工作交接文档
 
 > **项目**：AI股神团队 1.0 · A股多 Agent 智能分析系统
-> **仓库**：`https://github.com/LCD9Z/L.git`（**私有**）　**分支**：`main`　**HEAD**：`393b352`
-> **交接范围**：2026-09-13 ~ 2026-09-14 的工程改造（目录分层 4 轮 + 巨石拆分 3 次）
+> **仓库**：`https://github.com/LCD9Z/L.git`（**私有**）　**分支**：`main`　**HEAD**：`d76c96b`
+> **交接范围**：2026-09-13 ~ 2026-09-14 的工程改造（目录分层 4 轮 + 巨石拆分 3 次 + 数据研究 4 项）
 > **配套阅读**：[`WORKLOG.md`](WORKLOG.md)（做了什么）· [`CHANGELOG.md`](CHANGELOG.md)（版本演进）· [`DIRECTORY_LAYOUT.md`](DIRECTORY_LAYOUT.md)（结构全景）
 
 ---
 
 ## 一、一句话现状
 
-仓库已从「188 个 `.py` 全部平铺在根目录」重构为 **18 个子包 / 65 个入包模块 / 根目录仅 59 个**；
-`data_fetcher.py`(807 行) 与 `tracking.py`(308 行) 两个巨石已用**门面模式**拆解，对外 API 零变更。
-**质量门禁全绿**：ruff 全通过 · mypy 223 文件零错误 · pytest 502 passed · 本地 CI 6/6。
+仓库已从「188 个 `.py` 全部平铺在根目录」重构为 **19 个子包 / 68 个入包模块 / 根目录仅 59 个**；
+`data_fetcher.py`(807 行)、`tracking.py`(308 行)、`main.py`(402 行) 三个巨石已用**门面模式**拆解，对外 API 零变更。
+数据集已修正幸存者偏差（并入 180 只退市股），四项研究全部重跑完成。
+**质量门禁全绿**：ruff 全通过 · mypy 228 文件零错误 · pytest 502 passed · 本地 CI 6/6。
 
 ---
 
@@ -36,20 +37,22 @@
 ```
 项目根/
 ├── *.py          59 个：入口 / 门面 / 核心编排 / 门禁工具 / 未成族单例
-├── <18 个子包>/   每个都有 __init__.py（写「管什么 + 共同红线」）
-├── scripts/       run_*.py（16 个）
-├── tests/         test_*.py（61 个）
+├── <19 个子包>/   每个都有 __init__.py（写「管什么 + 共同红线」）
+├── scripts/       run_*.py（22 个）
+├── tests/         test_*.py（62 个）
 └── conftest.py    把项目根 + scripts/ 加入 sys.path
 ```
 
 - **子包内**同族引用用**相对导入**（`from .schema import ...`）；**包外**一律**绝对导入**（`from track.store import ...`）。
 - 文件名**保留族前缀**（`pit/pit_integrity.py`）—— 为 `git mv` 可追溯，改动机械易审。
-- 门面包（`fetch/`、`track/`）**不要直接依赖**，请继续用 `from data_fetcher import ...` / `import tracking`。
+- 门面包（`fetch/`、`track/`、`console/`）**不要直接依赖**，请继续用 `from data_fetcher import ...` / `import tracking` / `import main`。
 - **防回退守卫**：`tests/test_package_layout.py`，由 `PACKAGES` 单一来源推导，新增子包时**只需往 `PACKAGES` 加一行**，其余断言（无根目录平铺副本、无裸旧导入、包内相对导入、真实可导入）自动覆盖。
 
 ---
 
 ## 四、已完成改造（快速索引）
+
+### 目录分层与巨石拆分
 
 | 类别 | 内容 | 提交 |
 |------|------|------|
@@ -60,7 +63,17 @@
 | 缺陷修复 | `tushare/` 包遮蔽第三方库 | `f92c4ef` |
 | 巨石拆分 | `data_fetcher.py` → `fetch/` + 门面 | `9df28ea` |
 | 巨石拆分 | `tracking.py` → `track/` + 门面 | `393b352` |
+| 巨石拆分 | `main.py` → `console/` + 门面 | `6ea19d2` |
 | 文档 | `DIRECTORY_LAYOUT.md`（脚本生成，防漂移） | `9df28ea` |
+
+### 数据质量研究
+
+| 研究 | 结论 | 文档 |
+|------|------|------|
+| 幸存者偏差量化 | 180 只退市股并入数据集；影响是不复权的 30 倍 | `SURVIVORSHIP_IMPACT_REPORT.md` |
+| 四项研究修正重跑 | 基线策略负 Alpha 结论不变；V1 尾部剔除改善不成立 | `RERUN_CORRECTED_REPORT.md` |
+| 采样敏感性 | 分散化降标准差 4.2 倍，但不改"无 Alpha"结论 | `SAMPLING_SENSITIVITY_REPORT.md` |
+| 口径不一致排查 | 根因是采样数差异；修复硬编码窗口 bug | `CALIBRATION_DISCREPANCY_REPORT.md` |
 
 ---
 
@@ -68,11 +81,10 @@
 
 | 优先级 | 事项 | 说明 |
 |:---:|------|------|
-| 1 | `crawl4ai_fetcher.py`（370 行）拆分评估 | 叶子模块、测试覆盖好（`test_crawl4ai_adapter`），风险低 |
-| 2 | `main.py`（402 行）拆分评估 | 入口，无测试覆盖，验证手段弱；需先补冒烟 |
+| 1 | **真实 Alpha 假设** | 基线策略在全部实验条件下均为负超额。需新的经济逻辑假设 + 独立窗口检验。禁止参数网格搜索。 |
+| 2 | 外部集成真实凭据验收 | 飞书 / 付费模型，需用户提供凭据 |
 | 3 | 缓存备份处置 | 9.06 MB 已移出到 `_1.0_cache_backup_20260914-071155/`（**用户决定先观察，暂不删**） |
-| 4 | 外部集成真实凭据验收 | 飞书 / 付费模型，需用户提供凭据 |
-| 5 | 真实 Alpha 结论 | 需认证过的全市场 PIT 数据；当前 TDX 数据有**幸存者偏差**与**不复权**两项缺陷 |
+| 4 | `disallow_untyped_defs` | 569 处纯标注告警，收益递减；当前 `check_untyped_defs` 已覆盖 |
 | — | `orchestrator.py`（312 行） | **建议不拆**：核心是 278 行类，拆需 mixin，1.0 已评估「收益递减」 |
 
 ---
@@ -119,6 +131,15 @@
     「10 MB」里约 8.3 MB 是工具缓存（`.mypy_cache` 占 7.5 MB），**项目真实内容仅 1.11 MB / 284 文件**。
     判断方法：`git ls-files` 统计受控文件体积 = 真实大小，差额即被忽略的本地产物。
 
+11. **等距抽样在旋转下可能不变 —— 又一次静默失效**
+    `run_sampling_sensitivity_study.py` 初版用等距抽样 + 偏移量，当 `len/size` 与偏移成整数倍时，
+    5 个子样本**完全相同**（对称差 0）。会输出"标准差=0，离散度完美"的假结论。
+    改用带种子的确定性洗牌；验证修复后样本间重合约 90/300，真正独立。
+
+12. **退市股数据存在但需主动合并**
+    TDX 本地数据只含存活股，退市股数据在 `D:/tdx_dataset/delist/` 下已单独获取。
+    运行研究前需确认是否调用 `merge_delisted_into_dataset.py` 合并，否则结果含幸存者偏差。
+
 ---
 
 ## 七、交接验收清单（接手后先跑一遍）
@@ -126,7 +147,7 @@
 ```powershell
 # 1) 静态检查
 C:\Users\T430\.workbuddy\binaries\python\envs\default\Scripts\ruff.exe check .        # 期望 All checks passed
-C:\Users\T430\.workbuddy\binaries\python\envs\default\Scripts\mypy.exe --config-file mypy.ini .   # 期望 223 文件零错误
+C:\Users\T430\.workbuddy\binaries\python\envs\default\Scripts\mypy.exe --config-file mypy.ini .   # 期望 228 文件零错误
 
 # 2) 测试
 python -m pytest -q                 # 期望 502 passed
@@ -201,4 +222,11 @@ python run_ci.py
 | [`AUDIT_REPORT.md`](AUDIT_REPORT.md) | 静态分析审计报告与风险项 |
 | [`MERGE_1.0_REPORT.md`](MERGE_1.0_REPORT.md) | 1.0 合并报告与遗留事项清单 |
 | `TDX_DATA_ASSESSMENT.md` / `TDX_EVALUATION_REPORT.md` | 数据性质评估与首次端到端实证 |
+| `SAMPLING_SENSITIVITY_REPORT.md` | 采样敏感性 × 持仓分散度实验 |
+| `RERUN_CORRECTED_REPORT.md` | 四项研究修正后重跑汇总 |
+| `CALIBRATION_DISCREPANCY_REPORT.md` | 口径不一致排查与根因分析 |
+| `SURVIVORSHIP_IMPACT_REPORT.md` | 幸存者偏差对因子研究的影响 |
+| `DELISTED_UNIVERSE_REPORT.md` | 180 只退市股识别与数据集修正 |
+| `ADJUSTED_FACTOR_REPORT.md` | 复权因子对比研究 |
+| `MODULE_SPLIT_EVALUATION.md` | `main.py` 拆分评估与决策记录 |
 | `docs/archive/` | 历史阶段文档（PHASE*） |
