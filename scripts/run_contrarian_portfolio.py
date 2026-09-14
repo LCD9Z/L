@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backtest_engine import Costs, _trade_cost  # noqa: E402
 from factors.factor_ic_lab import compute_factors  # noqa: E402
-from risk.liquidity import is_liquid  # noqa: E402
+from risk.liquidity import dynamic_slippage, is_liquid  # noqa: E402
 from walk_forward import score_history  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -139,11 +139,24 @@ def pick_contrarian(data, idx_map, codes, day) -> List[Tuple[float, str, int]]:
     return scored[:TOP_N]
 
 
-def _trade_return(bars, i, costs: Costs, position_value: float) -> Optional[float]:
+def _trade_return(bars, i, costs: Costs, position_value: float,
+                  slip_mode: str = "flat") -> Optional[float]:
+    """单笔收益（含成本）。
+
+    slip_mode:
+      flat    —— 固定 base 滑点（第一阶段口径，会低估小盘/非流动性个股）
+      dynamic —— 按个股 20 日均成交额分档（生产级口径，见 risk/liquidity.dynamic_slippage）
+    """
     entry_bar = bars[i + 1]
-    exit_bar = bars[i + 1 + HORIZON]
-    entry_px = float(entry_bar["open"]) * (1 + costs.slippage_rate)
-    exit_px = float(exit_bar["close"]) * (1 - costs.slippage_rate)
+    exit_idx = i + 1 + HORIZON
+    exit_bar = bars[exit_idx]
+    if slip_mode == "dynamic":
+        slip_buy = dynamic_slippage(bars[: i + 1], costs.slippage_rate)
+        slip_sell = dynamic_slippage(bars[: exit_idx + 1], costs.slippage_rate)
+    else:
+        slip_buy = slip_sell = costs.slippage_rate
+    entry_px = float(entry_bar["open"]) * (1 + slip_buy)
+    exit_px = float(exit_bar["close"]) * (1 - slip_sell)
     if entry_px <= 0:
         return None
     shares = math.floor(position_value / entry_px / 100) * 100
@@ -156,7 +169,7 @@ def _trade_return(bars, i, costs: Costs, position_value: float) -> Optional[floa
     return (proceeds - total_buy) / total_buy
 
 
-def run_arm(data, picker, start: str, end: str) -> Dict[str, Any]:
+def run_arm(data, picker, start: str, end: str, slip_mode: str = "flat") -> Dict[str, Any]:
     idx_map = {
         code: {str(b["date"]): k for k, b in enumerate(bars)}
         for code, bars in data.items()
@@ -179,7 +192,8 @@ def run_arm(data, picker, start: str, end: str) -> Dict[str, Any]:
         pos_value = equity / len(picks)
         rets = []
         for _, code, i in picks:
-            r = _trade_return(data[code], i, costs=COSTS, position_value=pos_value)
+            r = _trade_return(data[code], i, costs=COSTS, position_value=pos_value,
+                              slip_mode=slip_mode)
             if r is not None:
                 rets.append(r)
         if not rets:
@@ -213,6 +227,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="组合层面对照实验 A/B（事前登记）")
     ap.add_argument("--dataset", required=True)
     ap.add_argument("--max-stocks", type=int, default=1000)
+    ap.add_argument("--slippage", choices=("flat", "dynamic"), default="flat",
+                    help="flat=固定滑点(第一阶段口径)；dynamic=按成交额分档(生产级)")
     ap.add_argument("--out", default="")
     args = ap.parse_args()
 
@@ -220,7 +236,7 @@ def main() -> int:
     print("组合层面对照实验：基线动量(A)  vs  H-C1 反转复合(B)　同一框架 A/B（事前登记）")
     print("=" * 92)
     print(f"口径：top_n={TOP_N}  持有={HORIZON}日  调仓每{STEP}日  "
-          f"次日开盘建仓/第5日收盘平仓  含成本与滑点")
+          f"次日开盘建仓/第5日收盘平仓  含成本  滑点={args.slippage}")
 
     t0 = time.time()
     print("[1/2] 加载数据 ...")
@@ -230,8 +246,8 @@ def main() -> int:
     print("[2/2] 逐窗口运行两臂 ...")
     results = {}
     for start, end in WINDOWS:
-        a = run_arm(data, pick_baseline, start, end)
-        b = run_arm(data, pick_contrarian, start, end)
+        a = run_arm(data, pick_baseline, start, end, args.slippage)
+        b = run_arm(data, pick_contrarian, start, end, args.slippage)
         results[f"{start}~{end}"] = {"A_baseline": a, "B_contrarian": b}
         print(f"\n  【窗口 {start} ~ {end}】")
         for label, r in (("A 基线动量", a), ("B H-C1反转", b)):
