@@ -48,15 +48,26 @@ OHLC = ("open", "high", "low", "close")
 
 
 def load_actions(path: str) -> Dict[str, List[Any]]:
-    """读入公司行动 CSV，按股票代码分组为 CorporateAction 列表。"""
-    from corporate.corporate_action_provider import normalize_tushare_dividend
-    out: Dict[str, List[Any]] = {}
+    """读入公司行动 CSV，按股票代码分组为 CorporateAction 列表。
+
+    必须经 :func:`consolidate_actions` 合并：同一除权日可能同时实施
+    **不同报告期**的分红方案（实测 21,212 组中有 7 组），
+    对价格复权而言当日影响是**合计**的现金与送转。
+    未合并时 `validate_actions` 会按「重复事件」拒绝。
+    """
+    from corporate.corporate_action_provider import (
+        consolidate_actions,
+        normalize_tushare_dividend,
+    )
+    raw: List[Any] = []
     with open(path, encoding="utf-8-sig", newline="") as f:
         for row in csv.DictReader(f):
             a = normalize_tushare_dividend(row)
-            if a is None:
-                continue
-            out.setdefault(a.normalized_code(), []).append(a)
+            if a is not None:
+                raw.append(a)
+    out: Dict[str, List[Any]] = {}
+    for a in consolidate_actions(raw):
+        out.setdefault(a.normalized_code(), []).append(a)
     return out
 
 
