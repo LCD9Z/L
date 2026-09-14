@@ -2,7 +2,7 @@
 
 > **项目**：AI股神团队 1.0 · A股多 Agent 智能分析系统
 > **仓库**：`https://github.com/LCD9Z/L.git`（**私有**）　**分支**：`main`　**HEAD**：`393b352`
-> **交接范围**：2026-09-13 ~ 2026-09-14 的工程改造（目录分层 4 轮 + 巨石拆分 2 次）
+> **交接范围**：2026-09-13 ~ 2026-09-14 的工程改造（目录分层 4 轮 + 巨石拆分 3 次）
 > **配套阅读**：[`WORKLOG.md`](WORKLOG.md)（做了什么）· [`CHANGELOG.md`](CHANGELOG.md)（版本演进）· [`DIRECTORY_LAYOUT.md`](DIRECTORY_LAYOUT.md)（结构全景）
 
 ---
@@ -11,7 +11,7 @@
 
 仓库已从「188 个 `.py` 全部平铺在根目录」重构为 **18 个子包 / 65 个入包模块 / 根目录仅 59 个**；
 `data_fetcher.py`(807 行) 与 `tracking.py`(308 行) 两个巨石已用**门面模式**拆解，对外 API 零变更。
-**质量门禁全绿**：ruff 全通过 · mypy 219 文件零错误 · pytest 470 passed + 1 skipped · 远端 CI 5/5。
+**质量门禁全绿**：ruff 全通过 · mypy 223 文件零错误 · pytest 502 passed · 本地 CI 6/6。
 
 ---
 
@@ -126,19 +126,67 @@
 ```powershell
 # 1) 静态检查
 C:\Users\T430\.workbuddy\binaries\python\envs\default\Scripts\ruff.exe check .        # 期望 All checks passed
-C:\Users\T430\.workbuddy\binaries\python\envs\default\Scripts\mypy.exe --config-file mypy.ini .   # 期望 219 文件零错误
+C:\Users\T430\.workbuddy\binaries\python\envs\default\Scripts\mypy.exe --config-file mypy.ini .   # 期望 223 文件零错误
 
 # 2) 测试
-python -m pytest -q                 # 期望 470 passed, 1 skipped
+python -m pytest -q                 # 期望 502 passed
 
-# 3) 完整本地 CI
+# 3) 完整本地 CI（**推荐：一条命令覆盖全部**）
 python run_ci.py                    # 期望 6/6 PASS
 
 # 4) 结构守卫
-python -m pytest tests/test_package_layout.py -q    # 覆盖全部 18 个子包
+python -m pytest tests/test_package_layout.py -q    # 覆盖全部 19 个子包
 ```
 
 预期结果全部通过即表示环境与代码状态一致，可安全继续开发。
+
+> **注**：`run_ci.py` 会自行处理 ruff/mypy 不在系统 Python 的情况
+> （回退到隔离 venv，见第九节）。若该回退也失败，设 `WORKBUDDY_PY_ENV`
+> 指向装有这些工具的 venv。
+
+---
+
+## 七之二、中断后如何接上（会话恢复流程）
+
+长任务可能在任意时刻中断。按以下顺序重建状态，**不要凭印象继续**：
+
+```bash
+cd C:/Users/T430/Desktop/1.0
+
+# ① 看最后提交，确认做到哪一步
+git log --oneline -8
+
+# ② 看有无未提交变更（有则说明上次中断在提交前）
+git status --short
+
+# ③ 一条命令验证状态是否绿
+python run_ci.py
+```
+
+然后按顺序读：
+
+| 顺序 | 文档 | 回答什么 |
+|:---:|------|---------|
+| 1 | 本文件 `HANDOVER.md` | 现状、约定、**踩坑清单**、待办 |
+| 2 | [`WORKLOG.md`](WORKLOG.md) | 上一次改造做了什么、为什么 |
+| 3 | [`CHANGELOG.md`](CHANGELOG.md) | 版本演进与历次收紧 |
+
+**关键提醒**：
+
+- **本文件的 HEAD 可能已过期** —— 以 `git log` 实际结果为准。
+- **踩坑清单（第六节）务必先读** —— 本次已有实例：`cli` 包名与
+  `fetch/cli.py` 冲突，被结构守卫在提交前拦下；而"包名不能与既有顶层模块同名"
+  这条早在第六节第 1 条写着。
+- **未提交变更 = 中断风险**。若 `git status` 非空，先判断这些改动是否完整
+  （跑 `python run_ci.py`），再决定提交还是回退。
+
+### 降低中断损失的做法
+
+1. **分小步提交** —— 每完成一个可验证的小改动就跑门禁并提交，
+   不要攒成一次大提交。
+2. **提交信息写清"为什么"** —— 中断后看提交信息即可重建意图，
+   不必重新推理。
+3. **改动前先确认工作区干净** —— 否则中断后无法区分"我的改动"与"上次的残留"。
 
 ---
 
