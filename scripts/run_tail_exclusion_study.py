@@ -241,13 +241,16 @@ def main() -> int:
                   f"基准 {bm:>7.2f}%  年化超额 {exc:>+7.2f}%  ({time.time()-t0:.0f}s)",
                   flush=True)
 
-    print("\n[3/3] 成本拖累对照（V0 与 V1，同一窗口 2024-01-02）...")
+    # 成本拖累对照：用**实际跑过的第一个窗口**，而不是硬编码 2024-01-02。
+    # 原实现硬编码该窗口，当 `--windows` 不含它时会在 next(...) 处抛 StopIteration。
+    cost_window = windows[0]
+    print(f"\n[3/3] 成本拖累对照（V0 与 V1，窗口 {cost_window}）...")
     orig = _zero_cost_patch()
     cost_rows = []
     try:
         for vname in ("V0_baseline", "V1_excl_ret20_top20"):
             flt = _make_filter(excl, VARIANTS[vname])
-            w = "2024-01-02"
+            w = cost_window
             oos_dates = sorted({str(b["date"]) for bars in data.values()
                                 for b in bars if str(b["date"]) >= w})
             allowed = {d: set(point_in_time_universe(universe, d)) for d in oos_dates}
@@ -266,7 +269,12 @@ def main() -> int:
             g = portfolio_backtest(restricted, universe_snapshot_map=universe,
                                    threshold=70, top_n=5, horizon=args.horizon,
                                    start_signal_date=w, candidate_filter=flt)
-            net = next(r for r in rows if r["variant"] == vname and r["window"] == w)
+            net_row = next((r for r in rows
+                            if r["variant"] == vname and r["window"] == w), None)
+            if net_row is None:
+                print(f"  {vname:30s} 该窗口无净收益记录，跳过")
+                continue
+            net = net_row
             cost_rows.append({"variant": vname, "gross_pct": g.get("total_return_pct"),
                               "net_pct": net["total_return_pct"],
                               "drag_pct": round((g.get("total_return_pct") or 0)
