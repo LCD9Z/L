@@ -213,11 +213,11 @@
 
 ```bash
 # 1) 构建认证数据集（约 8 分钟）
-python build_tdx_dataset.py --src D:/tdx_daily_all.zip --out D:/tdx_dataset \
+python scripts/build_tdx_dataset.py --src D:/tdx_daily_all.zip --out D:/tdx_dataset \
     --min-rows 600 --max-stocks 1500 --benchmark 000300 --benchmark-market sh
 
 # 2) 单窗口评估（约 8 分钟）
-python run_tdx_evaluation.py --dataset D:/tdx_dataset \
+python scripts/run_tdx_evaluation.py --dataset D:/tdx_dataset \
     --oos-start 2024-01-01 --max-stocks 800 --out D:/tdx_dataset/eval_result.json
 
 # 3) 多窗口稳健性检验（约 16 分钟；审计只做一次后复用数据）

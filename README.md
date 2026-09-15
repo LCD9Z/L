@@ -145,7 +145,7 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 | `AUDIT_REPORT.md` | 多角度代码审计报告 |
 | `log_utils.py` | 统一结构化日志（`LOG_LEVEL` / `LOG_FILE`） |
 | `tdx/tdx_csv_adapter.py` | 通达信日线 CSV 适配器（品种过滤 / code+market 消歧 / 导出契约） |
-| `build_tdx_dataset.py` | 原始 CSV → 认证数据集（清洗 + sha256 + PIT 股票池） |
+| `scripts/build_tdx_dataset.py` | 原始 CSV → 认证数据集（清洗 + sha256 + PIT 股票池） |
 | `scripts/run_tdx_evaluation.py` | 在 TDX 数据集上运行真实 Alpha 评估（单窗口） |
 | `scripts/run_tdx_rolling_eval.py` | 多窗口滚动样本外稳健性检验（审计复用，不调参） |
 | `factors/factor_ic_lab.py` | 横截面因子 IC 检验引擎（秩相关 / 无未来函数 / 分位组） |
@@ -160,7 +160,7 @@ python scripts/run_pipeline.py --universe universe.jsonl --profile lite
 | `pit/pit_event_master.py` · `pit/pit_trading_filter.py` · `pit/pit_research_rows.py` | PIT 事件与交易资格（v4.9 移植） |
 | `tdx/tdx_lifecycle.py` · `lifecycle_event_evidence.py` · `tdx/tdx_inventory.py` | 生命周期证据（v4.9 移植） |
 | `factors/factor_blind_test.py` | 因子盲测（v4.9 移植） |
-| `repair_tdx_metadata.py` | 重建数据集 sha256 元数据（修复工具） |
+| `scripts/repair_tdx_metadata.py` | 重建数据集 sha256 元数据（修复工具） |
 | `requirements.txt` · `requirements-dev.txt` | 运行依赖与开发/CI 依赖 |
 | `ruff.toml` · `mypy.ini` · `pytest.ini` | lint / 类型检查 / 测试配置 |
 | `.github/workflows/ci.yml` | CI：lint + 类型 + 测试 + 凭据扫描 |
@@ -462,7 +462,7 @@ python scripts/run_tdx_rolling_eval.py --dataset D:/tdx_dataset \
 
 ```bash
 # 原始 CSV → 认证数据集（过滤品种 + 清洗 + sha256 + PIT 股票池）
-python build_tdx_dataset.py --src D:/tdx_daily_all.zip --out D:/tdx_dataset \
+python scripts/build_tdx_dataset.py --src D:/tdx_daily_all.zip --out D:/tdx_dataset \
     --min-rows 600 --max-stocks 1500 --benchmark 000300
 
 # 单窗口评估

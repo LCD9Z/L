@@ -1,15 +1,16 @@
 # 目录全景（分层后）
 
-> 本文件由 `gen_layout_doc.py` **从真实仓库状态自动生成**，请勿手工编辑；
+> 本文件由 `scripts/gen_layout_doc.py` **从真实仓库状态自动生成**，请勿手工编辑；
 > 每次移动模块后重新生成即可，避免文档与实际结构漂移。
+> 生成命令：`python scripts/gen_layout_doc.py`　校验：`python scripts/gen_layout_doc.py --check`
 
 ## 总览
 
 | 指标 | 值 |
 |------|----|
-| 子包数 | **18** |
-| 已入包模块 | **65**（约 6,280 行） |
-| 根目录 `.py` | **59**（约 6,414 行） |
+| 子包数 | **19** |
+| 已入包模块 | **67**（约 6,609 行） |
+| 根目录 `.py` | **56**（约 5,760 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -89,7 +90,43 @@ A 股市场结构与确定性特征层。
 | `ashare/ashare_market.py` | 95 |
 | `ashare/ashare_universe.py` | 59 |
 
-### `corporate/`　（3 模块，约 369 行）
+### `console/`　（2 模块，约 254 行）
+
+**职责**：交互式命令行层（展示、输入、团队流程执行）。
+
+<details><summary>包级说明与红线（点击展开）</summary>
+
+```
+交互式命令行层（展示、输入、团队流程执行）。
+
+从 `main.py` 迁出。`main.py` 保留为**入口与编排**：它调用本包完成
+「读输入 → 跑团队 → 出报告」，自身不再包含展示与交互细节。
+
+模块一览：
+
+* :mod:`console.display` —— 终端颜色、打印辅助、输入辅助（纯展示/交互，无业务判断）。
+* :mod:`console.teams`   —— 多 Agent 团队的阶段规格与统一执行器。
+
+共同红线：
+
+* **本层不做业务判断**。评分解析、阶段推进、结果落库都由
+  :mod:`orchestrator` 负责；这里只负责「把提示词展示给用户、把粘贴内容读回来」。
+* **空输入绝不提交**。用户粘贴为空时跳过该阶段，不得写入空结果污染会话。
+* **交互可被随时中断**。每次提交后立即 `save_session()`；
+  `EOFError` / `KeyboardInterrupt` 走干净退出而非抛出未捕获异常。
+
+依赖方向：``console.teams -> console.display``，单向无环。
+本包**不反向依赖** `main.py`。
+```
+
+</details>
+
+| 模块 | 行数 |
+|------|-----:|
+| `console/display.py` | 108 |
+| `console/teams.py` | 146 |
+
+### `corporate/`　（3 模块，约 444 行）
 
 **职责**：A 股公司行为（corporate action）与复权因子子包。
 
@@ -126,7 +163,7 @@ A 股公司行为（corporate action）与复权因子子包。
 | 模块 | 行数 |
 |------|-----:|
 | `corporate/corporate_action_ingest.py` | 71 |
-| `corporate/corporate_action_provider.py` | 127 |
+| `corporate/corporate_action_provider.py` | 202 |
 | `corporate/corporate_actions.py` | 171 |
 
 ### `factors/`　（6 模块，约 812 行）
@@ -659,15 +696,12 @@ TuShare 数据接入（可选依赖）。
 
 | 模块 | 行数 | 入边 | 出边(根) |
 |------|-----:|-----:|--------:|
-| `build_tdx_dataset.py` | 215 | 0 | 0 |
 | `conftest.py` | 23 | 0 | 0 |
 | `credential_scan.py` | 192 | 0 | 0 |
-| `data_fetcher.py` | 101 | 8 | 0 |
-| `fetch_corporate_actions.py` | 205 | 0 | 0 |
-| `main.py` | 402 | 0 | 1 |
+| `data_fetcher.py` | 101 | 9 | 0 |
+| `main.py` | 158 | 0 | 1 |
 | `paper_trading.py` | 16 | 0 | 0 |
-| `repair_tdx_metadata.py` | 84 | 0 | 0 |
-| `run_ci.py` | 168 | 0 | 0 |
+| `run_ci.py` | 262 | 0 | 0 |
 | `stock_god.py` | 71 | 0 | 0 |
 
 ### 高耦合核心（被多处依赖或依赖多处）
@@ -686,7 +720,7 @@ TuShare 数据接入（可选依赖）。
 | `historical_universe.py` | 33 | 3 | 0 |
 | `industry_context.py` | 50 | 1 | 2 |
 | `market_regime.py` | 39 | 1 | 1 |
-| `orchestrator.py` | 337 | 1 | 1 |
+| `orchestrator.py` | 337 | 2 | 1 |
 | `phase22_alpha_runner.py` | 15 | 0 | 2 |
 | `phase41_data_workbench.py` | 123 | 0 | 2 |
 | `pool_manager.py` | 166 | 1 | 1 |
@@ -705,10 +739,10 @@ TuShare 数据接入（可选依赖）。
 | 模块 | 行数 | 入边 | 出边(根) |
 |------|-----:|-----:|--------:|
 | `candidate_prefilter.py` | 40 | 1 | 0 |
-| `crawl4ai_fetcher.py` | 370 | 0 | 0 |
-| `daily_csv_adapter.py` | 74 | 0 | 0 |
+| `crawl4ai_fetcher.py` | 370 | 1 | 0 |
+| `daily_csv_adapter.py` | 74 | 1 | 0 |
 | `data_contracts.py` | 91 | 1 | 0 |
-| `data_quality.py` | 111 | 0 | 0 |
+| `data_quality.py` | 111 | 1 | 0 |
 | `exchange_rules.py` | 20 | 1 | 0 |
 | `industry_strength.py` | 44 | 1 | 0 |
 | `lifecycle_event_evidence.py` | 77 | 0 | 0 |

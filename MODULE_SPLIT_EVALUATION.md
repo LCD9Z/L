@@ -195,5 +195,5 @@ $ python run_ci.py
 
 | 优先级 | 事项 | 说明 |
 |:---:|------|------|
-| 中 | 3 个数据准备脚本的位置 | `build_tdx_dataset.py` / `repair_tdx_metadata.py` / `fetch_corporate_actions.py` 在根目录，而项目约定脚本入 `scripts/`。结构守卫未覆盖此项，属一致性问题。移动需同步更新多份报告中的命令示例 |
+| 中 | ~~3 个数据准备脚本的位置~~ **✅ 已解决** | `build_tdx_dataset.py` / `repair_tdx_metadata.py` / `fetch_corporate_actions.py` 已迁入 `scripts/`，并新增结构守卫 `test_no_data_prep_scripts_in_root` 防止再次散落根目录 |
 | 低 | `crawl4ai_fetcher.py` 的 `__main__` 示例 | 引用 `https://example.com/`，实际不可用；保留作用法示意无害 |

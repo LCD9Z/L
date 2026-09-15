@@ -124,7 +124,7 @@ def main() -> int:
     actions_path = args.actions or os.path.join(dataset, "corporate_actions.csv")
     if not os.path.exists(actions_path):
         print(f"!! 缺少公司行动数据: {actions_path}")
-        print("   请先运行: python fetch_corporate_actions.py --out <路径>")
+        print("   请先运行: python scripts/fetch_corporate_actions.py --out <路径>")
         return 2
 
     print("=" * 104)

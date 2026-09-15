@@ -244,3 +244,49 @@ def test_no_bare_import_of_package_names():
         "发现对本项目包名的裸 import（疑似遮蔽第三方同名模块）:\n"
         + "\n".join(offenders)
     )
+
+
+#: 数据准备 / 运维类脚本的命名前缀 —— 这类脚本一律入 `scripts/`。
+#: 根目录只保留四类：库代码、门面模块、程序入口、门禁工具。
+SCRIPTS_ONLY_PREFIXES = ("build_", "repair_", "fetch_", "merge_", "enumerate_", "rerun_")
+
+#: 允许留在根目录的基础设施工具（门禁 / 凭据扫描，非一次性脚本）
+ROOT_TOOL_ALLOWLIST = frozenset({"run_ci.py", "credential_scan.py"})
+
+#: 已确认归属 scripts/ 的数据准备脚本（防止被误删或回迁）
+KNOWN_DATA_PREP_SCRIPTS = (
+    "build_tdx_dataset.py",
+    "fetch_corporate_actions.py",
+    "repair_tdx_metadata.py",
+)
+
+
+def test_data_prep_scripts_live_in_scripts_dir():
+    """数据准备类脚本不得散落在根目录。
+
+    背景：`build_tdx_dataset.py` / `fetch_corporate_actions.py` /
+    `repair_tdx_metadata.py` 曾长期留在根目录，违反「非库脚本入 scripts/」约定。
+    这类脚本在 README、研究报告与**其他脚本的错误提示**中被反复引用，
+    位置漂移会让命令示例失效 —— 已实际发生：`ADJUSTED_FACTOR_REPORT.md`
+    写的是 `scripts/fetch_corporate_actions.py`，而文件当时却在根目录。
+
+    守卫按**命名前缀**识别而非硬编码文件名，因此新增同类脚本同样受约束。
+    """
+    offenders = [
+        p.name
+        for p in ROOT.glob("*.py")
+        if p.name.startswith(SCRIPTS_ONLY_PREFIXES) and p.name not in ROOT_TOOL_ALLOWLIST
+    ]
+    assert offenders == [], (
+        "以下数据准备/运维类脚本应位于 scripts/，不应留在根目录: "
+        f"{offenders}（若确属基础设施工具，请加入 ROOT_TOOL_ALLOWLIST 并说明理由）"
+    )
+
+
+def test_known_data_prep_scripts_are_under_scripts_dir():
+    """三个已知数据准备脚本必须位于 scripts/，且不得在根目录留有副本。"""
+    missing = [n for n in KNOWN_DATA_PREP_SCRIPTS if not (ROOT / "scripts" / n).is_file()]
+    assert not missing, f"以下脚本缺失于 scripts/: {missing}"
+
+    duplicated = [n for n in KNOWN_DATA_PREP_SCRIPTS if (ROOT / n).is_file()]
+    assert not duplicated, f"以下脚本在根目录出现平铺副本: {duplicated}"

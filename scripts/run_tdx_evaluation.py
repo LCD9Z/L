@@ -104,7 +104,7 @@ def main() -> int:
     man = _load_manifest(dataset, args.max_stocks)
     codes = man["codes"]
     if not codes:
-        print("!! 数据集中无可用股票，请先运行 build_tdx_dataset.py")
+        print("!! 数据集中无可用股票，请先运行 scripts/build_tdx_dataset.py")
         return 2
 
     stats = _summarize_rows(dataset, codes)

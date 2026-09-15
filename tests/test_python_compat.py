@@ -121,7 +121,7 @@ def _mypy_exclude_pattern() -> str:
 def test_mypy_exclude_does_not_swallow_source_files():
     """mypy 的 exclude 必须按**路径段**匹配，不能命中文件名子串。
 
-    历史缺陷：未锚定的 `build` 片段使 `build_tdx_dataset.py` 与
+    历史缺陷：未锚定的 `build` 片段使 `scripts/build_tdx_dataset.py` 与
     `pit_universe_builder.py` 被静默排除在类型检查之外
     （目录模式报 186 个文件，而根目录实际有 188 个 .py）。
     整个模块逃过类型检查是静默失效，因此这里显式守卫。
@@ -130,7 +130,7 @@ def test_mypy_exclude_does_not_swallow_source_files():
 
     pattern = re.compile(_mypy_exclude_pattern())
     real_sources = [
-        "build_tdx_dataset.py",
+        "scripts/build_tdx_dataset.py",
         "pit_universe_builder.py",
         "distance_metric.py",
         "rebuild_cache.py",
