@@ -110,6 +110,7 @@ def main() -> int:
     from historical_universe import point_in_time_universe
     from portfolio_backtest import portfolio_backtest
     from real_alpha_pipeline import _curve_returns
+    from alpha.alpha_survival_lab import annualized_excess_arithmetic
 
     with open(os.path.join(dataset, "pit_universe.json"), encoding="utf-8") as fh:
         universe = json.load(fh)["snapshots"]
@@ -163,8 +164,8 @@ def main() -> int:
                                          start_signal_date=w)
                 s_ret = _curve_returns(res.get("equity_curve", []))
                 common = sorted(set(s_ret) & set(b_ret))
-                exc = (statistics.mean(s_ret[d] - b_ret[d] for d in common) * 252 * 100
-                       if common else 0.0)
+                exc = annualized_excess_arithmetic(
+                    (s_ret[d] - b_ret[d] for d in common), as_percent=True)
                 rows.append({"seed": seed, "window": w, "variant": label,
                              "top_n": top_n, "pos_pct": pos_pct,
                              "n_stocks": len(data), "trades": res.get("trades"),

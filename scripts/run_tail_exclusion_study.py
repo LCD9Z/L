@@ -37,6 +37,7 @@ from typing import Any, Dict, List, Sequence, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from factors.factor_ic_lab import MIN_HISTORY, compute_factors  # noqa: E402
+from alpha.alpha_survival_lab import annualized_excess_arithmetic  # noqa: E402
 
 # 变体定义：剔除哪些因子的最高分位
 VARIANTS: Dict[str, List[str]] = {
@@ -227,8 +228,8 @@ def main() -> int:
                     b_ret[b["date"]] = float(b["close"]) / float(a["close"]) - 1
             common = sorted(set(s_ret) & set(b_ret))
             bm = (float(bench[-1]["close"]) / float(bench[0]["close"]) - 1) * 100 if bench else 0.0
-            exc = (statistics.mean(s_ret[d] - b_ret[d] for d in common) * 252 * 100
-                   if common else 0.0)
+            exc = annualized_excess_arithmetic(
+                (s_ret[d] - b_ret[d] for d in common), as_percent=True)
             rows.append({"variant": vname, "window": w, "aligned": len(common),
                          "trades": res.get("trades"),
                          "win_rate_pct": res.get("win_rate_pct"),

@@ -36,6 +36,7 @@ from typing import Any, Dict, List, Sequence
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from factors.factor_ic_lab import MIN_HISTORY, compute_factors  # noqa: E402
+from alpha.alpha_survival_lab import annualized_excess_arithmetic  # noqa: E402
 
 VARIANTS: Dict[str, List[str]] = {
     "V0_baseline": [],
@@ -201,8 +202,8 @@ def main() -> int:
                 s_ret = _curve_returns(res.get("equity_curve", []))
                 b_ret = bench_ret_map(w)
                 common = sorted(set(s_ret) & set(b_ret))
-                exc = (statistics.mean(s_ret[d] - b_ret[d] for d in common) * 252 * 100
-                       if common else 0.0)
+                exc = annualized_excess_arithmetic(
+                    (s_ret[d] - b_ret[d] for d in common), as_percent=True)
                 rows.append({"seed": seed, "variant": vname, "window": w,
                              "n_stocks": len(data), "trades": res.get("trades"),
                              "win_rate_pct": res.get("win_rate_pct"),

@@ -30,6 +30,43 @@ def _mean(xs):
     return statistics.mean(xs) if xs else 0.0
 
 
+def annualized_excess_arithmetic(excess_returns, annualization=252, as_percent=False):
+    """**算术**年化超额 —— 本项目因子/滚动类研究的统一年化口径。
+
+    定义：``mean(日超额) × annualization``（默认 252 个交易日）。
+
+    与**几何（复合）年化**的区别（两者回答的是不同问题，**不要互相替代**）：
+
+    ==========  ================================  ==============================
+    口径        公式                              适用场景
+    ==========  ================================  ==============================
+    算术         ``mean(日超额) × 252``            单期期望的线性外推；比较因子
+                                                   /横截面排序强度
+    几何         ``(期末/期初)^(1/年) − 1``        实际复利结果（含波动拖累
+                                                   variance drag）；陈述"跑赢
+                                                   基准多少个百分点"
+    ==========  ================================  ==============================
+
+    有波动的策略上必然 **算术 ≥ 几何**，故两份报告若各用一种口径，
+    其数字**不可直接比较** —— 引用时必须写明用的是哪一种。
+
+    本项目分工（2026-09-15 核实）：
+    - 算术：本函数。``analyse_alpha`` 与 4 个研究脚本
+      （tail_exclusion / concentration / sampling_sensitivity /
+      universe_replication）均走此口径。
+    - 几何：``scripts/run_contrarian_portfolio.py``（A/B 组合层面对照），
+      因其要陈述"策略 CAGR 相对沪深 300 CAGR 的超额"。
+
+    空输入返回 ``0.0``（与既有调用点 ``if common else 0.0`` 的语义一致）。
+    注意这会把"无对齐样本"与"超额恰好为 0"混同 —— 调用方须自行确保样本非空。
+    """
+    vals = [_f(x) for x in excess_returns]
+    if not vals:
+        return 0.0
+    annual = statistics.mean(vals) * annualization
+    return annual * 100.0 if as_percent else annual
+
+
 def _std(xs):
     return statistics.stdev(xs) if len(xs) > 1 else 0.0
 
@@ -105,7 +142,7 @@ def analyse_alpha(strategy, benchmark, annualization=252, min_periods=252,
     t = _t_stat(excess)
     normal_p = _two_sided_pvalue_from_t(t)
     perm_p = permutation_pvalue(excess, reps=permutation_reps, seed=seed)
-    annual_excess = mean * annualization
+    annual_excess = annualized_excess_arithmetic(excess, annualization)
     positive = mean > 0
     ci_positive = ci is not None and ci['lower'] > 0
     significant = normal_p is not None and normal_p < 0.05 and perm_p is not None and perm_p < 0.05
