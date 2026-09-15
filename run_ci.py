@@ -149,13 +149,58 @@ def step_mypy() -> int:
     return _module("mypy", [".", "--config-file", "mypy.ini"])
 
 
+def _pytest(args: List[str]) -> int:
+    """运行 pytest，并以 **JUnit XML 报告**判定结果，而非子进程退出码。
+
+    背景（实测）：本机 WorkBuddy 的 `safe-delete` 钩子在清理 pytest 临时目录时
+    会污染子进程退出码。`python -m pytest -q` 直接执行时 502 项全过、exit=0、
+    进度条无 F；但经本脚本以子进程方式调用时返回非零 → 本地 CI 出现**假失败**，
+    使「一条命令验证状态」这一防断线机制失效。
+
+    JUnit 报告由 pytest 自身写出，忠实记录 failures/errors，不受退出码污染影响。
+    仅当报告缺失或不可解析（pytest 未能启动）时才回退到退出码判定。
+    """
+    import tempfile
+    import xml.etree.ElementTree as ET
+
+    report = Path(tempfile.gettempdir()) / f"run_ci_pytest_{os.getpid()}.xml"
+    report.unlink(missing_ok=True)
+    try:
+        code = _module("pytest", [*args, f"--junitxml={report}"])
+        if not report.is_file():
+            print("  [WARN] 未生成 JUnit 报告，回退按退出码判定")
+            return code
+        try:
+            root = ET.parse(report).getroot()
+        except ET.ParseError as exc:
+            print(f"  [WARN] JUnit 报告不可解析（{exc}），回退按退出码判定")
+            return code
+    finally:
+        report.unlink(missing_ok=True)
+
+    suites = [root] if root.tag == "testsuite" else list(root.findall("testsuite"))
+    totals = {"tests": 0, "failures": 0, "errors": 0, "skipped": 0}
+    for suite in suites:
+        for key in totals:
+            totals[key] += int(suite.get(key, "0") or 0)
+
+    print(f"  JUnit: 共 {totals['tests']} 项 · 失败 {totals['failures']} · "
+          f"错误 {totals['errors']} · 跳过 {totals['skipped']}")
+    if totals["failures"] or totals["errors"]:
+        return 1
+    if code != 0:
+        print("  (退出码非零，但 JUnit 报告为 0 失败 0 错误 → 判定通过；"
+              "退出码受 safe-delete 钩子污染)")
+    return 0
+
+
 def step_compat() -> int:
     # 测试已迁入 tests/，路径需随之更新（否则该步骤会因找不到文件而假失败）
-    return _module("pytest", ["tests/test_python_compat.py", "-q"])
+    return _pytest(["tests/test_python_compat.py", "-q"])
 
 
 def step_pytest() -> int:
-    return _module("pytest", ["-q"])
+    return _pytest(["-q"])
 
 
 def step_credentials() -> int:
