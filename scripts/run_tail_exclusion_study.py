@@ -48,6 +48,21 @@ VARIANTS: Dict[str, List[str]] = {
 DEFAULT_WINDOWS = ["2023-07-03", "2024-01-02", "2024-07-01", "2025-01-02", "2025-07-01"]
 
 
+def _cost_drag_window(windows: Sequence[str]) -> str:
+    """成本拖累对照所用的窗口 —— 取**实际跑过的第一个窗口**。
+
+    原实现把 `"2024-01-02"` 硬编码进 `next(...)`，当 `--windows` 不含该日期时
+    （例如只跑单窗口 `--windows 2023-07-03`）直接抛 `StopIteration`，
+    使整个研究在最后一步崩溃 —— 前面几十分钟的计算全部作废。
+
+    现改为从实参推导；空列表显式报 `ValueError`，而非让它以 `IndexError`
+    的形式在下游冒出来。
+    """
+    if not windows:
+        raise ValueError("--windows 为空，无法确定成本拖累对照窗口")
+    return windows[0]
+
+
 def _load(dataset: str, max_stocks: int, universe_only: bool = True) -> Dict[str, List[Dict[str, Any]]]:
     """加载股票池。
 
@@ -244,7 +259,7 @@ def main() -> int:
 
     # 成本拖累对照：用**实际跑过的第一个窗口**，而不是硬编码 2024-01-02。
     # 原实现硬编码该窗口，当 `--windows` 不含它时会在 next(...) 处抛 StopIteration。
-    cost_window = windows[0]
+    cost_window = _cost_drag_window(windows)
     print(f"\n[3/3] 成本拖累对照（V0 与 V1，窗口 {cost_window}）...")
     orig = _zero_cost_patch()
     cost_rows = []
