@@ -9,7 +9,7 @@
 | 指标 | 值 |
 |------|----|
 | 子包数 | **19** |
-| 已入包模块 | **67**（约 6,609 行） |
+| 已入包模块 | **67**（约 6,646 行） |
 | 根目录 `.py` | **56**（约 5,760 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
@@ -19,7 +19,7 @@
 
 ## 子包
 
-### `alpha/`　（2 模块，约 174 行）
+### `alpha/`　（2 模块，约 211 行）
 
 **职责**：Alpha 假设实验与存活实验室。
 
@@ -42,7 +42,7 @@ Alpha 假设实验与存活实验室。
 | 模块 | 行数 |
 |------|-----:|
 | `alpha/alpha_experiment.py` | 11 |
-| `alpha/alpha_survival_lab.py` | 163 |
+| `alpha/alpha_survival_lab.py` | 200 |
 
 ### `ashare/`　（6 模块，约 491 行）
 
@@ -690,7 +690,8 @@ TuShare 数据接入（可选依赖）。
 
 ## 根目录剩余模块
 
-分类依据：`出边`=该模块 import 的根目录其他模块数；`入边`=有多少模块 import 它。
+分类依据：`出边(根)`=该模块 import 的根目录其他模块数；`入边`=有多少**根目录**模块 import 它。
+（`tests/` 与 `scripts/` 的引用不计入；行数为生成时刻快照。）
 
 ### 门面 / 入口 / 门禁工具
 
@@ -698,7 +699,7 @@ TuShare 数据接入（可选依赖）。
 |------|-----:|-----:|--------:|
 | `conftest.py` | 23 | 0 | 0 |
 | `credential_scan.py` | 192 | 0 | 0 |
-| `data_fetcher.py` | 101 | 9 | 0 |
+| `data_fetcher.py` | 101 | 8 | 0 |
 | `main.py` | 158 | 0 | 1 |
 | `paper_trading.py` | 16 | 0 | 0 |
 | `run_ci.py` | 262 | 0 | 0 |
@@ -720,7 +721,7 @@ TuShare 数据接入（可选依赖）。
 | `historical_universe.py` | 33 | 3 | 0 |
 | `industry_context.py` | 50 | 1 | 2 |
 | `market_regime.py` | 39 | 1 | 1 |
-| `orchestrator.py` | 337 | 2 | 1 |
+| `orchestrator.py` | 337 | 1 | 1 |
 | `phase22_alpha_runner.py` | 15 | 0 | 2 |
 | `phase41_data_workbench.py` | 123 | 0 | 2 |
 | `pool_manager.py` | 166 | 1 | 1 |
@@ -739,10 +740,10 @@ TuShare 数据接入（可选依赖）。
 | 模块 | 行数 | 入边 | 出边(根) |
 |------|-----:|-----:|--------:|
 | `candidate_prefilter.py` | 40 | 1 | 0 |
-| `crawl4ai_fetcher.py` | 370 | 1 | 0 |
-| `daily_csv_adapter.py` | 74 | 1 | 0 |
+| `crawl4ai_fetcher.py` | 370 | 0 | 0 |
+| `daily_csv_adapter.py` | 74 | 0 | 0 |
 | `data_contracts.py` | 91 | 1 | 0 |
-| `data_quality.py` | 111 | 1 | 0 |
+| `data_quality.py` | 111 | 0 | 0 |
 | `exchange_rules.py` | 20 | 1 | 0 |
 | `industry_strength.py` | 44 | 1 | 0 |
 | `lifecycle_event_evidence.py` | 77 | 0 | 0 |

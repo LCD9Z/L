@@ -16,12 +16,29 @@
 本脚本让那句「请勿手工编辑」**成为事实**，并提供 `--check` 把
 「文档与真实结构一致」变成可断言的不变量。
 
+## 溯源（2026-09-15）
+
+初版生成器从未入库，只存在于一个会话 scratch 目录
+（`…/WorkBuddy/2026-09-13-15-48-32/gen_layout_doc.py`，含硬编码绝对路径）。
+本文件是它的**重构版**，口径与原版保持一致，可用原版输出做逐字节对照验证：
+
+    原版输出与本文档的差异应**只有**：
+    1. 首部说明（补 `scripts/` 前缀 + 生成/校验命令）
+    2. 「分类依据」一行（把含糊的"有多少模块 import 它"改为
+       "有多少**根目录**模块 import 它"，与实际实现一致）
+
+新增能力：`--check`（结构漂移检测）、根目录由 `__file__` 推导（不再硬编码）、
+跳过目录按**路径段**匹配（原版用子串匹配，`build` 会误伤 `builder*`）。
+
 ## 口径（刻意写死，避免歧义）
 
 - **行数**：`len(text.splitlines())`，与 `wc -l` 一致（文件以换行结尾时）。
-- **入边**：引用该模块的文件数，**排除 `tests/` 与 `scripts/`**
-  （它们不代表架构耦合），且不含模块自身。
-- **出边(根)**：该模块 import 的**根目录**模块数（去重）。
+  注意行数是**生成时刻的快照** —— 任何改动都会让它变化，
+  故 `--check` 不比对行数（见文末说明）。
+- **入边**：有多少**根目录**模块 import 它（排除自身）。刻意只统计根目录引用者，
+  与「出边(根)」同为根目录视角，二者才可对照。
+- **出边(根)**：该模块 import 的**根目录**模块数（去重，排除自身）。
+- **不计入**：`tests/` 与 `scripts/` 的引用 —— 它们不代表架构耦合。
 - **分类**：
   - 「门面 / 入口 / 门禁工具」= :data:`ROOT_ENTRY_MODULES` 显式清单
     （这一分类依据是**用途**而非依赖边，无法从图上推导）；
@@ -149,8 +166,14 @@ def _package_modules(pkg: str) -> List[str]:
 def build_graph() -> Tuple[Dict[str, int], Dict[str, int]]:
     """返回 `(入边, 出边)` 两个字典，键为**根目录模块名**。
 
-    入边：引用该模块的文件数（排除 `tests/` `scripts/` 与自身）。
-    出边：该模块 import 的根目录模块数（去重）。
+    口径（与本文档历次发布版本一致，勿轻改 —— 改了会让历史数字失去可比性）：
+
+    - **入边**：有多少**根目录**模块 import 它（排除自身）。
+      刻意只统计根目录引用者 —— 该列衡量的是「根目录对它的依赖程度」，
+      与「出边(根)」同为根目录视角，二者才可对照。
+    - **出边(根)**：该模块 import 的**根目录**模块数（去重，排除自身）。
+
+    注：`tests/` 与 `scripts/` 的引用不计入 —— 它们不代表架构耦合。
     """
     root_modules = {p.stem for p in ROOT.glob("*.py")}
     arch_files = [
@@ -165,10 +188,12 @@ def build_graph() -> Tuple[Dict[str, int], Dict[str, int]]:
     for path in arch_files:
         tops = _imported_tops(path)
         if path.parent == ROOT:
-            out_edges[path.stem] = len(tops & root_modules)
-        for name in tops & root_modules:
-            if name != path.stem:
-                in_edges[name] += 1
+            # 出边：根目录模块 → 它依赖的根目录模块
+            out_edges[path.stem] = len(tops & root_modules - {path.stem})
+            # 入边：只由**根目录**模块贡献（见 docstring 口径说明）
+            for name in tops & root_modules:
+                if name != path.stem:
+                    in_edges[name] += 1
 
     return in_edges, out_edges
 
@@ -276,7 +301,9 @@ def render() -> str:
         header
         + "\n".join(blocks)
         + "\n## 根目录剩余模块\n\n"
-        + "分类依据：`出边`=该模块 import 的根目录其他模块数；`入边`=有多少模块 import 它。\n\n"
+        + "分类依据：`出边(根)`=该模块 import 的根目录其他模块数；"
+        + "`入边`=有多少**根目录**模块 import 它。\n"
+        + "（`tests/` 与 `scripts/` 的引用不计入；行数为生成时刻快照。）\n\n"
         + "\n".join(root_blocks)
         + "\n"
         + WHY_AT_ROOT
