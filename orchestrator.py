@@ -218,6 +218,32 @@ class WorkflowOrchestrator:
         """检查是否完成"""
         return self.session.current_stage == "completed"
     
+    @staticmethod
+    def _serialize_result(result: Optional[AnalysisResult]) -> Optional[Dict]:
+        """把 `AnalysisResult` 序列化为**可往返**的 dict（None 原样返回）。
+
+        **必须包含 `analysis_type` 与 `signals`** —— `load_session` 用
+        `AnalysisResult(**data)` 反序列化，缺必填字段会直接抛 `TypeError`。
+
+        历史缺陷（2026-09-16 修复）：原实现在 5 处内联 dict 里都漏了
+        `analysis_type`，导致 `load_session` **必然失败** ——
+        会话恢复功能完全不可用，因 orchestrator 当时无测试而长期未被发现。
+        现收敛到本方法单一来源，并由 `test_orchestrator.py` 的
+        「序列化键集合 == dataclass 可接受字段」守卫防止再次漏字段。
+        """
+        if result is None:
+            return None
+        return {
+            "agent_name": result.agent_name,
+            "agent_emoji": result.agent_emoji,
+            "analysis_type": result.analysis_type,
+            "content": result.content,
+            "signals": list(result.signals),
+            "score": result.score,
+            "recommendation": result.recommendation,
+            "timestamp": result.timestamp,
+        }
+
     def save_session(self, filepath: Optional[str] = None) -> str:
         """保存会话到JSON"""
         if filepath is None:
@@ -229,6 +255,7 @@ class WorkflowOrchestrator:
         if parent:
             os.makedirs(parent, exist_ok=True)
 
+        ser = self._serialize_result
         data = {
             "stock_code": self.session.stock_code,
             "company_name": self.session.company_name,
@@ -236,48 +263,12 @@ class WorkflowOrchestrator:
             "created_at": self.session.created_at,
             "current_stage": self.session.current_stage,
             "analyst_reports": {
-                k: {
-                    "agent_name": v.agent_name,
-                    "agent_emoji": v.agent_emoji,
-                    "content": v.content,
-                    "score": v.score,
-                    "recommendation": v.recommendation,
-                    "timestamp": v.timestamp,
-                }
-                for k, v in self.session.analyst_reports.items()
+                k: ser(v) for k, v in self.session.analyst_reports.items()
             },
-            "bullish_report": {
-                "agent_name": self.session.bullish_report.agent_name,
-                "agent_emoji": self.session.bullish_report.agent_emoji,
-                "content": self.session.bullish_report.content,
-                "score": self.session.bullish_report.score,
-                "recommendation": self.session.bullish_report.recommendation,
-                "timestamp": self.session.bullish_report.timestamp,
-            } if self.session.bullish_report else None,
-            "bearish_report": {
-                "agent_name": self.session.bearish_report.agent_name,
-                "agent_emoji": self.session.bearish_report.agent_emoji,
-                "content": self.session.bearish_report.content,
-                "score": self.session.bearish_report.score,
-                "recommendation": self.session.bearish_report.recommendation,
-                "timestamp": self.session.bearish_report.timestamp,
-            } if self.session.bearish_report else None,
-            "trade_proposal": {
-                "agent_name": self.session.trade_proposal.agent_name,
-                "agent_emoji": self.session.trade_proposal.agent_emoji,
-                "content": self.session.trade_proposal.content,
-                "score": self.session.trade_proposal.score,
-                "recommendation": self.session.trade_proposal.recommendation,
-                "timestamp": self.session.trade_proposal.timestamp,
-            } if self.session.trade_proposal else None,
-            "final_decision": {
-                "agent_name": self.session.final_decision.agent_name,
-                "agent_emoji": self.session.final_decision.agent_emoji,
-                "content": self.session.final_decision.content,
-                "score": self.session.final_decision.score,
-                "recommendation": self.session.final_decision.recommendation,
-                "timestamp": self.session.final_decision.timestamp,
-            } if self.session.final_decision else None,
+            "bullish_report": ser(self.session.bullish_report),
+            "bearish_report": ser(self.session.bearish_report),
+            "trade_proposal": ser(self.session.trade_proposal),
+            "final_decision": ser(self.session.final_decision),
         }
         
         # 原子写入：先写临时文件，再替换，避免写入中途崩溃导致会话丢失

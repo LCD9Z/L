@@ -32,10 +32,10 @@
 | 根目录 `.py` | **188**（全部平铺，零子目录） | **56** |
 | 子包数 | 0 | **19** |
 | 已入包模块 | 0 | **67** |
-| `tests/` 测试文件 | 57 | **65** |
+| `tests/` 测试文件 | 57 | **66** |
 | `scripts/` 可执行脚本 | 16 | **35** |
-| pytest | 275 passed | **515 passed + 1 skipped（共 516 项）** |
-| mypy | 180 文件 | **236 文件零错误** |
+| pytest | 275 passed | **537 passed + 1 skipped（共 538 项）** |
+| mypy | 180 文件 | **237 文件零错误** |
 | ruff | 19 条规则挂起待评审 | **All checks passed** |
 | 远端 CI | 从未在远端跑通 | **5/5 全绿**（py3.10~3.13 + 凭据扫描） |
 | 本地 CI 等价器 | 无 | `run_ci.py`（6 步，与 CI 同序，**以 JUnit 判定 pytest**） |
@@ -104,7 +104,12 @@
 | 36 | `2dc4a06` | 09-16 05:1x | **纠正年化口径误诊** + 算术口径单一化（原 4 处内联实现） |
 | 37 | `ea6d3c5` | 09-16 05:2x | 为两处「静默失效」缺陷补回归测试 |
 | 38 | `64a364a` | 09-16 05:3x | 生成器口径对齐原始版本（入边只计根目录引用者） |
-| 39 | `10f0ef6` | 09-16 05:4x | 归档 A/B 与 H-C1 研究原始结果 JSON（此前从未入库） |
+| 39 | `10f0ef6` | 09-16 05:41 | 归档 A/B 与 H-C1 研究原始结果 JSON（此前从未入库） |
+| 40 | `7a3d005` | 09-16 05:49 | WORKLOG / HANDOVER 按「7 点交接要求」重构并同步至现状 |
+| 41 | `db8a870` | 09-16 05:49 | HANDOVER 的 HEAD 不再写提交计数（每次提交都会变） |
+| 42 | `652b52a` | 09-16 05:51 | 缓存备份处置结案 —— 用户决定保留现状 |
+| 43 | `2463f2a` | 09-16 05:54 | 落盘结果记录滑点模型（修复一/二阶段结论无法区分） |
+| 44 | 本次 | 09-16 06:xx | **补 `tests/test_orchestrator.py`（21 项）并修掉一个严重缺陷** |
 
 > 本阶段 6 个提交全部源于「读交接文档 → 检查未完成工作」——
 > 详见下方 [十一、第四阶段明细](#十一第四阶段明细工程债清理)。
@@ -353,6 +358,8 @@
 | 14 | **A/B 与 H-C1 的研究原始结果 JSON 从未入库**（仅存于会话 scratch 目录） | 清理 scratch 目录时发现 | 归档为根目录 `tdx_*_summary.json` + `AB_STUDIES_EVIDENCE.md` |
 | 15 | `tdx_ab_stage2_summary.json` 的 `verdict` 与一阶段完全相同（改滑点模型时未同步结论文案） | 归档时逐文件核对 | **已修**：根因是 `params` 未记录 `slip_mode`、结论文案不含滑点模型。已修脚本（params 加 `slip_mode` + 结论加 `[滑点=…]` 前缀 + 抽出 `_result_payload()` + 守卫测试）；**已归档 JSON 保持原样**（历史证据不可改写） |
 | 16 | 3 个数据准备脚本留在根目录，违反「非库脚本入 `scripts/`」约定 | 检查未完成工作时对照约定 | `git mv` 迁入 `scripts/` + 前缀式结构守卫 |
+| 17 | **【严重】`orchestrator.load_session()` 必然抛 `TypeError`** —— `save_session` 在 5 处内联 dict 里都漏写必填字段 `analysis_type` → **会话恢复功能完全不可用** | **补 `tests/test_orchestrator.py` 后立即发现** | 抽出 `_serialize_result()` 单一来源；新增通用守卫「序列化键集合 == dataclass 字段契约」 |
+| 18 | `run_contrarian_portfolio` 落盘结果**未记录滑点模型** → 一/二阶段结论无法区分 | 归档研究结果时逐文件核对 | `params` 加 `slip_mode` + 结论加 `[滑点=…]` 前缀 + 抽出 `_result_payload()` + 守卫测试 |
 
 > 缺陷 1、2 之外，1.0 阶段的静态分析缺陷（mypy `exclude` 未锚定致 2 模块逃检、`stock_scoring.pe_note`
 > 死代码等）见 [`CHANGELOG.md`](CHANGELOG.md) 与 `AUDIT_REPORT.md`。
@@ -388,8 +395,8 @@ python credential_scan.py
 | 检查 | 结果 |
 |------|------|
 | ruff | **All checks passed** |
-| mypy | **236 文件零错误** |
-| pytest | **515 passed + 1 skipped（共 516 项）** |
+| mypy | **237 文件零错误** |
+| pytest | **537 passed + 1 skipped（共 538 项）** |
 | 凭据扫描 | 通过（318 个文件） |
 | 脚本 `--help` 冒烟 | 35/35 |
 | 本地 CI（`10f0ef6`） | **6/6 PASS** |
@@ -508,5 +515,33 @@ python credential_scan.py
 | **验证** | `tdx_ab_stage3_summary.json` 与 `PORTFOLIO_AB_REPORT_3` 的已发布数字**完全吻合**（A −19.89% / B +12.54% / 基准 +12.06%） |
 | **处置** | 按项目既有惯例归档到**根目录** `tdx_*_summary.json`（曾先试 `reports/`，但 `.gitignore` 第 22 行将其列为不追踪的"运行产物"，归档会失去意义） |
 | **新增文档** | `AB_STUDIES_EVIDENCE.md`：文件↔阶段↔报告对照、留档理由、口径提醒、复现命令 |
-| **附带发现** | `tdx_ab_stage2_summary.json` 的 `verdict` 与一阶段**完全相同** —— 是脚本改滑点模型时未同步更新结论文案的缺陷（**未修**，已记入 HANDOVER 5.3） |
+| **附带发现** | `tdx_ab_stage2_summary.json` 的 `verdict` 与一阶段**完全相同** —— 详见 [11.6](#116-滑点模型-provenance修复提交-2463f2a) |
+
+### 11.6 滑点模型 provenance 修复（提交 `2463f2a`）
+
+| 项 | 内容 |
+|----|------|
+| **缺陷** | `tdx_ab_stage2_summary.json` 的 `verdict` 与一阶段完全相同，两份归档 JSON 无法区分 |
+| **根因（比文案更深）** | 脚本落盘的 `params` **从未记录 `slip_mode`**，结论文案也不含滑点模型。一/二阶段用同一脚本、仅滑点模型不同，故除数字外**无任何可区分信息**。经核实 `--slippage` 参数本身生效（`run_arm(..., args.slippage)`），问题纯粹是**输出缺 provenance** |
+| **处置** | 抽出 `_result_payload()`，`params` 加 `slip_mode`；结论文案加 `[滑点=…]` 前缀；新增守卫 `test_contrarian_payload_records_slippage_model` |
+| **刻意未做** | **已归档的 4 个 JSON 保持原样** —— 它们是历史证据，改写即伪造 |
+
+### 11.7 补 `orchestrator` 测试并修掉一个严重缺陷（提交 `2463f2a` 之后）
+
+> 这一条最能说明「为什么必须给核心模块补测试」：**写测试的过程直接挖出一个
+> 让功能完全不可用的缺陷**，而它已存在很久且从未被发现。
+
+| 项 | 内容 |
+|----|------|
+| **前置** | `orchestrator.py`（337 行，含 278 行编排类）是项目核心，却**无任何直接测试**（`grep -rn orchestrator tests/` 只命中一个检查拆分的用例） |
+| **补测试时立即发现** | `WorkflowOrchestrator.load_session()` **必然抛** `TypeError: AnalysisResult.__init__() missing 1 required positional argument: 'analysis_type'` |
+| **根因** | `save_session` 在 **5 处内联 dict** 里都漏写了 `analysis_type`，而该字段在 `AnalysisResult` 中是**必填**（无默认值） |
+| **影响** | **会话恢复功能完全不可用** —— 任何「从磁盘恢复会话」的流程都崩溃。因无测试，长期未被发现 |
+| **处置** | 抽出 `_serialize_result()` 作单一来源（同时消除 5 处重复）；补 `tests/test_orchestrator.py` **21 项** |
+| **通用守卫** | `test_serialized_keys_are_accepted_by_analysis_result` —— 拦的不是某个字段，而是**整类**「save 写的字段 load 读不了」：<br>①写出 dataclass 不认识的键 → `unexpected keyword argument`<br>②漏写无默认值的必填字段 → `missing required positional argument`<br>新增字段时这条会立刻失败 |
+| **守卫非空转验证** | 用修复前的旧写法（6 个键、缺 `analysis_type`）实测：`required - set(old_style)` = `{'analysis_type'}`（非空 → 守卫会失败），且 `AnalysisResult(**old_style)` 确实抛 `TypeError` |
+| **顺带覆盖** | 8 阶段提示词产出、结果路由到正确字段、阶段推进不越界、进度计算、`STAGES` 为不可变元组、裸文件名存盘（`makedirs("")` 历史缺陷）、原子写入不留 `.tmp`、未知阶段显式报错 |
+
+**pytest：517 → 538 项（+21）；mypy：236 → 237 文件。**
+
 

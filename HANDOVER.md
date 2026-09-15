@@ -35,7 +35,7 @@
 |------|------|:---:|
 | 工程结构 | 188 个平铺 `.py` → **19 子包 / 67 入包模块 / 根目录 56** | ✅ |
 | 巨石拆分 | `data_fetcher.py`(807) / `tracking.py`(308) / `main.py`(402) → 门面模式 | ✅ |
-| 质量门禁 | ruff 零告警 · mypy 236 文件零错误 · pytest 516 项 · 本地 CI 6/6 | ✅ |
+| 质量门禁 | ruff 零告警 · mypy 237 文件零错误 · pytest 538 项 · 本地 CI 6/6 | ✅ |
 | 数据接入 | 通达信日线 → 认证数据集（清洗 + sha256 + PIT 股票池） | ✅ |
 | 数据修正 | **幸存者偏差**（180 只窗口内退市股并入）· **不复权价**（分红送股复权因子） | ✅ |
 | 因子研究 | 横截面 IC 检验引擎、9 个经济假设检验、多窗口滚动样本外 | ✅ |
@@ -194,7 +194,7 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 ├── *.py          56 个：入口 / 门面 / 核心编排 / 门禁工具 / 未成族单例
 ├── <19 子包>/     每个都有 __init__.py（写「管什么 + 共同红线」）
 ├── scripts/       35 个可执行脚本（研究 / 数据准备 / 验收）
-├── tests/         65 个测试文件
+├── tests/         66 个测试文件
 └── conftest.py    把项目根 + scripts/ 加入 sys.path
 ```
 
@@ -243,7 +243,7 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 
 ### 5.1 测试脚本
 
-`tests/` 共 **65 个测试文件 / 516 项**。除常规单测外，**7 个为守卫测试**
+`tests/` 共 **66 个测试文件 / 538 项**。除常规单测外，**8 个为守卫测试**
 （防止已修缺陷回退）：
 
 | 守卫测试 | 守住什么 |
@@ -252,7 +252,8 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 | `test_python_compat.py` | Python 3.10 兼容；mypy `exclude` 不误伤真实源文件 |
 | `test_layout_doc_in_sync.py` | `DIRECTORY_LAYOUT.md` 与仓库结构一致（含反向守卫） |
 | `test_annualization_conventions.py` | 年化口径单一来源；禁止重新内联；算术≠几何 |
-| `test_study_regressions.py` | 等距抽样塌缩、成本拖累窗口硬编码（**含缺陷复现**） |
+| `test_study_regressions.py` | 等距抽样塌缩、成本拖累窗口硬编码、滑点模型未记录（**含缺陷复现**） |
+| `test_orchestrator.py` | 会话存/读往返完整；序列化键集合 == `AnalysisResult` 字段契约（拦整类「save 写的字段 load 读不了」） |
 | `test_survivorship_guard.py` | 幸存者偏差门禁 |
 | `test_credential_scan.py` | 凭据扫描器自身正确性 |
 
@@ -287,7 +288,7 @@ python scripts/gen_layout_doc.py --check
 |:--:|------|:---:|---------|
 | 1 | ~~`tdx_ab_stage2_summary.json` 的 verdict 与一阶段完全相同~~ | **已修（2026-09-16）** | 根因是脚本 `params` **未记录 `slip_mode`**、结论文案也不含滑点模型。已修 `scripts/run_contrarian_portfolio.py`（params 加 `slip_mode` + 结论加 `[滑点=…]` 前缀 + 抽出 `_result_payload()` + 守卫测试）。**已归档的 4 个 JSON 保持原样**（历史证据不可改写） |
 | 2 | 研究脚本**绝对数字不可引用** —— 策略对采样数极度敏感 | 已记录，未根治 | 同窗口 `2023-07-03`：`--max-stocks 400` → V0 −83.06%；`800` → −28.34%（差 54.72pp） |
-| 3 | `orchestrator.py`（337 行）**无直接测试引用** | 未修 | `grep -rn "orchestrator" tests/` → 仅 `test_module_splits.py` 检查拆分，无行为测试 |
+| 3 | ~~`orchestrator.py`（337 行）无直接测试引用~~ | **已修（2026-09-16）** | 补 `tests/test_orchestrator.py`（21 项）后**立刻发现严重缺陷**：`load_session()` 必然抛 `TypeError`（`save_session` 漏写必填字段 `analysis_type`）→ 会话恢复功能完全不可用。已修 + 加通用守卫 `test_serialized_keys_are_accepted_by_analysis_result` |
 | 4 | 10 个根目录模块无直接测试引用 | 未修 | 见 [6.2](#62-高风险模块) |
 | 5 | `disallow_untyped_defs` 未开启（569 处纯标注告警） | 刻意暂缓 | `mypy.ini` 中该项为 `False` |
 
@@ -383,7 +384,7 @@ python scripts/gen_layout_doc.py --check
 | `fetch/`（`data_fetcher.py`） | 🟠 中高 | 门面 + SSL/限流/缓存；monkeypatch 不穿透问题曾在此暴露 |
 | `scripts/run_contrarian_portfolio.py` | 🟠 中高 | 硬编码窗口与滑点模型；三阶段结论全靠它 |
 | `credential_scan.py` · `run_ci.py` | 🟠 中高 | 门禁工具自身出错 = **假绿**（已发生一次 pytest 假失败） |
-| `orchestrator.py` | 🟠 中高 | 337 行核心类，**无直接行为测试** |
+| `orchestrator.py` | 🟡 中 | 337 行核心类；2026-09-16 已补 21 项行为测试（借此发现 `load_session` 必然失败的严重缺陷并修复） |
 | `console/`（`main.py`） | 🟡 中 | 程序入口；`main.py` 曾 402 行无测试，现补了 15 项冒烟 |
 | `notify/feishu_notifier.py` | 🟡 中 | `WORK_DIR = dirname(__file__)`；发送参数曾用错（`--content` 应为 `--text`） |
 | 无直接测试引用（10 个） | 🟡 中 | `agents_base` · `cycle_price_action` · `llm_client` · `log_utils` · `market_universe_provider` · `pool_manager` · `professional_committee` · `prompt_engine` · `stock_god` · `v3_data_bus`（可能被间接覆盖） |
@@ -401,7 +402,7 @@ python scripts/gen_layout_doc.py --check
 | **1** | **新的经济逻辑假设（追求 Alpha）** | **3~5 天** | 含：逻辑调研 0.5 天 → 事前登记 0.5 天 → 因子实现 1 天 → IC 检验 0.5 天 → 组合层面 + 基准对照 1~2 天（多窗口回测）。**前提：必须提出新逻辑，禁止调现有 7 因子权重/阈值** |
 | 2 | ARK 付费模型凭据验收 | **0.5 天** | 阻塞于用户提供凭据；含接通 + 一次真实调用 + 结果留档 |
 | 3 | ~~修复 `tdx_ab_stage2` verdict 文案~~ | **✅ 已完成** | 根因是 `params` 未记录 `slip_mode`。已修脚本 + 加守卫测试（见 [5.3](#53-已知缺陷与复现步骤) 第 1 条） |
-| 4 | 为 10 个无直接覆盖模块补单测 | **1.5~2 天** | 优先 `orchestrator`（0.5 天）、`pool_manager`、`v3_data_bus`；纯标注类（`log_utils`）可略 |
+| 4 | ~~为 10 个无直接覆盖模块补单测~~ → **剩余 9 个** | **1~1.5 天** | ✅ `orchestrator` 已完成（21 项，并修掉一个严重缺陷）。剩余优先 `pool_manager`、`v3_data_bus`、`professional_committee`；纯标注类（`log_utils`）可略 |
 | 5 | `disallow_untyped_defs` 全量收紧 | **2~3 天** | 569 处纯标注补全，**无缺陷捕获收益**，建议最后做 |
 | 6 | 其余外部集成验收 | **1 天** | 需凭据；每项含真实调用 + 留档 |
 | 7 | 补齐数据库迁移机制 | **0.5 天** | 当前无迁移脚本；若 schema 需变更则必须先做 |
