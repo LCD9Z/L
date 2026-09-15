@@ -1,0 +1,60 @@
+{
+ "results": {
+  "2024-01-02~2026-09-30": {
+   "A_baseline": {
+    "periods": 123,
+    "trades": 1690,
+    "final_equity": 619149.71,
+    "total_return_pct": -38.09,
+    "annualized_pct": -17.83,
+    "max_drawdown_pct": 46.99,
+    "win_rate_pct": 44.2
+   },
+   "B_contrarian": {
+    "periods": 124,
+    "trades": 2480,
+    "final_equity": 1671274.12,
+    "total_return_pct": 67.13,
+    "annualized_pct": 23.21,
+    "max_drawdown_pct": 32.99,
+    "win_rate_pct": 49.44
+   }
+  },
+  "2025-01-02~2026-09-30": {
+   "A_baseline": {
+    "periods": 75,
+    "trades": 1145,
+    "final_equity": 848569.41,
+    "total_return_pct": -15.14,
+    "annualized_pct": -10.45,
+    "max_drawdown_pct": 45.44,
+    "win_rate_pct": 46.2
+   },
+   "B_contrarian": {
+    "periods": 75,
+    "trades": 1500,
+    "final_equity": 1255273.76,
+    "total_return_pct": 25.53,
+    "annualized_pct": 16.51,
+    "max_drawdown_pct": 39.08,
+    "win_rate_pct": 51.07
+   }
+  }
+ },
+ "verdict": "B 优于 A 且扣费后为正 → 支持「存在可实现 Alpha」（待基准指数复核）",
+ "params": {
+  "top_n": 20,
+  "horizon": 5,
+  "step": 5,
+  "threshold": 70,
+  "signs": {
+   "ret_20": -1,
+   "ret_5": -1,
+   "vol_20": -1,
+   "log_amount_20": -1,
+   "max_ret_20": -1,
+   "vol_ratio": -1,
+   "amihud_20": 1
+  }
+ }
+}

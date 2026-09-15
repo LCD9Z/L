@@ -1,0 +1,70 @@
+{
+ "results": {
+  "2024-01-02~2026-09-30": {
+   "A_baseline": {
+    "periods": 123,
+    "trades": 1690,
+    "final_equity": 582098.68,
+    "total_return_pct": -41.79,
+    "annualized_pct": -19.89,
+    "max_drawdown_pct": 49.08,
+    "win_rate_pct": 43.73
+   },
+   "B_contrarian": {
+    "periods": 124,
+    "trades": 2480,
+    "final_equity": 1337263.27,
+    "total_return_pct": 33.73,
+    "annualized_pct": 12.54,
+    "max_drawdown_pct": 35.95,
+    "win_rate_pct": 47.34
+   },
+   "benchmark": {
+    "days": 653,
+    "total_return_pct": 34.32,
+    "annualized_pct": 12.06
+   }
+  },
+  "2025-01-02~2026-09-30": {
+   "A_baseline": {
+    "periods": 75,
+    "trades": 1145,
+    "final_equity": 819110.82,
+    "total_return_pct": -18.09,
+    "annualized_pct": -12.55,
+    "max_drawdown_pct": 45.72,
+    "win_rate_pct": 45.94
+   },
+   "B_contrarian": {
+    "periods": 75,
+    "trades": 1500,
+    "final_equity": 1096809.82,
+    "total_return_pct": 9.68,
+    "annualized_pct": 6.41,
+    "max_drawdown_pct": 41.19,
+    "win_rate_pct": 49.13
+   },
+   "benchmark": {
+    "days": 411,
+    "total_return_pct": 19.06,
+    "annualized_pct": 11.29
+   }
+  }
+ },
+ "verdict": "两窗口超额符号相反 → 证据不足",
+ "params": {
+  "top_n": 20,
+  "horizon": 5,
+  "step": 5,
+  "threshold": 70,
+  "signs": {
+   "ret_20": -1,
+   "ret_5": -1,
+   "vol_20": -1,
+   "log_amount_20": -1,
+   "max_ret_20": -1,
+   "vol_ratio": -1,
+   "amihud_20": 1
+  }
+ }
+}
