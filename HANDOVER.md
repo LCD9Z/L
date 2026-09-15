@@ -2,7 +2,7 @@
 
 > **项目**：AI股神团队 1.0 · A股多 Agent 智能分析系统
 > **仓库**：`https://github.com/LCD9Z/L.git`（**私有**）　**分支**：`main`
-> **HEAD**：`10f0ef6`（共 39 次提交；**可能已过期，以 `git log` 实际为准**）
+> **HEAD**：`7a3d005`（**写入本文件时的值；每次提交都会变，以 `git log` 实际为准**）
 > **交接范围**：2026-09-13 ~ 2026-09-16 的工程改造与量化研究
 > **配套阅读**：[`WORKLOG.md`](WORKLOG.md)（过程与证据）· [`CHANGELOG.md`](CHANGELOG.md)（版本演进）· [`DIRECTORY_LAYOUT.md`](DIRECTORY_LAYOUT.md)（结构全景，脚本生成）
 
