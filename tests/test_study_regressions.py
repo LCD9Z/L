@@ -134,3 +134,26 @@ def test_cost_drag_window_rejects_empty_windows():
     """空窗口列表须显式报错，而不是以 IndexError 的形式在下游冒出。"""
     with pytest.raises(ValueError, match="windows"):
         _cost_drag_window([])
+
+
+# ---------------------------------------------------------------------------
+# 缺陷三：落盘结果未记录成本模型
+# ---------------------------------------------------------------------------
+
+def test_contrarian_payload_records_slippage_model():
+    """落盘结果必须记录成本模型，否则一/二阶段结果无法区分。
+
+    历史缺陷：一阶段（固定滑点 0.05%）与二阶段（动态滑点）用**同一脚本、
+    不同滑点模型**，产出的 `verdict` 文本**完全相同**，且 `params` 未记录
+    `slip_mode` → 两份归档 JSON 看起来一样（详见 `AB_STUDIES_EVIDENCE.md`）。
+
+    这条守卫确保：仅滑点模型不同时，落盘结果必须可区分。
+    """
+    from run_contrarian_portfolio import _result_payload
+
+    flat = _result_payload({"w": {}}, "v", "flat")
+    dynamic = _result_payload({"w": {}}, "v", "dynamic")
+
+    assert flat["params"]["slip_mode"] == "flat"
+    assert dynamic["params"]["slip_mode"] == "dynamic"
+    assert flat != dynamic, "仅滑点模型不同时，落盘结果必须可区分"

@@ -15,8 +15,17 @@
 | `tdx_ab_stage3_summary.json` | A/B 第三阶段（沪深 300 基准） | 两窗口超额符号相反 → **证据不足** | [`PORTFOLIO_AB_REPORT_3.md`](PORTFOLIO_AB_REPORT_3.md) |
 
 > **注意**：`tdx_ab_stage2_summary.json` 的 `verdict` 字段与一阶段完全相同，
-> 这是**脚本的文案缺陷**（改滑点模型时未同步更新结论文案），不是数据重复。
+> 这是**脚本的缺陷**（改滑点模型时未同步记录成本模型），不是数据重复。
 > 请以报告与数字为准，不要据此 JSON 的 verdict 判断二阶段结论。
+>
+> **根因（2026-09-16 查明并修复）**：脚本输出的 `params` **从未记录 `slip_mode`**，
+> 结论文案也不含滑点模型 —— 所以一阶段（固定滑点）与二阶段（动态滑点）
+> 除了数字之外**看起来一模一样**。已修复 `scripts/run_contrarian_portfolio.py`：
+> ①`params` 新增 `slip_mode`；②结论文案加 `[滑点=…]` 前缀；
+> ③抽出 `_result_payload()` 并加守卫测试 `test_contrarian_payload_records_slippage_model`。
+>
+> **本目录 4 个 JSON 是修复前的产物，保持原样**（它们是历史证据，不可改写）。
+> 其 `params` 无 `slip_mode` 字段属**预期**；如需区分，请以文件名与数字为准。
 
 ## 二、为什么必须留着
 

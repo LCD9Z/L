@@ -251,6 +251,24 @@ def bench_stats(bench, start: str, end: str) -> Optional[Dict[str, float]]:
             "annualized_pct": round(ann, 2)}
 
 
+def _result_payload(results, verdict, slip_mode):
+    """组装落盘结果。
+
+    **必须记录成本模型**（`slip_mode`）。历史缺陷：一阶段（固定滑点）与二阶段
+    （动态滑点）用同一脚本、不同滑点模型，产出的 `verdict` 文本**完全相同**，
+    且 `params` 未记录 `slip_mode` → 两份归档 JSON 无法区分属哪一阶段
+    （见 `AB_STUDIES_EVIDENCE.md`）。结论文案也已带上滑点标记，双重可辨。
+    """
+    return {
+        "results": results,
+        "verdict": verdict,
+        "params": {
+            "top_n": TOP_N, "horizon": HORIZON, "step": STEP,
+            "threshold": THRESHOLD, "signs": SIGNS, "slip_mode": slip_mode,
+        },
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="组合层面对照实验 A/B（事前登记）")
     ap.add_argument("--dataset", required=True)
@@ -333,15 +351,16 @@ def main() -> int:
             verdict = "B 略优于 A（差值 ≤ 2pp）→ 弱于/无显著差异"
         else:
             verdict = "B 未稳定优于 A → 无差异或更差"
+    # 把成本模型写进结论文案：一/二阶段仅滑点模型不同，verdict 文本曾完全相同，
+    # 导致归档结果无法区分属哪一阶段（见 AB_STUDIES_EVIDENCE.md）。
+    verdict = f"[滑点={args.slippage}] {verdict}"
     print(f"\n判定：{verdict}")
     print("=" * 92)
     print(f"总耗时 {time.time()-t0:.0f}s")
 
     if args.out:
         with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
-            json.dump({"results": results, "verdict": verdict,
-                       "params": {"top_n": TOP_N, "horizon": HORIZON, "step": STEP,
-                                  "threshold": THRESHOLD, "signs": SIGNS}},
+            json.dump(_result_payload(results, verdict, args.slippage),
                       fh, ensure_ascii=False, indent=1, default=str)
         print(f"结果已写入: {args.out}")
     return 0

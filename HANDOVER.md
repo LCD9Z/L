@@ -285,7 +285,7 @@ python scripts/gen_layout_doc.py --check
 
 | # | 缺陷 | 状态 | 复现步骤 |
 |:--:|------|:---:|---------|
-| 1 | **`tdx_ab_stage2_summary.json` 的 verdict 与一阶段完全相同** —— 改滑点模型时未同步更新结论文案 | **未修**（数据正确，仅文案） | 打开该 JSON，对比 `tdx_ab_stage1_summary.json` 的 `verdict` 字段 → 文本一致，但 `annualized_pct` 已变（B 从 +23.21% 降至 +12.54%） |
+| 1 | ~~`tdx_ab_stage2_summary.json` 的 verdict 与一阶段完全相同~~ | **已修（2026-09-16）** | 根因是脚本 `params` **未记录 `slip_mode`**、结论文案也不含滑点模型。已修 `scripts/run_contrarian_portfolio.py`（params 加 `slip_mode` + 结论加 `[滑点=…]` 前缀 + 抽出 `_result_payload()` + 守卫测试）。**已归档的 4 个 JSON 保持原样**（历史证据不可改写） |
 | 2 | 研究脚本**绝对数字不可引用** —— 策略对采样数极度敏感 | 已记录，未根治 | 同窗口 `2023-07-03`：`--max-stocks 400` → V0 −83.06%；`800` → −28.34%（差 54.72pp） |
 | 3 | `orchestrator.py`（337 行）**无直接测试引用** | 未修 | `grep -rn "orchestrator" tests/` → 仅 `test_module_splits.py` 检查拆分，无行为测试 |
 | 4 | 10 个根目录模块无直接测试引用 | 未修 | 见 [6.2](#62-高风险模块) |
@@ -400,7 +400,7 @@ python scripts/gen_layout_doc.py --check
 | — | 缓存备份处置 | **已结案（保留）** | 2026-09-16 已核验 `_1.0_cache_backup_…`（9.8M，纯缓存）与 `_backup_1.0`（9.1M，完全冗余）均为零信息损失；因环境批量删除护栏拦截，**用户决定保持现状**。其中的研究证据已抢救入库（`AB_STUDIES_EVIDENCE.md`） |
 | **1** | **新的经济逻辑假设（追求 Alpha）** | **3~5 天** | 含：逻辑调研 0.5 天 → 事前登记 0.5 天 → 因子实现 1 天 → IC 检验 0.5 天 → 组合层面 + 基准对照 1~2 天（多窗口回测）。**前提：必须提出新逻辑，禁止调现有 7 因子权重/阈值** |
 | 2 | ARK 付费模型凭据验收 | **0.5 天** | 阻塞于用户提供凭据；含接通 + 一次真实调用 + 结果留档 |
-| 3 | 修复 `tdx_ab_stage2` verdict 文案 | **0.2 天** | 改脚本结论文案并重跑一次（或直接更正 JSON 并注明） |
+| 3 | ~~修复 `tdx_ab_stage2` verdict 文案~~ | **✅ 已完成** | 根因是 `params` 未记录 `slip_mode`。已修脚本 + 加守卫测试（见 [5.3](#53-已知缺陷与复现步骤) 第 1 条） |
 | 4 | 为 10 个无直接覆盖模块补单测 | **1.5~2 天** | 优先 `orchestrator`（0.5 天）、`pool_manager`、`v3_data_bus`；纯标注类（`log_utils`）可略 |
 | 5 | `disallow_untyped_defs` 全量收紧 | **2~3 天** | 569 处纯标注补全，**无缺陷捕获收益**，建议最后做 |
 | 6 | 其余外部集成验收 | **1 天** | 需凭据；每项含真实调用 + 留档 |

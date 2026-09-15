@@ -351,7 +351,7 @@
 | 12 | **`CALIBRATION_DISCREPANCY_REPORT` §2.3 年化口径判定为误诊**（称两处实现不同，实为同一公式） | 动手"统一"前逐行核实 | 更正报告；找出**真正的**分歧（算术 vs 几何）并单一化算术口径 |
 | 13 | 4 个研究脚本各自内联 `mean(日超额) * 252 * 100`（4 个分叉点） | 同上核实过程 | 收敛到 `annualized_excess_arithmetic()`；新增"禁止重新内联"守卫 |
 | 14 | **A/B 与 H-C1 的研究原始结果 JSON 从未入库**（仅存于会话 scratch 目录） | 清理 scratch 目录时发现 | 归档为根目录 `tdx_*_summary.json` + `AB_STUDIES_EVIDENCE.md` |
-| 15 | `tdx_ab_stage2_summary.json` 的 `verdict` 与一阶段完全相同（改滑点模型时未同步结论文案） | 归档时逐文件核对 | **未修**，已记入 HANDOVER 5.3 待办 |
+| 15 | `tdx_ab_stage2_summary.json` 的 `verdict` 与一阶段完全相同（改滑点模型时未同步结论文案） | 归档时逐文件核对 | **已修**：根因是 `params` 未记录 `slip_mode`、结论文案不含滑点模型。已修脚本（params 加 `slip_mode` + 结论加 `[滑点=…]` 前缀 + 抽出 `_result_payload()` + 守卫测试）；**已归档 JSON 保持原样**（历史证据不可改写） |
 | 16 | 3 个数据准备脚本留在根目录，违反「非库脚本入 `scripts/`」约定 | 检查未完成工作时对照约定 | `git mv` 迁入 `scripts/` + 前缀式结构守卫 |
 
 > 缺陷 1、2 之外，1.0 阶段的静态分析缺陷（mypy `exclude` 未锚定致 2 模块逃检、`stock_scoring.pe_note`
