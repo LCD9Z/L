@@ -1,8 +1,8 @@
 # 工作交接文档
 
 > **项目**：AI股神团队 1.0 · A股多 Agent 智能分析系统
-> **仓库**：`https://github.com/LCD9Z/L.git`（**私有**）　**分支**：`main`　**HEAD**：`d76c96b`
-> **交接范围**：2026-09-13 ~ 2026-09-14 的工程改造（目录分层 4 轮 + 巨石拆分 3 次 + 数据研究 4 项）
+> **仓库**：`https://github.com/LCD9Z/L.git`（**私有**）　**分支**：`main`　**HEAD**：`eb37509`
+> **交接范围**：2026-09-13 ~ 2026-09-15 的工程改造 + 复合反转研究（目录分层 4 轮 + 巨石拆分 3 次 + 数据研究 4 项 + 复合反转假设 H-C1 检验 + 组合层面对照实验 A/B 三阶段）
 > **配套阅读**：[`WORKLOG.md`](WORKLOG.md)（做了什么）· [`CHANGELOG.md`](CHANGELOG.md)（版本演进）· [`DIRECTORY_LAYOUT.md`](DIRECTORY_LAYOUT.md)（结构全景）
 
 ---
@@ -12,7 +12,7 @@
 仓库已从「188 个 `.py` 全部平铺在根目录」重构为 **19 个子包 / 67 个入包模块 / 根目录仅 59 个**；
 `data_fetcher.py`(807 行)、`tracking.py`(308 行)、`main.py`(402 行) 三个巨石已用**门面模式**拆解，对外 API 零变更。
 数据集已修正幸存者偏差（并入 180 只退市股），四项研究全部重跑完成。
-**质量门禁全绿**：ruff 全通过 · mypy 228 文件零错误 · pytest 502 passed · 本地 CI 6/6。
+**质量门禁全绿**：ruff 全通过 · mypy 231 文件零错误 · pytest 501 passed + 1 skipped · 本地 CI 6/6。
 
 ---
 
@@ -81,7 +81,7 @@
 
 | 优先级 | 事项 | 说明 |
 |:---:|------|------|
-| 1 | **真实 Alpha 假设（进行中）** | H-C1：IC 层面**强支持**（+0.0913 / t=10.38）；组合层面 A/B：B 在 600/1000 样本两窗口均**显著优于基线**（+16~+41pp，扣费后为正）。**但固定滑点高估 B（偏好小盘+非流动性）、且无基准指数** → **仍未判定存在可实现 Alpha**，对外维持 `ALPHA_NOT_ESTABLISHED`；确定性结论为「反转优于动量」。第二阶段（动态滑点）已完成：B 年化被成本吃掉约 10.5pp/年（A 仅 2.1pp，B 的成本敏感性是 A 的 5 倍），证实一阶段高估；但 B 仍为正、仍大幅优于 A（+32.43pp/+18.96pp）→ 「反转优于动量」稳健，**B 的真实水平以 +6%~+13% 为准**。**第三阶段（沪深300 基准）已完成**：基准年化 +12.06%/+11.29%；B 超额仅 **+0.48pp/−4.88pp**（A 为 −31.95pp/−23.84pp）→ **「存在可实现 Alpha」不成立**：反转只是修复了基线的方向性错误、回到指数水平。对外结论**强化为 `ALPHA_NOT_ESTABLISHED`**。下一步需**新的经济逻辑**（禁止在现有 7 因子上调权重/阈值）。
+| 1 | **真实 Alpha 假设（研究链已闭环）** | H-C1：IC 层面**强支持**（+0.0913 / t=10.38）；组合层面 A/B：B 在 600/1000 样本两窗口均**显著优于基线**（+16~+41pp，扣费后为正）。**但固定滑点高估 B（偏好小盘+非流动性）、且无基准指数** → **仍未判定存在可实现 Alpha**，对外维持 `ALPHA_NOT_ESTABLISHED`；确定性结论为「反转优于动量」。第二阶段（动态滑点）已完成：B 年化被成本吃掉约 10.5pp/年（A 仅 2.1pp，B 的成本敏感性是 A 的 5 倍），证实一阶段高估；但 B 仍为正、仍大幅优于 A（+32.43pp/+18.96pp）→ 「反转优于动量」稳健，**B 的真实水平以 +6%~+13% 为准**。**第三阶段（沪深300 基准）已完成**：基准年化 +12.06%/+11.29%；B 超额仅 **+0.48pp/−4.88pp**（A 为 −31.95pp/−23.84pp）→ **「存在可实现 Alpha」不成立**：反转只是修复了基线的方向性错误、回到指数水平。对外结论**强化为 `ALPHA_NOT_ESTABLISHED`**。下一步需**新的经济逻辑**（禁止在现有 7 因子上调权重/阈值）。
 | 2 | 外部集成真实凭据验收 | 飞书 / 付费模型，需用户提供凭据 |
 | 3 | 缓存备份处置 | 9.06 MB 已移出到 `_1.0_cache_backup_20260914-071155/`（**用户决定先观察，暂不删**） |
 | 4 | `disallow_untyped_defs` | 569 处纯标注告警，收益递减；当前 `check_untyped_defs` 已覆盖 |
@@ -147,10 +147,10 @@
 ```powershell
 # 1) 静态检查
 C:\Users\T430\.workbuddy\binaries\python\envs\default\Scripts\ruff.exe check .        # 期望 All checks passed
-C:\Users\T430\.workbuddy\binaries\python\envs\default\Scripts\mypy.exe --config-file mypy.ini .   # 期望 228 文件零错误
+C:\Users\T430\.workbuddy\binaries\python\envs\default\Scripts\mypy.exe --config-file mypy.ini .   # 期望 231 文件零错误
 
 # 2) 测试
-python -m pytest -q                 # 期望 502 passed
+python -m pytest -q                 # 期望 501 passed + 1 skipped
 
 # 3) 完整本地 CI（**推荐：一条命令覆盖全部**）
 python run_ci.py                    # 期望 6/6 PASS
@@ -234,8 +234,6 @@ python run_ci.py
 | `PORTFOLIO_AB_REPORT.md` | A/B 第一阶段结果与两个隐患 |
 | `PORTFOLIO_AB_PREREG_2.md` | 第二阶段（动态滑点）事前登记 |
 | `PORTFOLIO_AB_REPORT_2.md` | 第二阶段：优势稳健但被成本侵蚀 |
-| `PORTFOLIO_AB_PREREG_3.md` | 第三阶段（沪深300 基准）事前登记 |
-| `PORTFOLIO_AB_REPORT_3.md` | 第三阶段：反转 ≈ 指数，无可靠正超额 |
 | `PORTFOLIO_AB_PREREG_3.md` | 第三阶段（沪深300 基准）事前登记 |
 | `PORTFOLIO_AB_REPORT_3.md` | 第三阶段：反转 ≈ 指数，无可靠正超额 |
 | `MODULE_SPLIT_EVALUATION.md` | `main.py` 拆分评估与决策记录 |
