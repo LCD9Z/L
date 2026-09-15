@@ -121,6 +121,6 @@ def send_analysis_summary(session, report_path: Optional[str] = None) -> Dict:
         if not user_id:
             return {"ok": False, "message": "未配置推送目标（chat_id / user_id 均为空）"}
         target += ["--user-id", user_id]
-    target += ["--msg-type", "text", "--content", message, "--as", "user"]
+    target += ["--text", message, "--as", "user"]
     ok, output = _run_lark(target)
     return {"ok": ok, "message": output[:500], "content": message}

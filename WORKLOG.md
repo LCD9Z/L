@@ -396,6 +396,6 @@ python credential_scan.py
    **「存在可实现 Alpha」判定为不成立**：反转只是修复了基线的方向性错误、回到指数水平，
    并未超越市场。**对外结论强化为 `ALPHA_NOT_ESTABLISHED`**。
    若要继续追求 Alpha，需**新的经济逻辑**（禁止在现有 7 因子上调权重/阈值）。
-2. **外部集成真实凭据验收**（飞书 / 付费模型）需用户提供凭据。
+2. **外部集成真实凭据验收** —— **飞书 notify 模块已验收通过**（2026-09-15）：`is_configured()` 为真、`lark-cli` 经连接器授权以 user 身份真实发送成功（返回 `ok:true` + `message_id`）；验收中还**发现并修复** `feishu_notifier.send_analysis_summary` 的 `--content` 参数 bug（当前 `lark-cli` 要求 `--content` 为 JSON，应改用 `--text`）。新增验收脚本 `scripts/run_feishu_acceptance.py`。**付费模型（ARK）凭据验收仍待用户提供**。
 3. **缓存备份待处理**：9.06 MB 的缓存/日志已移出项目到 `_1.0_cache_backup_20260914-071155/`（**用户决定先观察，暂不删除**）。
 4. `disallow_untyped_defs` 仍未开启（569 处纯标注告警，收益递减）。
