@@ -50,15 +50,22 @@ from factors.factor_ic_lab import (  # noqa: E402
 DEFAULT_HORIZON = 5
 DEFAULT_STEP = 5
 DEFAULT_VALID_DAYS = 90
+# 截面非零占比中位数低于此值 → 判「因子退化，不可检验」（见 HD1/HD4 登记）
+DEGENERACY_FLOOR = 0.05
 MIN_HISTORY = 60
 SUBWINDOWS = [("2016-08-01", "2021-06-30"), ("2021-07-01", "2026-09-30")]
 # 与既有价量因子的相关性诊断（不影响判定）
 DIAGNOSTIC_FACTORS = ("ret_20", "vol_20", "log_amount_20", "max_ret_20")
 
 
-def _load_revisions(path: str) -> Dict[str, List[Tuple[str, int, int]]]:
-    """→ ``{code: [(actual_disclose, has_revision, revision_count), ...]}``（按日期升序）。"""
-    out: Dict[str, List[Tuple[str, int, int]]] = {}
+def _load_revisions(path: str) -> Dict[str, List[Tuple[str, int, int, int]]]:
+    """→ ``{code: [(actual_disclose, has_revision, revision_count, advance), ...]}``（升序）。
+
+    ``advance = (first_scheduled − actual_disclose).days``，正 = 提前披露（H-D1 的因子）。
+    该字段**无前视**：`首次预约` 是原始预约日、未被后续变更覆盖 —— 已用数据核查，
+    `revisions=0` 的记录中 99.6% 满足 `actual == first`（见 ALPHA_HYPOTHESIS_PREREG_HD1.md §三）。
+    """
+    out: Dict[str, List[Tuple[str, int, int, int]]] = {}
     with open(path, encoding="utf-8") as fh:
         for line in fh:
             line = line.strip()
@@ -73,23 +80,29 @@ def _load_revisions(path: str) -> Dict[str, List[Tuple[str, int, int]]]:
             if not code or len(actual) != 10:
                 continue
             rev = int(r.get("revisions") or 0)
-            out.setdefault(code, []).append((actual, 1 if rev >= 1 else 0, min(rev, 2)))
+            first = str(r.get("first_scheduled") or "")
+            advance = 0
+            if len(first) == 10:
+                advance = (date.fromisoformat(first)
+                           - date.fromisoformat(actual)).days
+            out.setdefault(code, []).append(
+                (actual, 1 if rev >= 1 else 0, min(rev, 2), advance))
     for v in out.values():
         v.sort()
     return out
 
 
-def _lookup(records: List[Tuple[str, int, int]], day: str,
-            valid_days: int) -> Optional[Tuple[int, int, str]]:
+def _lookup(records: List[Tuple[str, int, int, int]], day: str,
+            valid_days: int) -> Optional[Tuple[int, int, str, int]]:
     """取 ``day`` 当日**已知**的最近一次披露（``actual_disclose <= day`` 且在有效期内）。"""
     dates = [r[0] for r in records]
     i = bisect.bisect_right(dates, day) - 1
     if i < 0:
         return None
-    d, has_rev, count = records[i]
+    d, has_rev, count, advance = records[i]
     if (date.fromisoformat(day) - date.fromisoformat(d)).days > valid_days:
         return None
-    return has_rev, count, d
+    return has_rev, count, d, advance
 
 
 def _tstat(xs: List[float]) -> Optional[float]:
@@ -142,33 +155,38 @@ def _load_bars(dataset: str, max_stocks: int, min_rows: int,
 
 def decide_verdict(mean_ic: Optional[float], t: Optional[float],
                    sub: List[Dict[str, Any]],
-                   group_diff_mean: Optional[float]) -> str:
-    r"""按**事前登记**判定（``ALPHA_HYPOTHESIS_PREREG_HD2.md``）。
+                   group_diff_mean: Optional[float],
+                   *, direction: str = "negative",
+                   degenerate: bool = False) -> str:
+    r"""按**事前登记**判定。
 
-    方向为负，故：
+    ``direction``：``"negative"``（H-D2）或 ``"positive"``（H-D1）。
+    两套登记的判定表结构相同，仅方向相反：
 
-    * **强支持**：IC < 0 且 t ≤ −2，且两子窗口同号（均 < 0）且至少一个 t ≤ −2，
-      且组差 < 0；
-    * **不成立**：IC ≥ 0，**或两子窗口 IC 符号相反**；
-    * **弱支持**：其余（IC < 0、子窗口同号，但 \|t\| < 2）。
+    * **强支持**：IC 方向正确且 \|t\| ≥ 2，且两子窗口同号且至少一个 \|t\| ≥ 2，
+      且组差方向正确；
+    * **不成立**：IC 方向不符，**或两子窗口 IC 符号相反**；
+    * **弱支持**：其余。
 
-    ⚠️ 该函数是 2026-09-25 一次真实缺陷的产物：原判定内联在 ``main()`` 里，
-    把「子窗口符号相反」误判为「弱支持」，**与事前登记相矛盾**。
-    抽成纯函数后由 ``tests/test_disclosure_factor_study.py`` 锁住。
+    ⚠️ ``degenerate=True`` 时返回「因子退化」—— 该门槛**前置写在 HD1/HD4 登记里**
+    （H-D4 的教训：判定表未预设退化，导致机械产出了一个无实质意义的判定）。
     """
+    if degenerate:
+        return "因子退化"
     if mean_ic is None:
         return "不成立"
+    sign = 1.0 if direction == "positive" else -1.0
     opposite = (len(sub) == 2 and sub[0]["ic_mean"] * sub[1]["ic_mean"] < 0)
     strong = (
-        mean_ic < 0 and t is not None and t <= -2
+        sign * mean_ic > 0 and t is not None and sign * t >= 2
         and len(sub) == 2
-        and all(s["ic_mean"] < 0 for s in sub)
-        and any(s["t"] is not None and s["t"] <= -2 for s in sub)
-        and group_diff_mean is not None and group_diff_mean < 0
+        and all(sign * s["ic_mean"] > 0 for s in sub)
+        and any(s["t"] is not None and sign * s["t"] >= 2 for s in sub)
+        and group_diff_mean is not None and sign * group_diff_mean > 0
     )
     if strong:
         return "强支持"
-    if mean_ic >= 0 or opposite:
+    if sign * mean_ic <= 0 or opposite:
         return "不成立"
     return "弱支持"
 
@@ -185,10 +203,22 @@ def main() -> int:
     ap.add_argument("--valid-days", type=int, default=DEFAULT_VALID_DAYS)
     ap.add_argument("--min-cross-section", type=int, default=100)
     ap.add_argument("--out", default="")
+    ap.add_argument("--factor", choices=("has_revision", "advance"),
+                    default="has_revision",
+                    help="has_revision=H-D2（变更次数≥1，方向−1）；"
+                         "advance=H-D1（披露时点偏离，方向+1）")
     args = ap.parse_args()
 
-    print("=" * 100)
-    print("H-D2 检验 · 定期报告预约披露变更次数 → 未来收益（事前登记，方向为负）")
+    is_hd1 = args.factor == "advance"
+    expect = "positive" if is_hd1 else "negative"
+    if is_hd1:
+        print("=" * 100)
+        print("H-D1 检验 · 披露时点偏离（first_scheduled − actual_disclose）→ 未来收益")
+        print("=" * 100)
+        print("事前登记：ALPHA_HYPOTHESIS_PREREG_HD1.md（方向为**正**）")
+    else:
+        print("=" * 100)
+        print("H-D2 检验 · 定期报告预约披露变更次数 → 未来收益（事前登记，方向为负）")
     print("=" * 100)
     print(f"口径：前瞻 {args.horizon} 日 / 每 {args.step} 日调仓 / 有效期 {args.valid_days} 自然日")
     print("取值时点：actual_disclose 当日收盘后 → T+1 开盘可交易（PIT 正确）\n")
@@ -214,6 +244,7 @@ def main() -> int:
     ic_series: List[Tuple[str, float]] = []
     group_diffs: List[Tuple[str, float]] = []
     sizes: List[int] = []
+    nonzero_frac: List[float] = []
     n_with_rev = 0
     corr_pairs: Dict[str, List[Tuple[float, str]]] = {
         k: [] for k in DIAGNOSTIC_FACTORS}
@@ -235,8 +266,9 @@ def main() -> int:
             got = _lookup(recs, day, args.valid_days)
             if got is None:
                 continue
-            has_rev, _count, _d = got
-            vals.append(float(has_rev))
+            has_rev, _count, _d, advance = got
+            fv = float(advance) if is_hd1 else float(has_rev)
+            vals.append(fv)
             fwds.append(fr)
             if has_rev:
                 n_with_rev += 1
@@ -250,6 +282,7 @@ def main() -> int:
         if len(vals) < args.min_cross_section:
             continue
         sizes.append(len(vals))
+        nonzero_frac.append(sum(1 for v in vals if v != 0.0) / len(vals))
 
         ic = spearman(vals, fwds)
         if ic is not None:
@@ -324,23 +357,38 @@ def main() -> int:
 
     # ---- 判定（严格按事前登记）----
     print("\n" + "=" * 100)
-    print("判定（事前登记口径，方向为负）")
+    print(f"判定（事前登记口径，方向为**{'正' if is_hd1 else '负'}**）")
     print("=" * 100)
     # ⚠️ 判定必须严格按事前登记（ALPHA_HYPOTHESIS_PREREG_HD2.md）：
     #   不成立 = IC >= 0 **或两子窗口 IC 符号相反**
     #   （原登记中「弱支持」曾写「子窗口符号不一致」，与「不成立」的
     #     「符号相反」自相矛盾；2026-09-25 已按**更严**方向勘误。
     #     此处的 `opposite` 判断即落实该勘误 —— 符号相反一律判「不成立」。）
-    verdict = decide_verdict(mean_ic, t, sub, gmean)
+    med_nonzero = statistics.median(nonzero_frac) if nonzero_frac else 0.0
+    degenerate = med_nonzero < DEGENERACY_FLOOR
+    print("\n" + "=" * 100)
+    print("因子可用性前置检查（登记 HD1 §五 / HD4 教训）")
+    print("=" * 100)
+    print(f"  每期非零占比：中位 {med_nonzero:.2%} · 最小 {min(nonzero_frac):.2%}"
+          f" · 最大 {max(nonzero_frac):.2%}")
+    print(f"  判据：中位 < {DEGENERACY_FLOOR:.0%} → 判「因子退化，不可检验」")
+    print(f"  结论：{'⚠️ **因子退化**' if degenerate else '未退化'}")
+    if degenerate:
+        print("  → 横截面上绝大多数观测取同一值，秩 IC 主要由极少数观测驱动，")
+        print("     **不输出**强/弱/不成立判定。")
+
+    verdict = decide_verdict(mean_ic, t, sub, gmean,
+                             direction=expect, degenerate=degenerate)
     opposite = (len(sub) == 2 and sub[0]["ic_mean"] * sub[1]["ic_mean"] < 0)
     if opposite:
         print("  ⚠️ 两个子窗口 IC 符号相反 → 按事前登记判「不成立」"
               "（不得表述为「前半段有效」）")
-    print(f"  IC 均值 {mean_ic:+.4f}（假设方向为**负**）")
+    print(f"  IC 均值 {mean_ic:+.4f}（假设方向为**{'正' if is_hd1 else '负'}**）")
     print(f"  判定：**{verdict}**")
-    if mean_ic > 0:
-        print("  ⚠️ IC 为正 —— 与假设方向**相反**。按事前登记，结论为「不成立」，")
-        print("     且**不得**改述为「反向有效」（禁止事后翻转方向）。")
+    wrong = (mean_ic < 0) if is_hd1 else (mean_ic > 0)
+    if wrong:
+        print(f"  ⚠️ IC 为{'负' if is_hd1 else '正'} —— 与假设方向**相反**。")
+        print("     按事前登记，结论为「不成立」，且**不得**改述为「反向有效」。")
 
     # ---- 诊断：与既有因子的相关性 ----
     print("\n" + "=" * 100)
@@ -356,7 +404,8 @@ def main() -> int:
         print(f"    {k:<16} 平均 ρ = {rho:+.4f}（{len(pair)} 期）")
 
     print("\n  声明：")
-    print("    · 本检验口径在跑之前已固定（ALPHA_HYPOTHESIS_PREREG_HD2.md），未做事后调整")
+    print("    · 本检验口径在跑之前已固定"
+          f"（ALPHA_HYPOTHESIS_PREREG_{'HD1' if is_hd1 else 'HD2'}.md），未做事后调整")
     print("    · 未做参数网格搜索；未翻转方向")
     print("    · 披露日 A 股池内覆盖 86.8%，2016~2019 年 73~83% 偏低")
     print("    · 未扣除交易成本；结论不构成投资建议")
@@ -370,6 +419,10 @@ def main() -> int:
         "subwindows": sub,
         "group_diff_mean": gmean, "group_diff_t": gt, "group_diff_p": gp,
         "verdict": verdict,
+        "factor_used": args.factor,
+        "expected_direction": expect,
+        "nonzero_frac_median": med_nonzero,
+        "degenerate": degenerate,
         "cross_section_median": statistics.median(sizes),
         "cross_section_min": min(sizes),
         "with_revision_ratio": n_with_rev / sum(sizes),

@@ -90,3 +90,55 @@ def test_weak_requires_same_sign_subwindows():
     """两子窗口同为负是「弱支持」的前提；一旦反号即降级为不成立。"""
     assert decide_verdict(-0.002, -1.2, _sub(-0.003, -1.0, -0.001, -0.8), -0.0001) == "弱支持"
     assert decide_verdict(-0.002, -1.2, _sub(-0.003, -1.0, +0.001, +0.3), -0.0001) == "不成立"
+
+
+# ---------------------------------------------------------------------------
+# H-D1 与「因子退化」门槛（2026-09-25 新增）
+#
+# H-D4 的教训：判定表未预设「因子退化」，于是一个**不具实质意义的判定**
+# 被机械产出（原始 IC t=-9.02 而残差 IC t=+9.73 的剧烈符号反转，
+# 根因是因子在 97.8% 的观测上取同一值）。
+# H-D1 登记因此**前置**写入可用性门槛：非零占比中位 < 5% → 判「因子退化，不可检验」。
+# 本组测试锁住该门槛与方向参数。
+# ---------------------------------------------------------------------------
+
+def test_degenerate_factor_gets_its_own_verdict():
+    """⚠️ 核心守卫：退化时不得输出强/弱/不成立，必须单列「因子退化」。"""
+    v = decide_verdict(+0.06, +9.0, _sub(+0.06, +7.0, +0.06, +6.0), +0.01,
+                       direction="negative", degenerate=True)
+    assert v == "因子退化", f"退化时必须单列，实际 {v}"
+
+
+def test_degeneracy_gate_overrides_everything():
+    """退化门槛优先于所有其他条件 —— 无论统计量多显著。"""
+    for ic, t in ((+0.10, +20.0), (-0.10, -20.0), (0.0, 0.0)):
+        assert decide_verdict(ic, t, _sub(ic, t, ic, t), ic,
+                              direction="positive", degenerate=True) == "因子退化"
+
+
+# ---- 方向参数：H-D1 为正，H-D2 为负 ----
+
+def test_positive_direction_strong_support():
+    assert decide_verdict(+0.01, +3.0, _sub(+0.012, +2.5, +0.008, +1.5), +0.002,
+                          direction="positive") == "强支持"
+
+
+def test_positive_direction_negative_ic_is_not_established():
+    """H-D1 的实际结果：IC 为正但子窗口符号相反 → 不成立。"""
+    v = decide_verdict(+0.00197, +1.00, _sub(+0.00353, +1.21, -0.00027, -0.10), -0.000447,
+                       direction="positive")
+    assert v == "不成立", f"子窗口符号相反必须判不成立，实际 {v}"
+
+
+def test_direction_flag_flips_the_verdict():
+    """同一个 IC，方向设定不同 → 判定不同。"""
+    sub = _sub(-0.012, -2.5, -0.008, -1.5)
+    assert decide_verdict(-0.01, -3.0, sub, -0.002, direction="negative") == "强支持"
+    assert decide_verdict(-0.01, -3.0, sub, -0.002, direction="positive") == "不成立"
+
+
+def test_positive_direction_requires_positive_group_diff():
+    """强支持要求组差方向也正确。"""
+    v = decide_verdict(+0.01, +3.0, _sub(+0.012, +2.5, +0.008, +1.5), -0.002,
+                       direction="positive")
+    assert v != "强支持"
