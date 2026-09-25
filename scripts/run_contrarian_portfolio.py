@@ -15,9 +15,9 @@
 from __future__ import annotations
 
 import argparse
-import json
 import math
 import os
+import statistics
 import sys
 import time
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -28,6 +28,8 @@ from backtest_engine import Costs, _trade_cost  # noqa: E402
 from factors.factor_ic_lab import compute_factors  # noqa: E402
 from risk.liquidity import dynamic_slippage, is_liquid  # noqa: E402
 from walk_forward import score_history  # noqa: E402
+from alpha.alpha_survival_lab import excess_t_statistics  # noqa: E402
+from research_artifacts import write_final, write_partial  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # 事前登记：因子方向（与 ALPHA_HYPOTHESIS_PREREG.md 一致）
@@ -183,6 +185,7 @@ def run_arm(data, picker, start: str, end: str, slip_mode: str = "flat") -> Dict
     peak = equity
     mdd = 0.0
     trade_rets: List[float] = []
+    cohorts: List[float] = []      # 每期（5 日持有）组合收益，用于单期 t 检验
     n_periods = 0
 
     for day in rebal:
@@ -200,6 +203,7 @@ def run_arm(data, picker, start: str, end: str, slip_mode: str = "flat") -> Dict
             continue
         cohort = sum(rets) / len(rets)  # 等权、满仓
         equity *= (1 + cohort)
+        cohorts.append(cohort)
         trade_rets.extend(rets)
         n_periods += 1
         peak = max(peak, equity)
@@ -209,8 +213,16 @@ def run_arm(data, picker, start: str, end: str, slip_mode: str = "flat") -> Dict
     total_ret = equity / INITIAL_CAPITAL - 1
     ann = ((equity / INITIAL_CAPITAL) ** (1 / years) - 1) * 100 if years > 0 else 0.0
     wins = sum(1 for r in trade_rets if r > 0)
+    # 统计量：对**每期组合收益**做单期 t 检验（H0: 期望收益 = 0）。
+    # 注意这是"策略自身收益是否异于 0"，**不是**"超额是否异于 0"
+    # —— 超额检验需要逐期基准对齐，本脚本未计算（已在报告中声明）。
+    st = excess_t_statistics(cohorts)
     return {
         "periods": n_periods,
+        "cohort_t_stat": st["t"],
+        "cohort_p_value": st["p"],
+        "cohort_mean_pct": round(statistics.mean(cohorts) * 100, 3) if cohorts else None,
+        "cohort_sd_pct": round(statistics.stdev(cohorts) * 100, 3) if len(cohorts) > 1 else None,
         "trades": len(trade_rets),
         "final_equity": round(equity, 2),
         "total_return_pct": round(total_ret * 100, 2),
@@ -326,6 +338,10 @@ def main() -> int:
         else:
             print(f"  {k}: B - A = {d:+.2f} pp    （无基准）")
 
+    # 增量落盘：两臂 × 多窗口，进程可能静默死亡（见 research_artifacts）
+    write_partial(args.out, {"results": results, "args": vars(args)},
+                  note=f"已完成 {len(results)} 个窗口")
+
     if excesses:
         if all(e > 2 for e in excesses):
             verdict = "B 年化超额两窗口均 > 2pp → 存在可实现 Alpha（样本内限定仍在）"
@@ -354,15 +370,52 @@ def main() -> int:
     # 把成本模型写进结论文案：一/二阶段仅滑点模型不同，verdict 文本曾完全相同，
     # 导致归档结果无法区分属哪一阶段（见 AB_STUDIES_EVIDENCE.md）。
     verdict = f"[滑点={args.slippage}] {verdict}"
+
+    # ------------------------------------------------------------------
+    # 统计口径限定（2026-09-23 新增）
+    #
+    # ⚠️ 上面的判定是**点估计阈值规则**（"超额 > 2pp"），**不是显著性检验**。
+    # 加入 t/p 后发现：B 的超额 +2.06/+2.11pp 刚过阈值，但其**自身收益**的
+    # t 仅 +0.89/+0.72（p = 0.37/0.47），与 0 无法区分；年化超额的置信区间
+    # 宽达 ±39pp。故必须把统计状态一并写入结论文案，否则读者会把
+    # "点估计过线"误读为"已证实"。
+    #
+    # 注意：这里报的是**各臂自身收益**是否异于 0，**不是**超额是否异于 0
+    # （超额检验需逐期基准对齐，本脚本未计算）。
+    # ------------------------------------------------------------------
+    arm_ts = [
+        v["B_contrarian"].get("cohort_t_stat") for v in results.values()
+    ]
+    arm_ps = [
+        v["B_contrarian"].get("cohort_p_value") for v in results.values()
+    ]
+    if all(t is not None for t in arm_ts):
+        ts_txt = "/".join(f"{t:+.2f}" for t in arm_ts)
+        ps_txt = "/".join(f"{p:.2f}" for p in arm_ps)
+        weak = all(p is not None and p >= 0.05 for p in arm_ps)
+        ci_parts = []
+        for v in results.values():
+            b_arm = v["B_contrarian"]
+            b_t = b_arm.get("cohort_t_stat")
+            if not b_t:
+                continue
+            half = 1.96 * abs(b_arm["annualized_pct"]) / max(abs(b_t), 1e-9)
+            ci_parts.append(f"±{half:.0f}pp")
+        ci_txt = "；".join(ci_parts)
+        verdict += (
+            f"｜⚠️ 统计口径：B 自身收益 t = {ts_txt}（p = {ps_txt}）"
+            + ("，与 0 无法区分" if weak else "")
+            + f"；年化超额的 95% CI 宽约 {ci_txt}。"
+            "「超额 > 2pp」是点估计阈值规则、**非显著性检验** —— "
+            "本判定应视为 **INCONCLUSIVE（未达统计显著）**，"
+            "不得作为「已证实存在 Alpha」引用。"
+        )
     print(f"\n判定：{verdict}")
     print("=" * 92)
     print(f"总耗时 {time.time()-t0:.0f}s")
 
     if args.out:
-        with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
-            json.dump(_result_payload(results, verdict, args.slippage),
-                      fh, ensure_ascii=False, indent=1, default=str)
-        print(f"结果已写入: {args.out}")
+        write_final(args.out, _result_payload(results, verdict, args.slippage))
     return 0
 
 

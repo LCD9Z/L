@@ -12,6 +12,8 @@
 * :mod:`validation.performance`          —— 绩效指标（CAGR / 波动 / 夏普 / 回撤），
   存在的意义就是**避免只看收益率**。
 * :mod:`validation.benchmark`            —— 基准对比与超额收益（无第三方依赖）。
+  含**等权全市场基准**构造器 `equal_weight_returns`（日频再平衡、PIT 成分、
+  停牌按 0 收益持有）——用于纠正"全市场策略只对标沪深300"的基准错配。
 * :mod:`validation.strategy_validation`  —— Bootstrap 与前向窗口划分，
   判断结果是否只是运气。
 * :mod:`validation.robustness`           —— 参数稳健性扫描，
@@ -20,6 +22,10 @@
 * :mod:`validation.phase13_risk`         —— 红队审计：前视执行、单笔巨亏、
   同日过度集中。
 * :mod:`validation.health_monitor`       —— 实盘/模拟盘健康度告警。
+* :mod:`validation.multiple_testing`     —— **多重检验校正**：紧缩夏普比率（DSR）、
+  BH-FDR、Bonferroni、最小跟踪记录长度（MinTRL）。本项目累计报告 30+ 项
+  统计检验，未做校正时"至少出现一个显著结果"的概率达 78.5%——本模块是把
+  这件事算进显著性里的唯一入口。
 
 共同红线：
 

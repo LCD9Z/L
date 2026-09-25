@@ -110,7 +110,9 @@ def main() -> int:
     from historical_universe import point_in_time_universe
     from portfolio_backtest import portfolio_backtest
     from real_alpha_pipeline import _curve_returns
-    from alpha.alpha_survival_lab import annualized_excess_arithmetic
+    from alpha.alpha_survival_lab import (annualized_excess_arithmetic,
+                                           excess_t_statistics)
+    from research_artifacts import write_final, write_partial  # noqa: E402
 
     with open(os.path.join(dataset, "pit_universe.json"), encoding="utf-8") as fh:
         universe = json.load(fh)["snapshots"]
@@ -164,8 +166,10 @@ def main() -> int:
                                          start_signal_date=w)
                 s_ret = _curve_returns(res.get("equity_curve", []))
                 common = sorted(set(s_ret) & set(b_ret))
-                exc = annualized_excess_arithmetic(
-                    (s_ret[d] - b_ret[d] for d in common), as_percent=True)
+                # 先物化为列表：既算年化，也算 t/p（统计量必须一并落盘）
+                excess = [s_ret[d] - b_ret[d] for d in common]
+                exc = annualized_excess_arithmetic(excess, as_percent=True)
+                st = excess_t_statistics(excess)
                 rows.append({"seed": seed, "window": w, "variant": label,
                              "top_n": top_n, "pos_pct": pos_pct,
                              "n_stocks": len(data), "trades": res.get("trades"),
@@ -173,12 +177,24 @@ def main() -> int:
                              "total_return_pct": res.get("total_return_pct"),
                              "max_drawdown_pct": res.get("max_drawdown_pct"),
                              "benchmark_return_pct": round(bm, 2),
-                             "annualized_excess_pct": round(exc, 2)})
+                             "annualized_excess_pct": round(exc, 2),
+                             "t_stat": st["t"], "p_value": st["p"]})
                 print(f"    {label:18s} 交易 {res.get('trades'):>4}  "
                       f"胜率 {res.get('win_rate_pct'):>6}  收益 "
                       f"{res.get('total_return_pct'):>9}%  回撤 "
                       f"{res.get('max_drawdown_pct'):>7}%  年化超额 {exc:>+7.2f}%",
                       flush=True)
+                # ⚠️ 增量落盘：本实验 12 次回测约 2 小时，而本机后台进程会**静默死亡**。
+                # 2026-09-23 实测：跑到第 11 次时进程无报错退出，因只在结尾写一次 JSON，
+                # **10 次回测（约 2 小时）的结果全部丢失**。
+                # 故每完成一次回测就写 `<out>.partial`；正式 `<out>` 只在全部完成后写，
+                # 使部分结果永远可抢救，且不会被误当作完整结果。
+                write_partial(args.out,
+                              {"rows": rows, "seeds": seeds, "windows": windows,
+                               "args": vars(args)},
+                              note=f"已完成 {len(rows)}/"
+                                   f"{len(seeds) * len(windows) * len(CONCENTRATION_VARIANTS)}"
+                                   " 次回测")
         del data
 
     # ---- 核心：离散度对比 ----
@@ -223,14 +239,11 @@ def main() -> int:
 
     print()
     print("声明：本实验只改集中度，信号/阈值/周期/成本全部不变。")
-    print("      数据存在幸存者偏差与不复权两项缺陷，结果不构成投资结论。")
+    print("      数据缺陷以数据集 evidence.json 为准"
+          "（v3 已消除幸存者偏差与不复权两项），结果不构成投资结论。")
 
-    if args.out:
-        with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
-            json.dump({"rows": rows, "summary": summary, "seeds": seeds,
-                       "windows": windows, "args": vars(args)},
-                      fh, ensure_ascii=False, indent=1, default=str)
-        print(f"\n结果已写入: {args.out}")
+    write_final(args.out, {"rows": rows, "summary": summary, "seeds": seeds,
+                           "windows": windows, "args": vars(args)})
     print(f"总耗时 {time.time()-t0:.0f}s")
     return 0
 

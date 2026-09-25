@@ -7,6 +7,55 @@ AI股神团队 · A 股多 Agent 智能分析系统的版本演进记录。
 
 ---
 
+## Alpha 能力缺口补齐：P0 全 4 项 + P1 前 2 项（2026-09-19）
+
+起点：[`ALPHA_CAPABILITY_GAP_ANALYSIS.md`](ALPHA_CAPABILITY_GAP_ANALYSIS.md) 指出项目
+「验证 L3、其余 L1~L2」——**是精密的证伪机器，还不是 Alpha 生产机器**。
+本轮执行其 P0（纯校准）与 P1（数据补齐）方案，详见
+[`P0_P1_EXECUTION_REPORT.md`](P0_P1_EXECUTION_REPORT.md) 与
+[`WORKLOG.md`](WORKLOG.md) 第十二节。
+
+### P0（4/4 完成）
+
+| 项 | 交付 | 实测结果 |
+|----|------|---------|
+| **等权全A基准** | `validation/benchmark.equal_weight_returns` + `run_tdx_rolling_eval` 第二基准 | 6/6 窗口 Δ **全为负**（中位 **−6.44pp**，区间 −1.33~−16.38pp）。等权超额中位 **−27.83%** vs 沪深300 的 −21.5%。**换基准后 2 个窗口从"不显著"变为"显著跑输"**（t −2.56 / −2.24） |
+| **多重检验校正** | `validation/multiple_testing`（DSR/BH-FDR/Bonferroni/MinTRL/FWER）+ 审计脚本 | **8 个核心因子同时通过 BH 与 Bonferroni**；`dist_high_20` 降级为边缘；32 项检验的 FWER = **80.6%** |
+| **因子正交化** | `factors/factor_ic_lab.orthogonalize_panel`（sequential + Löwdin） | 秩相关 **0.935 → 0.060**（sequential）/ **0.072**（Löwdin） |
+| **ST 涨跌幅** | `exchange_rules.derive_limit_ratio` + 数据集 `limit_ratio` 列 + 加载层透传 `is_st` | **规则更正**：主板 ST 为**时变**（2026-07-06 前 ±5%、之后 ±10%） |
+
+### P1（2 完成 / 2 受阻 / 1 待做）
+
+* **P1-5 扩池至全A**：v3 **入选 5,667 只**（候选 5,807，短历史丢弃 140），在市覆盖 22.7% → **约 97.6%**。
+* **P1-6 PIT 财务数据**：`fetch/fundamentals_source` + `pit/pit_fundamentals` +
+  `scripts/fetch_fundamentals`。数据源 `stock_yjbb_em` 覆盖 **2016Q1~2026Q2（42 期）**。
+  打开 `pb` / `roe` / `net_profit_growth` / `pe_ttm` 及新增 3 个因子。
+* **P1-7 PIT 行业分类** ⛔ **受阻**：akshare 无行业变更历史接口 → 不产出伪 PIT 数据。
+* **P1-8 指数成分历史** ⛔ **受阻**：免费源只给当前成分快照（`日期` 唯一值 2026-09-18）
+  → 不产出伪历史成分表。替代方案 = 自建等权全A基准。
+* **P1-9 数据集增量更新管线**：`scripts/update_certified_dataset.py`。
+  前复权序列**不可盲目追加**（qfq 每次除权除息重新锚定）→ 用**重叠日校验**判定：
+  偏差 ≤ 容差则追加、偏差 > 容差则**整体替换该股序列**、无重叠日则**不动并记入日志**。
+  「无法判定」绝不当作「无需更新」。14 项测试覆盖三种判定分支。
+
+### 额外修复的缺陷（4 个）
+
+| # | 缺陷 | 性质 |
+|:--:|------|------|
+| 1 | 北交所 `920xxx` 被 `board_of` 误判为「其他A股」→ 涨跌幅 10% 而非 **30%** | 🔴 数据正确性（在线） |
+| 2 | `load_certified_csv` 丢弃 `is_st` → P0-4 修复**无法生效** | 🔴 使修复失效 |
+| 3 | `build_certified_dataset_v2.py` 引用未定义名 `prev_day` | 🟠 潜在 `NameError` |
+| 4 | `_rows_iter` 闭包未绑定循环变量 `code` | 🟠 潜在串号 |
+| 5 | **财务数据源公告日 88.4% 不可信**（2016-01~2025-06 系统性偏移 +1 年） | 🔴 数据质量（已用法定截止日兜底） |
+
+### 质量基线
+
+`python run_ci.py` **6/6 通过**：ruff All checks passed · mypy **264** 文件零错误（此前 237）·
+pytest **795 项**（此前 538，+257）失败 0 错误 0 · 凭据扫描通过 ·
+新增测试文件 8 个 · 清理今日早前遗留的 20 处 ruff 告警与 25 处 mypy 错误。
+
+---
+
 ## 待办 #1/#2 处置与本地 CI 修复（2026-09-14）
 
 承接 [`HANDOVER.md`](HANDOVER.md) 第五节待办清单。详见

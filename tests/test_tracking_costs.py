@@ -21,12 +21,13 @@ from tracking import TrackingCosts, net_return_pct
 # ---------------------------------------------------------------------------
 
 def test_round_trip_cost_pct_matches_hand_calculation():
-    """往返成本 = 双边佣金 + 卖出印花税，占基准仓位比例。"""
+    """往返成本 = 双边佣金 + 卖出印花税 + 双边过户费，占基准仓位比例。"""
     c = TrackingCosts(position_notional=100_000.0)
-    # 佣金 max(5, 100000*0.0003) = 30（双边 60）；印花税 100000*0.0005 = 50
-    expected = (30 + 30 + 50) / 100_000.0
+    # 佣金 max(5, 100000*0.0003) = 30（双边 60）；印花税 100000*0.0005 = 50；
+    # 过户费 100000*0.00001 = 1（双边 2，中国结算 2022-04-29 起 0.01‰ 沪深两市）
+    expected = (30 + 30 + 50 + 2) / 100_000.0
     assert c.round_trip_cost_pct() == pytest.approx(expected)
-    assert c.round_trip_cost_pct() == pytest.approx(0.0011)
+    assert c.round_trip_cost_pct() == pytest.approx(0.00112)
 
 
 def test_cost_is_independent_of_share_price():
@@ -49,8 +50,20 @@ def test_min_commission_does_not_dominate():
 def test_small_notional_falls_back_to_min_commission():
     """基准仓位很小时，最低佣金应正确生效（而非被忽略）。"""
     c = TrackingCosts(position_notional=10_000.0)
-    # 佣金 max(5, 3) = 5，双边 10；印花税 5 → 合计 15/10000 = 0.15%
-    assert c.round_trip_cost_pct() == pytest.approx(0.0015)
+    # 佣金 max(5, 3) = 5，双边 10；印花税 5；过户费 0.1（双边 0.2）
+    # → 合计 15.2/10000 = 0.152%
+    assert c.round_trip_cost_pct() == pytest.approx(0.00152)
+
+
+def test_stamp_duty_is_piecewise_by_trade_date():
+    """跨 2023-08-28 的回填必须按当时税率计印花税（减半前 1‰）。"""
+    c = TrackingCosts(position_notional=100_000.0)
+    # 旧税率：佣金 60 + 印花税 100 + 过户费 2 → 162/100000
+    assert c.round_trip_cost_pct(as_of="2023-07-03") == pytest.approx(0.00162)
+    # 生效日当天及以后：现行税率 0.5‰
+    assert c.round_trip_cost_pct(as_of="2023-08-28") == pytest.approx(0.00112)
+    # 未提供日期：按现行税率（向后兼容旧调用）
+    assert c.round_trip_cost_pct() == pytest.approx(0.00112)
 
 
 def test_zero_notional_does_not_divide_by_zero():

@@ -36,7 +36,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PACKAGES = {
     "pit": [
         "pit_integrity", "pit_universe_builder", "pit_event_master",
-        "pit_trading_filter", "pit_research_rows",
+        "pit_trading_filter", "pit_research_rows", "pit_fundamentals",
     ],
     "tdx": ["tdx_csv_adapter", "tdx_inventory", "tdx_lifecycle"],
     "corporate": ["corporate_actions", "corporate_action_provider", "corporate_action_ingest"],
@@ -50,19 +50,21 @@ PACKAGES = {
     ],
     "reporting": ["report_generator", "report_markdown", "report_styles"],
     "runtime": ["runtime_env", "runtime_profile"],
-    "risk": ["a_share_risk", "risk_engine", "risk_budget", "liquidity"],
+    "risk": ["a_share_risk", "risk_engine", "risk_budget", "liquidity", "var_calculator"],
     "validation": [
         "validation_suite", "performance", "phase13_risk", "robustness",
         "strategy_validation", "benchmark", "stress_test", "health_monitor",
+        "multiple_testing",
     ],
     "stage2": ["stage2_scoring", "stage2_ablation", "stage2_enrichment"],
     "alpha": ["alpha_experiment", "alpha_survival_lab"],
     "phase62": ["phase62_series", "phase62_tdx_index"],
-    "regime": ["regime_backtest_report", "regime_validation"],
+    "regime": ["regime_backtest_report", "regime_validation", "adx_router"],
     "tushare_client": ["tushare_provider", "tushare_ashare_events"],
     "notify": ["feishu_notifier", "lark_notify"],
     "router": ["provider_router", "quant_skill_router"],
-    "fetch": ["transport", "common", "quote", "kline", "news", "cli"],
+    "fetch": ["transport", "common", "quote", "kline", "news", "cli", "akshare_source",
+              "fundamentals_source"],
     "track": ["costs", "schema", "store", "stats"],
     "console": ["display", "teams"],
 }

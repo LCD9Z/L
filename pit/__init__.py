@@ -20,7 +20,11 @@
 * :mod:`pit.pit_event_master`     —— 已核验风险 / 停牌事件主表（保守只读）。
 * :mod:`pit.pit_trading_filter`   —— 将事件证据应用到可交易性过滤。
 * :mod:`pit.pit_research_rows`    —— 仅由 PIT 可交易观测构建研究样本行。
+* :mod:`pit.pit_fundamentals`     —— **PIT 财务数据**：按**公告日**索引业绩报表，
+  给定 ``(code, date)`` 只返回该日**确实已公告**的最新一期。
+  它是"财务数据不得前视"的唯一执行点 —— 前视偏差不会报错，只会让回测悄悄变好。
 
 依赖方向为单向：``research_rows -> trading_filter -> event_master``，
 ``integrity`` 与 ``universe_builder`` 互不依赖，也不依赖其余模块。
+``pit_fundamentals`` 独立（纯内存查表，不落盘、不发网络请求）。
 """

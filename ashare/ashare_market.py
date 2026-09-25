@@ -13,7 +13,11 @@ def board_of(code: str) -> str:
         return '科创板'
     if c.startswith('300') or c.startswith('301'):
         return '创业板'
-    if c.startswith(('8', '4')):
+    # 北交所代码段：43xxxx / 83xxxx / 87xxxx / 88xxxx（存量），以及
+    # **920xxx**（2023 年起启用的新段，如 920000 安徽凤凰）。
+    # 早期实现只判 ('8','4')，920xxx 会落到「其他A股」→ 涨跌幅被当成 10%
+    # 而非 30%（2026-09-19 由 tests/test_exchange_rules.py 抓出）。
+    if c.startswith(('8', '4')) or c.startswith('920'):
         return '北交所'
     # 200/900 are B-share codes, not A-share universe. Keep them explicit so
     # a broad code scan cannot silently mix B shares into the A-share model.

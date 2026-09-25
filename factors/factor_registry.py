@@ -27,7 +27,13 @@ CANDIDATE_FACTORS: List[Dict[str, Any]] = [
     {"name": "volume_ratio_20d", "group": "liquidity", "direction": 1, "source": "bars"},
     {"name": "amount_ratio_5d", "group": "liquidity", "direction": 1, "source": "bars"},
     {"name": "turnover_mean_20d", "group": "liquidity", "direction": 1, "source": "bars"},
-    # Fundamentals: registry only until PIT snapshot provider is connected
+    # Fundamentals: PIT 提供方已接入（2026-09-19）。
+    # 由 `fetch/fundamentals_source.py`（东财业绩报表，按报告期含公告日）抓取，
+    # 经 `pit/pit_fundamentals.py` 按**公告日**索引 —— 只暴露该日确实已公告的数据。
+    # 可用性仍由 `availability()` 按实际数据判定：抓取未覆盖的期/股一律保持
+    # missing_source，不因为"提供了接口"就默认可用。
+    # `ps_ttm` 需要市值（本地数据集无股本），`operating_cashflow_growth` 需要
+    # OCF 同比口径 —— 两者仍不可用，不硬凑。
     {"name": "pe_ttm", "group": "valuation", "direction": -1, "source": "pit_fundamentals"},
     {"name": "pb", "group": "valuation", "direction": -1, "source": "pit_fundamentals"},
     {"name": "ps_ttm", "group": "valuation", "direction": -1, "source": "pit_fundamentals"},

@@ -73,8 +73,10 @@ def walk_forward(code,bars,threshold=70.0,horizon=5,initial_capital=100000.0,cos
         entry=float(bars[entry_i]['open'])*(1+costs.slippage_rate); exitp=float(bars[exit_i]['close'])*(1-costs.slippage_rate)
         shares=math.floor(equity/entry/100)*100
         if shares<=0: break
-        bn=shares*entry; sn=shares*exitp; pnl=sn-_trade_cost(sn,'sell',costs)-bn-_trade_cost(bn,'buy',costs)
-        equity+=pnl; ret=pnl/(bn+_trade_cost(bn,'buy',costs))*100
+        bn=shares*entry; _bc=_trade_cost(bn,'buy',costs,bars[entry_i]['date'])
+        sn=shares*exitp; _sc=_trade_cost(sn,'sell',costs,bars[exit_i]['date'])
+        pnl=sn-_sc-bn-_bc
+        equity+=pnl; ret=pnl/(bn+_bc)*100
         trades.append({'signal_date':bars[i]['date'],'entry_date':bars[entry_i]['date'],'exit_date':bars[exit_i]['date'],'score':round(sig['score'],2),'risk':round(sig['risk'],2),'return_pct':round(ret,4),'pnl':round(pnl,2),'status':'closed'})
         curve.append({'date':bars[exit_i]['date'],'equity':equity}); i=exit_i+1
     return metrics(code,initial_capital,equity,trades,curve)

@@ -37,7 +37,11 @@ from typing import Any, Dict, List, Sequence, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from factors.factor_ic_lab import MIN_HISTORY, compute_factors  # noqa: E402
-from alpha.alpha_survival_lab import annualized_excess_arithmetic  # noqa: E402
+from research_artifacts import write_final, write_partial  # noqa: E402
+from alpha.alpha_survival_lab import (  # noqa: E402
+    annualized_excess_arithmetic,
+    excess_t_statistics,
+)
 
 # 变体定义：剔除哪些因子的最高分位
 VARIANTS: Dict[str, List[str]] = {
@@ -159,8 +163,9 @@ def _zero_cost_patch():
     """
     import portfolio_backtest as pb
     orig = (pb._trade_cost, pb.dynamic_slippage)
-    pb._trade_cost = lambda notional, side, c: 0.0
-    pb.dynamic_slippage = lambda rows, base=0.0005: 0.0
+    # _trade_cost 现支持可选的第 4 参 trade_date（印花税分段），用 *args 兼容
+    pb._trade_cost = lambda *args, **kwargs: 0.0
+    pb.dynamic_slippage = lambda *args, **kwargs: 0.0
     return orig
 
 
@@ -175,6 +180,10 @@ def main() -> int:
     ap.add_argument("--max-stocks", type=int, default=400)
     ap.add_argument("--windows", default=",".join(DEFAULT_WINDOWS))
     ap.add_argument("--top-frac", type=float, default=0.20)
+    ap.add_argument("--top-n", type=int, default=5,
+                    help="同时持仓上限（C20 分散实验取 20）")
+    ap.add_argument("--position-pct", type=float, default=0.25,
+                    help="单仓占初始资金上限（C20 分散实验取 0.05）")
     ap.add_argument("--horizon", type=int, default=5)
     ap.add_argument("--all-csv", action="store_true",
                     help="从目录全部 CSV 取码（含早前残留），仅用于稳健性交叉验证")
@@ -234,7 +243,9 @@ def main() -> int:
                     restricted[code] = kept
             bench = [b for b in bench_all if b["date"] >= w]
             res = portfolio_backtest(restricted, universe_snapshot_map=universe,
-                                     threshold=70, top_n=5, horizon=args.horizon,
+                                     threshold=70, top_n=args.top_n,
+                                     max_position_pct=args.position_pct,
+                                     horizon=args.horizon,
                                      start_signal_date=w, candidate_filter=flt)
             s_ret = _curve_returns(res.get("equity_curve", []))
             b_ret = {b["date"]: 0.0 for b in bench}
@@ -243,15 +254,21 @@ def main() -> int:
                     b_ret[b["date"]] = float(b["close"]) / float(a["close"]) - 1
             common = sorted(set(s_ret) & set(b_ret))
             bm = (float(bench[-1]["close"]) / float(bench[0]["close"]) - 1) * 100 if bench else 0.0
-            exc = annualized_excess_arithmetic(
-                (s_ret[d] - b_ret[d] for d in common), as_percent=True)
+            # 先物化为列表：既算年化，也算 t/p（统计量必须一并落盘）
+            excess = [s_ret[d] - b_ret[d] for d in common]
+            exc = annualized_excess_arithmetic(excess, as_percent=True)
+            st = excess_t_statistics(excess)
             rows.append({"variant": vname, "window": w, "aligned": len(common),
                          "trades": res.get("trades"),
                          "win_rate_pct": res.get("win_rate_pct"),
                          "total_return_pct": res.get("total_return_pct"),
                          "max_drawdown_pct": res.get("max_drawdown_pct"),
                          "benchmark_return_pct": round(bm, 2),
-                         "annualized_excess_pct": round(exc, 2)})
+                         "annualized_excess_pct": round(exc, 2),
+                         "t_stat": st["t"], "p_value": st["p"]})
+            # 增量落盘：本实验约 1~2 小时，进程可能静默死亡（见 research_artifacts）
+            write_partial(args.out, {"rows": rows, "args": vars(args)},
+                          note=f"已完成 {len(rows)} 个（变体×窗口）单元")
             print(f"  {vname:30s} {w}  交易 {res.get('trades'):>4}  "
                   f"收益 {res.get('total_return_pct'):>8}%  "
                   f"基准 {bm:>7.2f}%  年化超额 {exc:>+7.2f}%  ({time.time()-t0:.0f}s)",
@@ -283,7 +300,9 @@ def main() -> int:
                 if ever:
                     restricted[code] = kept
             g = portfolio_backtest(restricted, universe_snapshot_map=universe,
-                                   threshold=70, top_n=5, horizon=args.horizon,
+                                   threshold=70, top_n=args.top_n,
+                                   max_position_pct=args.position_pct,
+                                   horizon=args.horizon,
                                    start_signal_date=w, candidate_filter=flt)
             net_row = next((r for r in rows
                             if r["variant"] == vname and r["window"] == w), None)
@@ -331,15 +350,14 @@ def main() -> int:
               f"{r['annualized_excess_pct']:>+10.2f}")
 
     print()
-    print("声明：本实验未扫参数；数据存在幸存者偏差与不复权两项缺陷，")
+    print("声明：本实验未扫参数；数据缺陷以数据集 evidence.json 为准"
+          "（v3 已消除幸存者偏差与不复权两项），")
     print("      结果仅反映该改动在此数据集上的表现，不构成投资结论。")
 
     if args.out:
-        with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
-            json.dump({"rows": rows, "summary": summary, "cost_comparison": cost_rows,
-                       "variants": VARIANTS, "args": vars(args)},
-                      fh, ensure_ascii=False, indent=1, default=str)
-        print(f"\n结果已写入: {args.out}")
+        write_final(args.out, {"rows": rows, "summary": summary,
+                               "cost_comparison": cost_rows,
+                               "variants": VARIANTS, "args": vars(args)})
     return 0
 
 

@@ -125,6 +125,24 @@ def permutation_pvalue(values, reps=5000, seed=20260905):
     return (ge + 1) / (int(reps) + 1)
 
 
+def excess_t_statistics(excess_returns) -> Dict[str, Any]:
+    """超额收益序列的 t 统计量与双尾 p 值（正态近似）。
+
+    供研究脚本**补记统计量**用：与 :func:`analyse_alpha` 走同一套
+    ``_t_stat`` / ``_two_sided_pvalue_from_t``，但**不跑 bootstrap / 置换检验**，
+    因此代价可忽略，适合在只关心 t/p 的对照实验里调用。
+
+    动机（2026-09-22）：项目此前的策略层面实验只归档 ``annualized_excess``
+    这一个**点估计**，没有标准误 → p 值**无法事后反推**，导致 12 个策略配置
+    无法纳入多重检验校正。凡产出超额数字的实验都应一并落盘本函数的返回值。
+
+    样本 < 2 或标准差为 0 时 ``t`` / ``p`` 为 ``None``（不编造）。
+    """
+    vals = [_f(x) for x in excess_returns]
+    t = _t_stat(vals)
+    return {"t": t, "p": _two_sided_pvalue_from_t(t), "n": len(vals)}
+
+
 def analyse_alpha(strategy, benchmark, annualization=252, min_periods=252,
                   bootstrap_reps=2000, permutation_reps=5000, seed=20260905):
     rows = align_returns(strategy, benchmark)

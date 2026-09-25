@@ -3,8 +3,10 @@
 > **项目**：AI股神团队 1.0 · A股多 Agent 智能分析系统
 > **仓库**：`https://github.com/LCD9Z/L.git`（**私有**）　**分支**：`main`
 > **HEAD**：`7a3d005`（**写入本文件时的值；每次提交都会变，以 `git log` 实际为准**）
-> **交接范围**：2026-09-13 ~ 2026-09-16 的工程改造与量化研究
+> **交接范围**：2026-09-13 ~ 2026-09-19 的工程改造、量化研究与 Alpha 能力缺口补齐
 > **配套阅读**：[`WORKLOG.md`](WORKLOG.md)（过程与证据）· [`CHANGELOG.md`](CHANGELOG.md)（版本演进）· [`DIRECTORY_LAYOUT.md`](DIRECTORY_LAYOUT.md)（结构全景，脚本生成）
+> **本轮新增**：[`ALPHA_CAPABILITY_GAP_ANALYSIS.md`](ALPHA_CAPABILITY_GAP_ANALYSIS.md)（能力缺口分析）·
+> [`P0_P1_EXECUTION_REPORT.md`](P0_P1_EXECUTION_REPORT.md)（P0/P1 落地执行报告）
 
 ---
 
@@ -42,12 +44,27 @@
 | 组合研究 | 采样敏感性、持仓分散度、尾部剔除、多股票池重复验证 | ✅ |
 | 假设检验 | 复合反转 H-C1（事前登记 → IC 强支持 → 组合层面 → 基准对照） | ✅ |
 | 外部集成 | 飞书 notify 真实凭据验收通过 | ✅ |
+| **基准校正** | **等权全A第二基准**（`validation/benchmark.equal_weight_returns`）—— 纠正"全市场策略只对标沪深300"的错配 | ✅ |
+| **多重检验校正** | `validation/multiple_testing.py`：DSR / BH-FDR / Bonferroni / MinTRL / FWER | ✅ |
+| **因子正交化** | `factors/factor_ic_lab.orthogonalize_panel`：顺序残差化 + Löwdin | ✅ |
+| **涨跌停口径** | `exchange_rules.derive_limit_ratio`：**时变**（主板 ST 2026-07-06 前 ±5% / 之后 ±10%） | ✅ |
+| **PIT 财务数据** | `fetch/fundamentals_source` + `pit/pit_fundamentals`：按公告日索引，打开 `pb`/`roe`/`pe_ttm`/`net_profit_growth` 等因子 | ✅ |
+| **数据集增量更新** | `scripts/update_certified_dataset.py`：**重叠日校验**（前复权序列不可盲目追加） | ✅ |
+| **基本面因子检验** | `scripts/run_fundamental_factor_study.py`：**`pb`(t=−7.42) 与 `pe_ttm`(t=−4.19) 通过 BH+Bonferroni 双校正**；质量/成长 4 因子不显著 | ✅ |
+| **控制市值残差检验** | 同上 `--control log_amount_20`：**`pb` 溢价独立于市值（保留 88%）**；控制后 `net_profit_growth`/`ocf_per_share` 变为显著；合并族 m=14 校正后 **4/7 存活** | ✅ |
+| **全池等权基准** | `scripts/build_equal_weight_benchmark.py`（流式，内存 O(交易日数)）：分母均值 **937.8 → 5,187 只**，覆盖率 **18.1% → 约 96%** | ✅ |
+| **全A股票池** | `D:/tdx_dataset_v3`：入选 **5,667 只**，池规模 2,542~5,428，在市覆盖 22.7% → **约 97.6%** | ✅ |
 
 ### 1.3 待完成功能
 
 | 项 | 说明 |
 |----|------|
-| **新的经济逻辑假设** | 现有 7 因子上已判定无 Alpha；需**新假设**（禁止调权重/阈值） |
+| **在 v3 上重跑全部关键检验** | v3 构建完成后（6 窗口双基准滚动 + 五因子 IC + 正交化对照 + C20 尾部剔除）。**在 v3 结论出来前不应基于 v2 旧数字做新的策略判断** |
+| **新的经济逻辑假设** | 现有 7 因子上已判定无 Alpha；需**新假设**（禁止调权重/阈值）。P1-6 已打开基本面维度，是新假设的主要来源 |
+| ~~P1-7 PIT 行业分类~~ | ⛔ **已决策放弃（2026-09-22）** —— 不采购付费源、不自建统计代理。**代价：`pb`/`pe_ttm` 的价值溢价未做行业中性化**，该残留风险已记录在案 |
+| ~~P1-8 指数成分历史~~ | ⛔ **已决策放弃（2026-09-22）** —— 免费源只给当前成分快照。基准改用**自建等权全A**（已实现） |
+| P1-9 数据集增量更新管线 | 当前为固定快照（锚定 2026-09-11），不可增量 |
+| 策略层面实验补记 p 值 | 12 项实验归档的是判定而非 p 值 → 无法纳入多重检验校正 |
 | ARK 付费模型凭据验收 | 需用户提供凭据 |
 | `disallow_untyped_defs` 收紧 | 569 处纯标注告警，收益递减，暂缓 |
 | 无直接测试覆盖模块补测 | 见 [6.2](#62-高风险模块) |
@@ -112,6 +129,8 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 | `factors/factor_ic_lab.py:62` | `PRIOR_SIGN`（各因子先验方向） | **契约常量，改动会翻转策略方向** |
 | `lifecycle_event_evidence.py:24` | `VERIFIED_2026_DELISTINGS`（人工核验的退市清单） | 数据快照 |
 | `market_regime.py:5` | `BENCHMARKS` | 契约常量 |
+| `exchange_rules.py:31-34` | `ST_LIMIT_CHANGE_DATE="2026-07-06"`、`ST_LIMIT_RATIO_BEFORE=0.05`、`ST_LIMIT_RATIO_AFTER=0.10` | **规则常量，改动会翻转涨跌停判定**。出处：沪深北交易所 2026-07-06 同步施行的交易规则修订 |
+| `factors/factor_ic_lab.py:COMPOSITE_FACTORS / ORTHO_ORDER_DEFAULT` | 复合五因子集合与**顺序残差化的事前声明顺序** | **契约常量**：改顺序会改变正交化结果，且**不得按 IC 结果调整**（等于用结果选参数） |
 | `notify/feishu_notifier.py:14` | `WORK_DIR = dirname(__file__)` | **`__file__` 派生路径** —— 改动风险高，见 [6.2](#62-高风险模块) |
 | `track/schema.py:13` | `_DB_PATH` 取两层父目录 | 同上，已有守卫 `test_db_path_stays_at_project_root` |
 
@@ -223,6 +242,8 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 
 | 文档 | 结论 |
 |------|------|
+| [`ALPHA_CAPABILITY_GAP_ANALYSIS.md`](ALPHA_CAPABILITY_GAP_ANALYSIS.md) | **能力缺口分析**：六环框架（数据→假设→信号→组合→验证→运行），成熟度 数据 L2 / 假设 L1 / 信号 L2 / 组合 L1 / **验证 L3** / 运行 L1；含两项实测（基准错配、因子冗余）与 P0~P3 补足路线 |
+| [`P0_P1_EXECUTION_REPORT.md`](P0_P1_EXECUTION_REPORT.md) | **P0/P1 落地执行报告**：4 项 P0 全部完成、P1 前 2 项完成、2 项受阻（附核查证据）；含 4 个额外缺陷 |
 | [`AB_STUDIES_EVIDENCE.md`](AB_STUDIES_EVIDENCE.md) | **A/B 与 H-C1 原始结果归档说明**（含口径提醒） |
 | [`PORTFOLIO_AB_REPORT_3.md`](PORTFOLIO_AB_REPORT_3.md) | 第三阶段：反转 ≈ 指数，无可靠正超额 |
 | [`PORTFOLIO_AB_REPORT_2.md`](PORTFOLIO_AB_REPORT_2.md) | 第二阶段：优势稳健但被成本侵蚀 |
@@ -243,8 +264,9 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 
 ### 5.1 测试脚本
 
-`tests/` 共 **66 个测试文件 / 538 项**。除常规单测外，**8 个为守卫测试**
-（防止已修缺陷回退）：
+`tests/` 共 **70+ 个测试文件**（2026-09-19 新增 7 个：等权基准 / 多重检验 /
+正交化 / 因子IC重构锁定 / 涨跌幅规则 / PIT财务 / 财务数据源，共 **176 项**）。
+除常规单测外，**8 个为守卫测试**（防止已修缺陷回退）：
 
 | 守卫测试 | 守住什么 |
 |---------|---------|
@@ -291,6 +313,11 @@ python scripts/gen_layout_doc.py --check
 | 3 | ~~`orchestrator.py`（337 行）无直接测试引用~~ | **已修（2026-09-16）** | 补 `tests/test_orchestrator.py`（21 项）后**立刻发现严重缺陷**：`load_session()` 必然抛 `TypeError`（`save_session` 漏写必填字段 `analysis_type`）→ 会话恢复功能完全不可用。已修 + 加通用守卫 `test_serialized_keys_are_accepted_by_analysis_result` |
 | 4 | 10 个根目录模块无直接测试引用 | 未修 | 见 [6.2](#62-高风险模块) |
 | 5 | `disallow_untyped_defs` 未开启（569 处纯标注告警） | 刻意暂缓 | `mypy.ini` 中该项为 `False` |
+| 6 | ~~北交所 `920xxx` 代码段被 `board_of` 误判为「其他A股」~~ | **已修（2026-09-19）** | 后果：涨跌幅按 10% 而非 **30%**。数据集含 `920000` 安徽凤凰，故为**在线缺陷**。发现方式：新写的 `tests/test_exchange_rules.py` 直接失败。已加 `920` 前缀判定 |
+| 7 | ~~`load_certified_csv` 丢弃 `is_st`~~ | **已修（2026-09-19）** | 后果：P0-4 的涨跌停派生规则**无法生效**（回测路径拿不到 ST 状态）。已改为逐日状态字段透传（`is_st`/`limit_ratio`/`limit_pct`） |
+| 8 | ~~`build_certified_dataset_v2.py` 引用未定义名 `prev_day`~~ | **已修（2026-09-19）** | 停牌区间推导中 `prev_day` 仅在循环体内赋值，循环后仍被引用。当前路径"恰好安全"但静态上不可保证。已循环外初始化。发现方式：`ruff` F821 |
+| 9 | ~~`_rows_iter` 闭包未绑定循环变量 `code`~~ | **已修（2026-09-19）** | 发现方式：`ruff` B023。已加 `code=code` 默认参数绑定 |
+| 10 | ~~财务数据源公告日 88.4% 不可信~~ | **已兜底（2026-09-19）** | 东财 `最新公告日期` 在 2016-01~2025-06 **全部期数**上系统性偏移 **+1 年**（茅台 2016Q1 EPS 3.89 确为 2016Q1，却标注 2017-04-25）；仅最近约 4 期正确。**财务数值本身正确，只有公告日错**。已由 `pit.pit_fundamentals.resolve_availability` 兜底：公告日超法定截止日 45 天即判不可信 → 退回法定披露截止日。**残留风险**：真实延迟披露且超窗口者会略早可用（2025-09 后各期 1.6%~4.2%）。彻底解决需改用带真实披露日的源 |
 
 > **已修复**的历史缺陷（含复现路径）见 `WORKLOG.md` 第六节与
 > `tests/test_study_regressions.py`、`tests/test_annualization_conventions.py`。
@@ -399,15 +426,21 @@ python scripts/gen_layout_doc.py --check
 | 优先级 | 任务 | 预估工时 | 假设与说明 |
 |:---:|------|:---:|------|
 | — | 缓存备份处置 | **已结案（保留）** | 2026-09-16 已核验 `_1.0_cache_backup_…`（9.8M，纯缓存）与 `_backup_1.0`（9.1M，完全冗余）均为零信息损失；因环境批量删除护栏拦截，**用户决定保持现状**。其中的研究证据已抢救入库（`AB_STUDIES_EVIDENCE.md`） |
-| **1** | **新的经济逻辑假设（追求 Alpha）** | **3~5 天** | 含：逻辑调研 0.5 天 → 事前登记 0.5 天 → 因子实现 1 天 → IC 检验 0.5 天 → 组合层面 + 基准对照 1~2 天（多窗口回测）。**前提：必须提出新逻辑，禁止调现有 7 因子权重/阈值** |
-| 2 | ARK 付费模型凭据验收 | **0.5 天** | 阻塞于用户提供凭据；含接通 + 一次真实调用 + 结果留档 |
-| 3 | ~~修复 `tdx_ab_stage2` verdict 文案~~ | **✅ 已完成** | 根因是 `params` 未记录 `slip_mode`。已修脚本 + 加守卫测试（见 [5.3](#53-已知缺陷与复现步骤) 第 1 条） |
-| 4 | ~~为 10 个无直接覆盖模块补单测~~ → **剩余 9 个** | **1~1.5 天** | ✅ `orchestrator` 已完成（21 项，并修掉一个严重缺陷）。剩余优先 `pool_manager`、`v3_data_bus`、`professional_committee`；纯标注类（`log_utils`）可略 |
-| 5 | `disallow_untyped_defs` 全量收紧 | **2~3 天** | 569 处纯标注补全，**无缺陷捕获收益**，建议最后做 |
-| 6 | 其余外部集成验收 | **1 天** | 需凭据；每项含真实调用 + 留档 |
-| 7 | 补齐数据库迁移机制 | **0.5 天** | 当前无迁移脚本；若 schema 需变更则必须先做 |
+| **1** | **在 v3 上重跑全部关键检验** | **3~4 小时（机器时间）** | 6 窗口双基准滚动 + 五因子 IC + 正交化前后对照 + C20 尾部剔除。**前置：v3 构建完成**。在 v3 结论出来前不应基于 v2 旧数字做新判断 |
+| **2** | **财务因子 IC 检验** | **0.5 天** | `pb` / `roe` / `net_profit_growth` / `pe_ttm` —— **第一条真正的新增数据维度**，是新假设的主要来源。前置：`fundamentals.jsonl` 抓取完成 |
+| 3 | **新的经济逻辑假设（追求 Alpha）** | **3~5 天** | 含：逻辑调研 0.5 天 → 事前登记 0.5 天 → 因子实现 1 天 → IC 检验 0.5 天 → 组合层面 + 基准对照 1~2 天。**前提：必须提出新逻辑，禁止调现有因子权重/阈值** |
+| 4 | 策略层面实验补记 p 值 | **1 天** | 12 项实验归档的是判定而非 p 值 → 当前无法纳入多重检验校正（`reports/multiple_testing_audit.json` 已记录该缺口） |
+| 5 | P1-9 数据集增量更新管线 | **✅ 已完成** | `scripts/update_certified_dataset.py`：**重叠日校验**保证前复权序列不被盲目追加（偏差超容差 → 整体替换该股序列）。14 项测试 |
+| 6 | P1-7 / P1-8 替代路径决策 | **需决策** | 三选一：付费源采购 / 自建统计代理（收益相关性聚类）/ 放弃该维度 |
+| 7 | 财务数据源改用带真实披露日的接口 | **0.5 天** | 当前用法定截止日兜底（见 §5.3 缺陷 6）；巨潮资讯接口可取真实披露日 |
+| 7 | ARK 付费模型凭据验收 | **0.5 天** | 阻塞于用户提供凭据；含接通 + 一次真实调用 + 结果留档 |
+| 8 | ~~修复 `tdx_ab_stage2` verdict 文案~~ | **✅ 已完成** | 根因是 `params` 未记录 `slip_mode`。已修脚本 + 加守卫测试（见 [5.3](#53-已知缺陷与复现步骤) 第 1 条） |
+| 9 | ~~为 10 个无直接覆盖模块补单测~~ → **剩余 9 个** | **1~1.5 天** | ✅ `orchestrator` 已完成（21 项，并修掉一个严重缺陷）。剩余优先 `pool_manager`、`v3_data_bus`、`professional_committee`；纯标注类（`log_utils`）可略 |
+| 10 | `disallow_untyped_defs` 全量收紧 | **2~3 天** | 569 处纯标注补全，**无缺陷捕获收益**，建议最后做 |
+| 11 | 其余外部集成验收 | **1 天** | 需凭据；每项含真实调用 + 留档 |
+| 12 | 补齐数据库迁移机制 | **0.5 天** | 当前无迁移脚本；若 schema 需变更则必须先做 |
 
-**建议顺序**：3 → 2 → 1（主攻方向）→ 4 → 7 → 6 → 5。
+**建议顺序**：1 → 2 → 4 → 3（主攻方向）→ 5 → 6 → 9 → 12 → 11 → 10。
 
 ---
 
@@ -439,3 +472,28 @@ python run_ci.py          # ③ 一条命令验证状态是否绿
 
 **降低中断损失**：①分小步提交（每个可验证的小改动就提交）；②提交信息写清"为什么"；
 ③改动前确认工作区干净。
+
+
+---
+
+## 长跑脚本增量落盘（2026-09-24 已解决）
+
+**风险**：研究脚本单次运行 10 分钟~2 小时，而本机后台进程会**静默死亡**。
+2026-09-23 实测：集中度实验跑到第 11/12 次回测时进程无报错退出，
+因脚本只在结尾写一次 JSON，**10 次回测（约 2 小时）结果全丢**。
+
+**机制（已落地）**：`research_artifacts.py` 提供 `.partial` + `complete` 双文件落盘。
+
+| 约定 | 含义 |
+|------|------|
+| 存在正式 `<out>` | **代表跑完**（`complete: true`） |
+| 存在 `<out>.partial` | 部分结果，**可抢救但不得当完整结果** |
+| 写入方式 | 原子（`.tmp` + `os.replace`），不会读到半成品 |
+
+**已接入**：`run_tail_exclusion_study` / `run_regime_overlay_study` /
+`run_cost_model_check` / `run_contrarian_portfolio` / `run_concentration_study`。
+
+**防回退守卫**：`tests/test_research_artifacts.py`（22 项）——
+参数化断言这 5 个脚本必须调用 `write_partial`，且禁止再出现 `open(args.out, "w")` 的裸结尾落盘。
+
+> **新增长跑脚本时**：必须接入 `write_partial` / `write_final`，否则守卫会红。

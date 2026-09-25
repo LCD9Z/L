@@ -45,11 +45,19 @@ def load_certified_csv(path: str | Path, metadata_path: str | Path | None = None
     rows=[]
     with path.open(encoding="utf-8", newline="") as f:
         for r in csv.DictReader(f):
-            rows.append({
+            bar = {
                 "date": r["date"], "open": float(r["open"]), "close": float(r["close"]),
                 "high": float(r["high"]), "low": float(r["low"]),
                 "volume": float(r.get("volume") or 0), "amount": float(r.get("amount") or 0),
-            })
+            }
+            # 逐日交易状态字段**透传**（数据集有则带上，没有则省略）。
+            # 涨跌停判定需要它们：主板 ST 股票的涨跌幅与普通股不同
+            # （2026-07-06 前 ±5%，之后 ±10%），缺了会产生**单向乐观偏差**
+            # ——真实一字板买不进的票会被当成可买。见 exchange_rules.derive_limit_ratio。
+            for key in ("is_st", "limit_ratio", "limit_pct"):
+                if r.get(key) not in (None, ""):
+                    bar[key] = r[key]
+            rows.append(bar)
     if len(rows) != int(meta.get("rows", -1)):
         raise ValueError("dataset_row_count_mismatch")
     if sorted(r["date"] for r in rows) != [r["date"] for r in rows]:
