@@ -212,3 +212,64 @@ def test_excess_t_statistics_degenerate_inputs():
 def test_excess_t_statistics_sign_follows_mean():
     assert excess_t_statistics([0.01, 0.02, 0.03])["t"] > 0
     assert excess_t_statistics([-0.01, -0.02, -0.03])["t"] < 0
+
+
+# ---------------------------------------------------------------------------
+# 回归守卫：pandas 缺失值不得伪装成合法日期
+#
+# 2026-09-25 实测缺陷：巨潮披露日 176,841 条中有 **11 条** `actual_disclose="NaT"`。
+# 根因是 `_norm_date` 只判 `None`，而 `str(pd.NaT) == "NaT"`（长度 3，非空串），
+# 于是 "NaT" 作为"合法日期"流进下游，直接污染了「披露时点偏离」的分布计算
+# （`date.fromisoformat("NaT")` 才报错暴露出来）。
+#
+# 「缺失即缺失」—— 这里锁住两层防线。
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("raw", ["NaT", "nat", "NaN", "nan", "None", "", "   ", None])
+def test_norm_date_rejects_pandas_missing(raw):
+    from fetch.fundamentals_source import _norm_date
+    assert _norm_date(raw) == ""
+
+
+@pytest.mark.parametrize("raw,expected", [
+    ("2024-04-25", "2024-04-25"),
+    ("2024/04/25", "2024-04-25"),
+    ("20240425", "2024-04-25"),
+    ("  2024-04-25  ", "2024-04-25"),
+    ("2024-04-25 00:00:00", "2024-04-25"),
+])
+def test_norm_date_still_parses_real_dates(raw, expected):
+    from fetch.fundamentals_source import _norm_date
+    assert _norm_date(raw) == expected
+
+
+def test_fetch_disclosure_period_skips_nat(monkeypatch):
+    """上游返回缺失值时不得产出该记录（此前会产出 actual_disclose="NaT"）。
+
+    用 ``float("nan")`` 覆盖与 ``pd.NaT`` 相同的代码路径（``str()`` 后非空串），
+    从而不必为测试引入 pandas 依赖。
+    """
+    monkeypatch.setattr("fetch.fundamentals_source._ak",
+                        lambda: FakeAk([_row("000001", float("nan")),
+                                       _row("000002", "2025-04-01")]))
+    got = fetch_disclosure_period("2024-12-31")
+    assert [r["code"] for r in got] == ["000002"]
+
+
+def test_load_disclosures_rejects_non_iso_dates(tmp_path):
+    """消费端防御：即使文件里混入 "NaT"，读入时也必须剔除。"""
+    p = tmp_path / "d.jsonl"
+    p.write_text('{"code": "600519", "report_period": "2024-03-31",'
+                 ' "actual_disclose": "NaT"}\n'
+                 '{"code": "000001", "report_period": "2024-03-31",'
+                 ' "actual_disclose": "2024-04-18"}\n', encoding="utf-8")
+    d = load_disclosures(p)
+    assert ("600519", "2024-03-31") not in d        # NaT 被拒
+    assert d[("000001", "2024-03-31")] == "2024-04-18"
+
+
+def test_load_disclosures_accepts_iso_dates_only(tmp_path):
+    p = tmp_path / "d.jsonl"
+    p.write_text('{"code": "1", "report_period": "2024-03-31",'
+                 ' "actual_disclose": "20240418"}\n', encoding="utf-8")
+    assert load_disclosures(p) == {}                # 非 ISO 格式一律不收

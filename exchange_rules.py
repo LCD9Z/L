@@ -30,6 +30,17 @@ ST_LIMIT_CHANGE_DATE = "2026-07-06"
 ST_LIMIT_RATIO_BEFORE = 0.05
 ST_LIMIT_RATIO_AFTER = 0.10
 
+# 创业板涨跌幅由 ±10% 放宽至 ±20% 的生效日。
+#   出处：深交所创业板改革并试点注册制，2020-08-24 起新上市及存量股票统一 ±20%。
+#   ⚠️ 此前本函数对创业板**无条件返回 0.20**，等于把当前规则**追溯**到 2016 年 ——
+#   2026-09-25 实测：创业板 2,121,218 行中 **738,070 行（34.8%）** 涨跌幅被高估，
+#   涉及 834 只。后果是「一字板不可买」检查在该期间**失效**（10% 涨停被当作
+#   未触及 20% 阈值），使回测在该段偏乐观。这是 **PIT 违规**，不是近似。
+CHINEXT_20PCT_DATE = "2020-08-24"
+CHINEXT_RATIO_BEFORE = 0.10        # 改革前：普通股 ±10%
+CHINEXT_ST_RATIO_BEFORE = 0.05     # 改革前：风险警示股 ±5%（与其他板块一致）
+CHINEXT_RATIO_AFTER = 0.20
+
 
 def is_st_flag(value) -> bool:
     """把 ``is_st`` 的各种表示解析为布尔。
@@ -56,7 +67,10 @@ def derive_limit_ratio(code: str, *, is_st: bool = False,
     ====================  ============================================
     basis                 含义
     ====================  ============================================
-    ``board``             非 ST；或创业/科创/北交所（其 ST 与普通股同幅度）
+    ``board``             非 ST；或科创板/北交所（其 ST 与普通股同幅度）；
+                          或创业板且交易日为 2020-08-24 及之后 → 20%
+    ``board_chinext_legacy`` 创业板非 ST 且交易日早于 2020-08-24 → 10%
+    ``board_chinext_st_legacy`` 创业板 ST 且交易日早于 2020-08-24 → 5%
     ``board_st_legacy``   主板 ST 且交易日早于 2026-07-06 → 5%
     ``board_st``          主板 ST 且交易日为 2026-07-06 及之后 → 10%
     ====================  ============================================
@@ -71,8 +85,16 @@ def derive_limit_ratio(code: str, *, is_st: bool = False,
     若数据源能提供逐日 ``limit_ratio`` 字段，:func:`limit_ratio` 会优先采用它。
     """
     board = board_of(code)
-    if board in ("科创板", "创业板"):
-        return 0.20, "board"
+    if board == "科创板":
+        return 0.20, "board"          # 2019-07-22 开板即 ±20%，无需分段
+    if board == "创业板":
+        # 2020-08-24 起 ±20%（ST 与普通股同幅度）；此前普通股 ±10%、ST ±5%。
+        # **必须按交易日分段**，否则是 PIT 违规（见上方常量注释）。
+        if trade_date is not None and str(trade_date) < CHINEXT_20PCT_DATE:
+            if is_st:
+                return CHINEXT_ST_RATIO_BEFORE, "board_chinext_st_legacy"
+            return CHINEXT_RATIO_BEFORE, "board_chinext_legacy"
+        return CHINEXT_RATIO_AFTER, "board"
     if board == "北交所":
         return 0.30, "board"
     if not is_st:

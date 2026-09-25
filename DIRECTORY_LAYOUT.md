@@ -9,8 +9,8 @@
 | 指标 | 值 |
 |------|----|
 | 子包数 | **19** |
-| 已入包模块 | **73**（约 8,851 行） |
-| 根目录 `.py` | **57**（约 5,969 行） |
+| 已入包模块 | **73**（约 8,867 行） |
+| 根目录 `.py` | **57**（约 5,991 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -213,7 +213,7 @@ A 股公司行为（corporate action）与复权因子子包。
 | `factors/factor_registry.py` | 82 |
 | `factors/factor_validation.py` | 130 |
 
-### `fetch/`　（8 模块，约 1,367 行）
+### `fetch/`　（8 模块，约 1,377 行）
 
 **职责**：L2 数据管道实现层（由 data_fetcher.py 拆分）。
 
@@ -249,7 +249,7 @@ L2 数据管道实现层（由 data_fetcher.py 拆分）。
 | `fetch/akshare_source.py` | 142 |
 | `fetch/cli.py` | 41 |
 | `fetch/common.py` | 120 |
-| `fetch/fundamentals_source.py` | 297 |
+| `fetch/fundamentals_source.py` | 307 |
 | `fetch/kline.py` | 257 |
 | `fetch/news.py` | 243 |
 | `fetch/quote.py` | 137 |
@@ -305,7 +305,7 @@ PHASE62 系列 —— TDX 指数 / 序列接入（v4.9 选择性移植）。
 | `phase62/phase62_series.py` | 19 |
 | `phase62/phase62_tdx_index.py` | 70 |
 
-### `pit/`　（6 模块，约 739 行）
+### `pit/`　（6 模块，约 745 行）
 
 **职责**：Point-in-time (PIT) 研究数据子集。
 
@@ -347,7 +347,7 @@ Point-in-time (PIT) 研究数据子集。
 | 模块 | 行数 |
 |------|-----:|
 | `pit/pit_event_master.py` | 87 |
-| `pit/pit_fundamentals.py` | 372 |
+| `pit/pit_fundamentals.py` | 378 |
 | `pit/pit_integrity.py` | 88 |
 | `pit/pit_research_rows.py` | 44 |
 | `pit/pit_trading_filter.py` | 57 |
@@ -760,7 +760,7 @@ TuShare 数据接入（可选依赖）。
 | `daily_csv_adapter.py` | 74 | 0 | 0 |
 | `data_contracts.py` | 91 | 1 | 0 |
 | `data_quality.py` | 111 | 0 | 0 |
-| `exchange_rules.py` | 105 | 1 | 0 |
+| `exchange_rules.py` | 127 | 1 | 0 |
 | `industry_strength.py` | 44 | 1 | 0 |
 | `lifecycle_event_evidence.py` | 77 | 0 | 0 |
 | `llm_client.py` | 130 | 0 | 0 |

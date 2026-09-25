@@ -107,10 +107,20 @@ def _text(value: Any) -> str:
 
 
 def _norm_date(value: Any) -> str:
-    """把 ``2024-04-25`` / ``20240425`` / Timestamp 统一成 ``YYYY-MM-DD``。"""
+    """把 ``2024-04-25`` / ``20240425`` / Timestamp 统一成 ``YYYY-MM-DD``。
+
+    ⚠️ pandas 的缺失值是 ``NaT`` / ``NaN``，``str()`` 之后**不是空串** ——
+    若只判 ``None``，``"NaT"`` 会作为"合法日期"流进下游。
+    2026-09-25 实测：巨潮披露日 176,841 条中有 **11 条** ``actual_disclose="NaT"``，
+    下游 ``if not actual`` 抓不住，直接污染了「披露时点偏离」的分布计算。
+    **缺失即缺失** —— 这里统一归成空串，由调用方决定如何处置。
+    """
     if value is None:
         return ""
-    s = str(value).strip().replace("/", "-")
+    s = str(value).strip()
+    if s.lower() in ("nat", "nan", "none", ""):
+        return ""
+    s = s.replace("/", "-")
     if len(s) >= 10:
         return s[:10]
     if len(s) == 8 and s.isdigit():

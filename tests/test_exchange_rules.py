@@ -180,3 +180,48 @@ def test_limit_prices_reject_invalid_prev_close():
     assert limit_prices(0, "600000") == (None, None)
     assert limit_prices(None, "600000") == (None, None)
     assert limit_prices(-1.0, "600000") == (None, None)
+
+
+# ---------------------------------------------------------------------------
+# 回归守卫：创业板涨跌幅必须**按交易日分段**，不得把当前规则追溯
+#
+# 2026-09-25 实测缺陷：`derive_limit_ratio` 对创业板**无条件返回 0.20**，
+# 等于把 2020-08-24 起才生效的 ±20% 追溯到了 2016 年。
+# 量化：创业板 2,121,218 行中 **738,070 行（34.8%）** 涨跌幅被高估，涉及 834 只。
+#
+# 后果不是"近似"而是**偏乐观**：该期间 10% 涨停的「一字板」不会被
+# 「涨跌停不可买」检查拦住（10% < 20% 阈值），回测因而多吃了本不可成交的成交。
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("date,expected,basis", [
+    ("2016-01-04", 0.10, "board_chinext_legacy"),   # 创业板改革前
+    ("2020-08-21", 0.10, "board_chinext_legacy"),   # 生效日前最后交易日（周五）
+    ("2020-08-24", 0.20, "board"),                  # 生效日当天
+    ("2024-06-03", 0.20, "board"),
+])
+def test_chinext_limit_ratio_is_date_aware(date, expected, basis):
+    ratio, got_basis = derive_limit_ratio("300001", is_st=False, trade_date=date)
+    assert (ratio, got_basis) == (expected, basis)
+
+
+def test_chinext_without_trade_date_assumes_current_rule():
+    """未给交易日时退回当前规则（20%）—— 调用方应尽量传日期。"""
+    ratio, basis = derive_limit_ratio("300001")
+    assert (ratio, basis) == (0.20, "board")
+
+
+def test_star_market_is_20pct_regardless_of_date():
+    """科创板 2019-07-22 开板即 ±20%，无需分段。"""
+    for d in ("2019-07-22", "2024-06-03"):
+        assert derive_limit_ratio("688001", trade_date=d) == (0.20, "board")
+
+
+def test_chinext_st_is_20pct_after_change_date():
+    """创业板 ST 与普通股同幅度（改革后 ±20%）。"""
+    assert derive_limit_ratio("300001", is_st=True, trade_date="2024-06-03")[0] == 0.20
+
+
+def test_chinext_st_before_change_date_is_5pct():
+    """改革前创业板风险警示股为 ±5%（与其他板块 ST 一致）。"""
+    ratio, basis = derive_limit_ratio("300001", is_st=True, trade_date="2019-05-06")
+    assert (ratio, basis) == (0.05, "board_chinext_st_legacy")

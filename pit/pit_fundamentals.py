@@ -57,7 +57,11 @@ from __future__ import annotations
 import json
 from bisect import bisect_right
 from pathlib import Path
+import re
 from typing import Any, Dict, Iterable, List, Optional, Tuple
+
+# 严格的 ISO 日期格式。用于拒绝上游混入的非日期值（如 pandas 的 "NaT"）。
+_ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 __all__ = [
     "SUPPORTED_FACTORS",
@@ -192,7 +196,9 @@ def load_disclosures(path: str | Path) -> Dict[Tuple[str, str], str]:
             code = str(r.get("code") or "").zfill(6)
             period = str(r.get("report_period") or "")
             actual = str(r.get("actual_disclose") or "")
-            if code and period and actual:
+            # 防御性校验：必须是 YYYY-MM-DD。上游曾把 pandas 的 NaT 写成字符串
+            # "NaT" 混入文件（2026-09-25 实测 11/176,841 条），只判空串抓不住。
+            if code and period and _ISO_DATE.match(actual):
                 out[(code, period)] = actual
     return out
 
