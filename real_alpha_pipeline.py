@@ -54,7 +54,12 @@ def load_certified_csv(path: str | Path, metadata_path: str | Path | None = None
             # 涨跌停判定需要它们：主板 ST 股票的涨跌幅与普通股不同
             # （2026-07-06 前 ±5%，之后 ±10%），缺了会产生**单向乐观偏差**
             # ——真实一字板买不进的票会被当成可买。见 exchange_rules.derive_limit_ratio。
-            for key in ("is_st", "limit_ratio", "limit_pct"):
+            # ⚠️ `turnover` 必须在列：`walk_forward.score_history` 的换手率分项
+            # 依赖它，缺失时该分项**静默失效**（恒为 0，−5~+10 的区分度全部丢失）。
+            # 2026-09-26 实测：白名单漏掉它 → 阈值 70 的过线率只有 **6.65%**，
+            # 而恢复后为 **18.71%**（近 3 倍）—— 即策略长期在**远窄于设计意图**的
+            # 候选池里选股。CSV 中该列一直有值（认证字段），是加载器丢弃了它。
+            for key in ("is_st", "limit_ratio", "limit_pct", "turnover", "turnover_rate"):
                 if r.get(key) not in (None, ""):
                     bar[key] = r[key]
             rows.append(bar)

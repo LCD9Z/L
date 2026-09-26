@@ -10,7 +10,7 @@
 |------|----|
 | 子包数 | **19** |
 | 已入包模块 | **73**（约 8,867 行） |
-| 根目录 `.py` | **57**（约 5,991 行） |
+| 根目录 `.py` | **57**（约 5,996 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -744,7 +744,7 @@ TuShare 数据接入（可选依赖）。
 | `portfolio_backtest.py` | 93 | 1 | 3 |
 | `professional_committee.py` | 89 | 1 | 1 |
 | `prompt_engine.py` | 187 | 0 | 3 |
-| `real_alpha_pipeline.py` | 204 | 0 | 4 |
+| `real_alpha_pipeline.py` | 209 | 0 | 4 |
 | `real_data_collector.py` | 115 | 0 | 1 |
 | `release_gate.py` | 156 | 1 | 1 |
 | `stock_scoring.py` | 173 | 2 | 2 |
