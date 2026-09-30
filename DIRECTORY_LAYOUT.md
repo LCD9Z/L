@@ -9,7 +9,7 @@
 | 指标 | 值 |
 |------|----|
 | 子包数 | **20** |
-| 已入包模块 | **84**（约 10,574 行） |
+| 已入包模块 | **85**（约 10,860 行） |
 | 根目录 `.py` | **57**（约 6,108 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
@@ -413,7 +413,7 @@ HTML 研究报告生成子包。
 | `reporting/report_markdown.py` | 90 |
 | `reporting/report_styles.py` | 463 |
 
-### `risk/`　（6 模块，约 651 行）
+### `risk/`　（7 模块，约 937 行）
 
 **职责**：风险与可执行性子包。
 
@@ -450,6 +450,7 @@ HTML 研究报告生成子包。
 | 模块 | 行数 |
 |------|-----:|
 | `risk/a_share_risk.py` | 46 |
+| `risk/expert_filter.py` | 286 |
 | `risk/liquidity.py` | 59 |
 | `risk/market_risk_gate.py` | 311 |
 | `risk/risk_budget.py` | 22 |

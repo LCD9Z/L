@@ -252,19 +252,27 @@ def main() -> int:
         "note": "标签统一用前复权价（收益必须先复权）；raw_factor=未复权价算因子；"
                 "raw_flag_excluded=未复权且剔除窗口内含超涨跌停跳空的样本。",
     }
+    def _fmt(stat: Dict[str, Any]) -> str:
+        """⚠️ ``ic_mean`` / ``t`` 可能为 ``None``（样本不足、因子在该口径下退化）。
+
+        原实现直接 ``f"{v:+.6f}"`` → 在 None 上抛 ``TypeError``，
+        整个脚本在**打印阶段**崩溃（数据其实已算完）—— 属"计算成功、汇报失败"。
+        缺失即缺失：显示 ``—``，不伪造数字。
+        """
+        ic, t = stat.get("ic_mean"), stat.get("t")
+        ic_txt = f"{ic:+.6f}" if ic is not None else "—"
+        t_txt = f"{t:+.2f}" if t is not None else "—"
+        return f"{ic_txt}/{t_txt}"
+
     print("[4/4] 结果：")
-    print(f"{'因子':14s} {'原始价 IC/t':>20s} {'复权价 IC/t':>20s} {'剔跳空 IC/t':>20s}")
+    print(f"{'因子':14s} {'原始价 IC/t':>22s} {'复权价 IC/t':>22s} {'剔跳空 IC/t':>22s}")
     for f in FACTORS:
-        r = res["raw_factor"][f]
-        a = res["adj_factor"][f]
-        x = res["raw_flag_excluded"][f]
-        print(f"{f:14s} {r['ic_mean']:+.6f}/{r['t']:+.2f}  "
-              f"{a['ic_mean']:+.6f}/{a['t']:+.2f}  {x['ic_mean']:+.6f}/{x['t']:+.2f}")
+        print(f"{f:14s} {_fmt(res['raw_factor'][f]):>22s} "
+              f"{_fmt(res['adj_factor'][f]):>22s} "
+              f"{_fmt(res['raw_flag_excluded'][f]):>22s}")
     print(f"\n{'子集（复权价）':18s} {'IC / t（全样本）':>24s} {'IC / t（剔跳空）':>24s}")
     for s in SUBSETS:
-        a, x = comp_res[s], comp_ex[s]
-        print(f"{s:18s} {a['ic_mean']:+.6f}/{a['t']:+.2f}      "
-              f"{x['ic_mean']:+.6f}/{x['t']:+.2f}")
+        print(f"{s:18s} {_fmt(comp_res[s]):>24s} {_fmt(comp_ex[s]):>24s}")
     text = json.dumps(out, ensure_ascii=False, indent=1)
     if args.out:
         with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
