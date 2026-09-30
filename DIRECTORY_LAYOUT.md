@@ -8,9 +8,9 @@
 
 | 指标 | 值 |
 |------|----|
-| 子包数 | **19** |
-| 已入包模块 | **73**（约 8,867 行） |
-| 根目录 `.py` | **57**（约 5,996 行） |
+| 子包数 | **20** |
+| 已入包模块 | **83**（约 10,263 行） |
+| 根目录 `.py` | **57**（约 6,023 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -413,7 +413,7 @@ HTML 研究报告生成子包。
 | `reporting/report_markdown.py` | 90 |
 | `reporting/report_styles.py` | 463 |
 
-### `risk/`　（5 模块，约 319 行）
+### `risk/`　（5 模块，约 340 行）
 
 **职责**：风险与可执行性子包。
 
@@ -450,7 +450,7 @@ HTML 研究报告生成子包。
 | 模块 | 行数 |
 |------|-----:|
 | `risk/a_share_risk.py` | 46 |
-| `risk/liquidity.py` | 38 |
+| `risk/liquidity.py` | 59 |
 | `risk/risk_budget.py` | 22 |
 | `risk/risk_engine.py` | 22 |
 | `risk/var_calculator.py` | 191 |
@@ -578,6 +578,31 @@ Stage-2 Alpha 重排 / 富集 / 消融实验。
 | `tdx/tdx_csv_adapter.py` | 332 |
 | `tdx/tdx_inventory.py` | 22 |
 | `tdx/tdx_lifecycle.py` | 82 |
+
+### `tdx_native/`　（10 模块，约 1,375 行）
+
+**职责**：tdx_native 测试包：把五因子研究接入通达信原生 `.day` 数据。
+
+<details><summary>包级说明与红线（点击展开）</summary>
+
+```
+tdx_native 测试包：把五因子研究接入通达信原生 `.day` 数据。
+```
+
+</details>
+
+| 模块 | 行数 |
+|------|-----:|
+| `tdx_native/adjust.py` | 81 |
+| `tdx_native/backfill.py` | 247 |
+| `tdx_native/daily_report.py` | 157 |
+| `tdx_native/day_reader.py` | 178 |
+| `tdx_native/fetch_names.py` | 120 |
+| `tdx_native/five_factor.py` | 85 |
+| `tdx_native/gbbq_reader.py` | 81 |
+| `tdx_native/run_daily.py` | 168 |
+| `tdx_native/screen.py` | 148 |
+| `tdx_native/smoke_test.py` | 110 |
 
 ### `track/`　（4 模块，约 359 行）
 
@@ -741,7 +766,7 @@ TuShare 数据接入（可选依赖）。
 | `phase22_alpha_runner.py` | 15 | 0 | 2 |
 | `phase41_data_workbench.py` | 123 | 0 | 2 |
 | `pool_manager.py` | 166 | 1 | 1 |
-| `portfolio_backtest.py` | 93 | 1 | 3 |
+| `portfolio_backtest.py` | 120 | 1 | 3 |
 | `professional_committee.py` | 89 | 1 | 1 |
 | `prompt_engine.py` | 187 | 0 | 3 |
 | `real_alpha_pipeline.py` | 209 | 0 | 4 |

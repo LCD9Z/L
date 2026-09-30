@@ -36,3 +36,24 @@ def dynamic_slippage(rows, base=0.0005):
     if a>=300_000_000: return max(base,0.0005)
     if a>=100_000_000: return max(base,0.0010)
     return max(base,0.0030)
+
+
+def sqrt_impact(rows, notional, k=1.0):
+    """Almgren-Chriss sqrt 律冲击成本（单边，收益率计）。
+
+    impact = k · σ_daily · √(Q / V)
+      Q = 本笔名义金额，V = 20 日均成交额，σ = 20 日日收益标准差
+    地板 1bp。k 事前固定（默认 1.0，覆盖临时冲击的保守估计）。
+    """
+    import math as _m
+    import statistics as _st
+    amts = [float(b["amount"] or 0) for b in rows[-20:] if b.get("amount")]
+    V = sum(amts) / len(amts) if amts else 0.0
+    if V <= 0 or notional <= 0:
+        return 0.0030
+    closes = [float(b["close"]) for b in rows[-21:] if b.get("close")]
+    rets = [closes[i] / closes[i - 1] - 1 for i in range(1, len(closes))
+            if closes[i - 1] > 0]
+    sigma = _st.pstdev(rets) if len(rets) > 1 else 0.0
+    impact = k * sigma * _m.sqrt(notional / V)
+    return max(impact, 0.0001)

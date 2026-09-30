@@ -1,0 +1,50 @@
+{
+ "as_of": "20260130",
+ "source": "C:\\Users\\T430\\Desktop\\1.0 - 副本\\tdx_native\\_smoke\\vipdoc",
+ "universe": {
+  "stocks_found": 3,
+  "scored": 3,
+  "st_removed": 0,
+  "top_n": 3
+ },
+ "top": [
+  {
+   "code": "600001",
+   "name": "",
+   "market": "sh",
+   "score": 0.466667,
+   "ret20": -0.455902,
+   "vol20": 0.00072,
+   "amihud20": 1e-10,
+   "loga20": 19.519293,
+   "maxret20": -0.028463,
+   "liq20": 300000000.0
+  },
+  {
+   "code": "600002",
+   "name": "",
+   "market": "sh",
+   "score": 0.4,
+   "ret20": 0.019802,
+   "vol20": 6e-06,
+   "amihud20": 0.0,
+   "loga20": 19.519293,
+   "maxret20": 0.00099,
+   "liq20": 300000000.0
+  },
+  {
+   "code": "600003",
+   "name": "",
+   "market": "sh",
+   "score": 0.333333,
+   "ret20": 1.653161,
+   "vol20": 0.000161,
+   "amihud20": 2e-10,
+   "loga20": 19.519293,
+   "maxret20": 0.050292,
+   "liq20": 300000000.0
+  }
+ ],
+ "runtime_sec": 0.0,
+ "disclaimer": "五因子为统计特征，非收益承诺；TDX 原生价为不复权，ret20 含除权跳空污染，建议加 --events-cache；本输出仅供研究观察，不构成投资建议。"
+}
