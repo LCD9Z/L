@@ -9,8 +9,8 @@
 | 指标 | 值 |
 |------|----|
 | 子包数 | **20** |
-| 已入包模块 | **83**（约 10,263 行） |
-| 根目录 `.py` | **57**（约 6,023 行） |
+| 已入包模块 | **84**（约 10,516 行） |
+| 根目录 `.py` | **57**（约 6,108 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -413,7 +413,7 @@ HTML 研究报告生成子包。
 | `reporting/report_markdown.py` | 90 |
 | `reporting/report_styles.py` | 463 |
 
-### `risk/`　（5 模块，约 340 行）
+### `risk/`　（6 模块，约 593 行）
 
 **职责**：风险与可执行性子包。
 
@@ -451,6 +451,7 @@ HTML 研究报告生成子包。
 |------|-----:|
 | `risk/a_share_risk.py` | 46 |
 | `risk/liquidity.py` | 59 |
+| `risk/market_risk_gate.py` | 253 |
 | `risk/risk_budget.py` | 22 |
 | `risk/risk_engine.py` | 22 |
 | `risk/var_calculator.py` | 191 |
@@ -761,7 +762,7 @@ TuShare 数据接入（可选依赖）。
 | `execution_rules.py` | 18 | 2 | 1 |
 | `historical_universe.py` | 33 | 3 | 0 |
 | `industry_context.py` | 50 | 1 | 2 |
-| `market_regime.py` | 39 | 1 | 1 |
+| `market_regime.py` | 124 | 1 | 1 |
 | `orchestrator.py` | 328 | 1 | 1 |
 | `phase22_alpha_runner.py` | 15 | 0 | 2 |
 | `phase41_data_workbench.py` | 123 | 0 | 2 |

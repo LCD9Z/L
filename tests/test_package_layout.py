@@ -50,7 +50,8 @@ PACKAGES = {
     ],
     "reporting": ["report_generator", "report_markdown", "report_styles"],
     "runtime": ["runtime_env", "runtime_profile"],
-    "risk": ["a_share_risk", "risk_engine", "risk_budget", "liquidity", "var_calculator"],
+    "risk": ["a_share_risk", "risk_engine", "risk_budget", "liquidity", "var_calculator",
+             "market_risk_gate"],
     "validation": [
         "validation_suite", "performance", "phase13_risk", "robustness",
         "strategy_validation", "benchmark", "stress_test", "health_monitor",
