@@ -9,8 +9,8 @@
 | 指标 | 值 |
 |------|----|
 | 子包数 | **20** |
-| 已入包模块 | **85**（约 10,860 行） |
-| 根目录 `.py` | **57**（约 6,108 行） |
+| 已入包模块 | **88**（约 11,442 行） |
+| 根目录 `.py` | **57**（约 6,160 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -305,7 +305,7 @@ PHASE62 系列 —— TDX 指数 / 序列接入（v4.9 选择性移植）。
 | `phase62/phase62_series.py` | 19 |
 | `phase62/phase62_tdx_index.py` | 70 |
 
-### `pit/`　（6 模块，约 745 行）
+### `pit/`　（8 模块，约 1,181 行）
 
 **职责**：Point-in-time (PIT) 研究数据子集。
 
@@ -349,9 +349,11 @@ Point-in-time (PIT) 研究数据子集。
 | `pit/pit_event_master.py` | 87 |
 | `pit/pit_fundamentals.py` | 378 |
 | `pit/pit_integrity.py` | 88 |
+| `pit/pit_quarterly.py` | 209 |
 | `pit/pit_research_rows.py` | 44 |
 | `pit/pit_trading_filter.py` | 57 |
 | `pit/pit_universe_builder.py` | 91 |
+| `pit/statistical_industry.py` | 227 |
 
 ### `regime/`　（3 模块，约 324 行）
 
@@ -413,7 +415,7 @@ HTML 研究报告生成子包。
 | `reporting/report_markdown.py` | 90 |
 | `reporting/report_styles.py` | 463 |
 
-### `risk/`　（7 模块，约 937 行）
+### `risk/`　（8 模块，约 1,083 行）
 
 **职责**：风险与可执行性子包。
 
@@ -455,6 +457,7 @@ HTML 研究报告生成子包。
 | `risk/market_risk_gate.py` | 311 |
 | `risk/risk_budget.py` | 22 |
 | `risk/risk_engine.py` | 22 |
+| `risk/valuation_weight.py` | 146 |
 | `risk/var_calculator.py` | 191 |
 
 ### `router/`　（2 模块，约 108 行）
@@ -768,7 +771,7 @@ TuShare 数据接入（可选依赖）。
 | `phase22_alpha_runner.py` | 15 | 0 | 2 |
 | `phase41_data_workbench.py` | 123 | 0 | 2 |
 | `pool_manager.py` | 166 | 1 | 1 |
-| `portfolio_backtest.py` | 120 | 1 | 3 |
+| `portfolio_backtest.py` | 172 | 1 | 3 |
 | `professional_committee.py` | 89 | 1 | 1 |
 | `prompt_engine.py` | 187 | 0 | 3 |
 | `real_alpha_pipeline.py` | 209 | 0 | 4 |

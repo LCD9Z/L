@@ -13,11 +13,30 @@ def _next_bar(bars, day):
     for b in bars:
         if str(b['date'])>day: return b
     return None
+def _atr(bars, n):
+    """平均真实波幅（True Range 均值）。**只用传入的 bars** —— PIT 由调用方保证。
+
+    窗口不足 ``n+1`` 根或缺 OHLC 时返回 ``None``（缺失即不干预，不猜）。
+    """
+    if len(bars) < n + 1:
+        return None
+    trs = []
+    prev = bars[0].get('close')
+    for r in bars[1:]:
+        h, l, c = r.get('high'), r.get('low'), r.get('close')
+        if None in (h, l, c, prev):
+            return None
+        trs.append(max(float(h) - float(l), abs(float(h) - float(prev)),
+                       abs(float(l) - float(prev))))
+        prev = c
+    return sum(trs) / len(trs) if trs else None
+
+
 def _horizon_date(bars, entry_date, horizon):
     future=[b for b in bars if str(b['date'])>=entry_date]
     return str(future[min(horizon-1,len(future)-1)]['date']) if future else entry_date
 
-def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000_000,costs=None,max_position_pct=0.25,legacy=False,min_avg_amount=100_000_000,universe_snapshot_map=None,start_signal_date=None,candidate_filter=None,position_scaler=None,score_func=None,max_participation=0.0,impact_model=False):
+def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000_000,costs=None,max_position_pct=0.25,legacy=False,min_avg_amount=100_000_000,universe_snapshot_map=None,start_signal_date=None,candidate_filter=None,position_scaler=None,score_func=None,max_participation=0.0,impact_model=False,stop_atr_k=0.0,weight_func=None):
     """组合回测。
 
     candidate_filter: 可选回调 ``(code, hist, day) -> bool``；返回 False 时该标的
@@ -38,13 +57,28 @@ def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000
     """
     costs=costs or Costs(); cash=float(initial_capital); positions: List[Dict[str, Any]]=[]; trades: List[Dict[str, Any]]=[]; curve: List[Dict[str, Any]]=[]
     capacity_capped=0
+    stop_triggered=0; stop_days: List[int]=[]
     dates=_dates(data); cal_pos={str(d):i for i,d in enumerate(dates)}; indexed={c:_by_date(v) for c,v in data.items()}
     for day in dates:
         still=[]
         for p in positions:
             b=indexed[p['code']].get(day)
             if b: p['last_close']=float(b['close'])
-            if b and day>=p['exit_due']:
+            # ---- ATR 移动止损（能力孤岛接线）----
+            # 事前登记：stop = 持仓期最高收盘 − k×ATR(14)，ATR **只用截至前一日**的数据；
+            # 触发条件为当日收盘 < stop，按当日收盘价平仓（与 exit_due 的平仓约定一致）。
+            # 缺失即不干预：ATR 不足 15 根 / k<=0 时本规则完全不生效。
+            stop_hit=False
+            if b and stop_atr_k>0:
+                bars_s=data[p['code']]
+                pos_s=next((i for i,x in enumerate(bars_s) if str(x['date'])==day),None)
+                if pos_s is not None and pos_s>=15:
+                    a=_atr(bars_s[pos_s-15:pos_s],14)
+                    peak=p.get('peak_close',p['entry_price'])
+                    p['peak_close']=max(peak,float(b['close']))
+                    if a and a>0 and float(b['close']) < p['peak_close']-stop_atr_k*a:
+                        stop_hit=True
+            if b and (day>=p['exit_due'] or stop_hit):
                 bars=data[p['code']]; pos=next((i for i,x in enumerate(bars) if str(x['date'])==day),None)
                 prev=float(bars[pos-1]['close']) if pos and pos>0 else None
                 if prev and _is_unsellable_limit(b,prev,p['code']): p['exit_deferred']=True; still.append(p); continue
@@ -53,7 +87,10 @@ def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000
                     slip=sqrt_impact([x for x in bars if str(x['date'])<=day],
                                      p['shares']*float(b['close']))
                 gross=p['shares']*float(b['close'])*(1-slip); proceeds=gross-_trade_cost(gross,'sell',costs,day); cash+=proceeds
-                trades.append({**p,'exit_date':day,'exit_price':round(gross/p['shares'],4),'return_pct':round((proceeds-p['cost_basis'])/p['cost_basis']*100,4),'status':'closed'})
+                _ed=cal_pos.get(day,0)-cal_pos.get(p['entry_date'],0)
+                if stop_hit:
+                    stop_triggered+=1; stop_days.append(_ed)
+                trades.append({**p,'exit_date':day,'exit_price':round(gross/p['shares'],4),'return_pct':round((proceeds-p['cost_basis'])/p['cost_basis']*100,4),'status':'closed','exit_reason':('stop' if stop_hit else 'horizon'),'held_days':_ed})
             else: still.append(p)
         positions=still
         candidates=[]
@@ -91,7 +128,12 @@ def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000
                 # 避免与 entry/shares 相互依赖；事前近似，与卖出一致用单边冲击。
                 slip=sqrt_impact(hist, initial_capital*max_position_pct)
             entry=float(nxt['open'])*(1+slip)
-            budget=min(initial_capital*max_position_pct,cash/max(1,slots))*scale
+            w=1.0
+            if weight_func is not None:
+                try: w=float(weight_func(code,hist,day))
+                except Exception: w=1.0
+                if w!=w or w<0: w=1.0             # NaN / 负数 → 不干预
+            budget=min(initial_capital*max_position_pct,cash/max(1,slots))*scale*w
             capped=False
             if max_participation>0:
                 cap_notional=float(hist[-1].get('amount') or 0)*max_participation
@@ -103,12 +145,22 @@ def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000
             gross=shares*entry; total=gross+_trade_cost(gross,'buy',costs,nxt['date'])
             if total>cash: continue
             cash-=total; entry_date=str(nxt['date']); due=_horizon_date(data[code],entry_date,horizon)
-            positions.append({'code':code,'signal_date':day,'entry_date':entry_date,'entry_price':round(entry,4),'shares':shares,'score':round(score,2),'risk':round(risk,2),'cost_basis':total,'exit_due':due,'last_close':float(nxt['close'])})
+            positions.append({'code':code,'signal_date':day,'entry_date':entry_date,'entry_price':round(entry,4),'shares':shares,'score':round(score,2),'risk':round(risk,2),'cost_basis':total,'exit_due':due,'last_close':float(nxt['close']),
+                              'peak_close':float(nxt['close'])})
         equity=cash+sum(p['shares']*p['last_close'] for p in positions); curve.append({'date':day,'equity':round(equity,2),'cash':round(cash,2),'positions':len(positions)})
     # 不强制把不可卖的跌停仓位当作可成交；期末仅按市值计价
     final=curve[-1]['equity'] if curve else initial_capital
     out=summarize_portfolio(initial_capital,final,trades,curve)
     out['capacity_capped_buys']=capacity_capped
+    # 止损路径的必报项（短线冲浪手 P0-2 验收要求）：止损率 + 平均触发天数
+    n_closed=len([t for t in trades if t.get('status')=='closed'])
+    out['stop_stats']={
+        'stop_atr_k':stop_atr_k,
+        'n_stops':stop_triggered,
+        'stop_rate_pct':round(stop_triggered/n_closed*100,2) if n_closed else None,
+        'avg_days_to_stop':round(sum(stop_days)/len(stop_days),2) if stop_days else None,
+        'n_closed':n_closed,
+    }
     return out
 
 def summarize_portfolio(initial,final,trades,curve):

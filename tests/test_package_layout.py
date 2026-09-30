@@ -37,6 +37,7 @@ PACKAGES = {
     "pit": [
         "pit_integrity", "pit_universe_builder", "pit_event_master",
         "pit_trading_filter", "pit_research_rows", "pit_fundamentals",
+        "pit_quarterly", "statistical_industry",
     ],
     "tdx": ["tdx_csv_adapter", "tdx_inventory", "tdx_lifecycle"],
     "corporate": ["corporate_actions", "corporate_action_provider", "corporate_action_ingest"],
@@ -51,7 +52,7 @@ PACKAGES = {
     "reporting": ["report_generator", "report_markdown", "report_styles"],
     "runtime": ["runtime_env", "runtime_profile"],
     "risk": ["a_share_risk", "risk_engine", "risk_budget", "liquidity", "var_calculator",
-             "market_risk_gate", "expert_filter"],
+             "market_risk_gate", "expert_filter", "valuation_weight"],
     "validation": [
         "validation_suite", "performance", "phase13_risk", "robustness",
         "strategy_validation", "benchmark", "stress_test", "health_monitor",
