@@ -106,7 +106,6 @@ def main() -> int:
 
     # 交易日历 = 全部日期并集
     all_dates = sorted({b["date"] for bars in data.values() for b in bars})
-    idx = {d: i for i, d in enumerate(all_dates)}
     by_code = {c: {b["date"]: b for b in bars} for c, bars in data.items()}
     print(f"[2/3] 交易日 {len(all_dates)} 天，计算因子 ...", flush=True)
 
@@ -117,22 +116,24 @@ def main() -> int:
         fwd_d = all_dates[k + HORIZON]
         panel: Dict[str, Dict[str, float]] = {}
         ret_map: Dict[str, float] = {}
-        for c, bars in by_code.items():
-            b = bars.get(d)
-            prev = bars.get(all_dates[k - 1]) if k > 0 else None
+        # `bars` 在上一段推导式里是 list，这里若复用同名会让类型推断崩塌
+        for c, code_bars in by_code.items():
+            b = code_bars.get(d)
+            prev = code_bars.get(all_dates[k - 1]) if k > 0 else None
             if b is None:
                 continue
-            seq = [bars.get(x) for x in all_dates[max(0, k - 21): k + 1]]
-            seq = [x for x in seq if x is not None]
+            # 分两步：seq 若被重复赋值，mypy 会沿用首次（含 None）的推断
+            seq_raw = [code_bars.get(x) for x in all_dates[max(0, k - 21): k + 1]]
+            seq = [x for x in seq_raw if x is not None]
             if len(seq) < 22 or prev is None:
                 continue
             closes = [float(x["close"]) for x in seq]
             amounts = [float(x["amount"] or 0) for x in seq]
             rets = [closes[i] / closes[i - 1] - 1 for i in range(1, len(closes))]
-            amt_vals = [(abs(rets[i - 1]) / amounts[i] if amounts[i] > 0 else None)
-                        for i in range(1, len(closes))]
-            amt_vals = [v for v in amt_vals[-20:] if v is not None]
-            bf = bars.get(fwd_d)
+            amt_raw = [(abs(rets[i - 1]) / amounts[i] if amounts[i] > 0 else None)
+                       for i in range(1, len(closes))]
+            amt_vals = [v for v in amt_raw[-20:] if v is not None]
+            bf = code_bars.get(fwd_d)
             if closes[-22] <= 0 or not amt_vals or bf is None:
                 continue
             panel[c] = {
@@ -153,15 +154,16 @@ def main() -> int:
     ic_acc: Dict[str, List[float]] = {f: [] for f in FACTORS}
     ic_comp: List[float] = []
     ic_fam: List[float] = []
-    for d, panel in panels.items():
-        codes_d = sorted(panel)
-        vals = {f: [panel[c][f] for c in codes_d] for f in FACTORS}
+    # 变量名不与上面逐股循环里的 `panel` / `b`（dict|None）复用
+    for d, panel_d in panels.items():
+        codes_d = sorted(panel_d)
+        vals = {f: [panel_d[c][f] for c in codes_d] for f in FACTORS}
         ranks = {f: _ranks(vals[f]) for f in FACTORS}
         for i, a in enumerate(FACTORS):
-            for b in FACTORS[i + 1:]:
-                r = _spearman(vals[a], vals[b])
+            for b_fac in FACTORS[i + 1:]:
+                r = _spearman(vals[a], vals[b_fac])
                 if r == r:  # 非 NaN
-                    corr_acc.setdefault((a, b), []).append(r)
+                    corr_acc.setdefault((a, b_fac), []).append(r)
         fwd_r = _ranks([fwd[d][c] for c in codes_d])
         for f in FACTORS:
             r = _pearson(ranks[f], fwd_r)
@@ -178,7 +180,7 @@ def main() -> int:
         if r2 == r2:
             ic_fam.append(r2)
 
-    def stat(v: List[float]) -> Dict[str, float]:
+    def stat(v: List[float]) -> Dict[str, Any]:
         n = len(v)
         m = sum(v) / n
         sd = math.sqrt(sum((x - m) ** 2 for x in v) / max(1, n - 1))
@@ -208,8 +210,9 @@ def main() -> int:
     text = json.dumps(out, ensure_ascii=False, indent=1)
     print(text)
     if args.out:
-        with open(args.out, "w", encoding="utf-8", newline="\n") as f:
-            f.write(text)
+        # 变量名不与上面 `for f, v in ic_acc.items()` 的 f 复用
+        with open(args.out, "w", encoding="utf-8", newline="\n") as fp:
+            fp.write(text)
         print(f"已写入: {args.out}")
     return 0
 

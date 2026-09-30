@@ -24,7 +24,6 @@ import argparse
 import json
 import os
 import sys
-import time
 from typing import Any, Dict, List
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -32,7 +31,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_WINDOWS = ["2023-07-03", "2024-01-02"]
 
 # 修正前的成本模型：无过户费、印花税全程按现行税率（不分段）
-LEGACY_COSTS_KWARGS = dict(transfer_fee_rate=0.0, stamp_duty_change_date="0001-01-01")
+# 显式标注：dict(...) 会被推断为 dict[str, object]，无法展开给 Costs(**kwargs)
+LEGACY_COSTS_KWARGS: Dict[str, Any] = dict(
+    transfer_fee_rate=0.0, stamp_duty_change_date="0001-01-01")
 
 
 def _load_universe(dataset: str) -> Dict[str, List[str]]:
@@ -179,7 +180,7 @@ def main() -> int:
     if args.out:
         with open(args.out, "w", encoding="utf-8", newline="\n") as f:
             json.dump({"windows": rows, "cost_models": {
-                k: {kk: vv for kk, vv in vars(v).items()} for k, v in cost_models.items()},
+                k: dict(vars(v)) for k, v in cost_models.items()},
                 "args": vars(args)}, f, ensure_ascii=False, indent=1, default=str)
         print(f"\n结果已写入: {args.out}")
     return 0

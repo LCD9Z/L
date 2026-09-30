@@ -84,7 +84,7 @@ def build_report(vipdoc: str, events_cache: str = "", names_csv: str = "",
         f"- 股票池：{res['universe']['stocks_found']} 只 A 股，打分 {res['universe']['scored']} 只",
         f"- 剔除：ST {res['universe']['st_removed']} 只"
         + (f"，V1 尾部剔除 {exclude_ret20_top:.0%}" if exclude_ret20_top else ""),
-        f"- 数据源：通达信原生 `.day`"
+        "- 数据源：通达信原生 `.day`"
         + ("（前复权）" if events_cache else "（原始价）"),
         "",
         "| # | 代码 | 名称 | 得分 | ret20 | vol20 | maxret20 | 20日均额 | 风险标签 |",

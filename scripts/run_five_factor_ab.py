@@ -150,7 +150,6 @@ def build_score_panel(data, days, keep_ret20=False, keep_raw=False, subsets=None
     pos = {d: i for i, d in enumerate(days)}
     closes = {c: {b["date"]: float(b["close"]) for b in bars} for c, bars in data.items()}
     amounts = {c: {b["date"]: float(b["amount"] or 0) for b in bars} for c, bars in data.items()}
-    panel: Dict[str, Dict[str, float]] = {}
     ret_rank: Dict[str, Dict[str, float]] = {}
     raws: Dict[str, Dict[str, Dict[str, float]]] = {}
     panels: Dict[str, Dict[str, Dict[str, float]]] = {
@@ -356,10 +355,10 @@ def main() -> int:
                 if not comp or not rr:
                     continue
 
-                def _fwd(codes, _d=d, _nd=nd):
+                def _fwd(codes, _d=d, _nd=nd, _cm=closes_map):
                     vals = []
                     for c in codes:
-                        cm = closes_map.get(c, {})
+                        cm = _cm.get(c, {})
                         a = cm.get(_d)
                         b = cm.get(_nd)
                         if a and b:
@@ -388,8 +387,8 @@ def main() -> int:
             from collections import Counter
             print(f"      状态分布 {dict(Counter(regime_by_day.values()))}", flush=True)
 
-        def score_b(code, hist, day):
-            v = panel.get(day, {}).get(code)
+        def score_b(code, hist, day, _p=panel):
+            v = _p.get(day, {}).get(code)
             if v is None:
                 return {"score": 0.0, "risk": 9.0}
             return {"score": float(v) * 100.0, "risk": 5.0}

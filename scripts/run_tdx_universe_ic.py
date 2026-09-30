@@ -22,7 +22,7 @@ import statistics
 import sys
 import time
 from array import array
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -134,14 +134,15 @@ def main() -> int:
     master = [b["date"] for b in cal]
     rebal = [d for i, d in enumerate(master) if i % args.step == 0 and d >= args.start]
     print(f"      主日历 {len(master)} 天，调仓日 {len(rebal)} 个（不重叠）", flush=True)
-    rebal_set = set(rebal)
 
     # 列式桶：每期每因子一个 array('d')
-    buckets: Dict[str, Dict[str, array]] = {}
+    # 每期一个 dict：因子列是 array('d')，adj_factor 是 {因子: array}，
+    # flag 是 array('b') —— 混合类型，故值标注为 Any
+    buckets: Dict[str, Dict[str, Any]] = {}
     n_used = 0
 
     print("[2/4] 逐股计算因子（raw / adj 两套）...", flush=True)
-    for n, (code, market, path) in enumerate(stocks, 1):
+    for n, (code, _market, path) in enumerate(stocks, 1):
         if n % 500 == 0:
             print(f"      {n}/{len(stocks)}  ({time.time()-t0:.0f}s)", flush=True)
         bars = day_reader.read_day_all(path)
@@ -236,7 +237,8 @@ def main() -> int:
         return {"ic_mean": round(m, 6), "t": round(t, 2), "n": len(v)}
 
     res = {cfg: {f: stat(series[cfg][f]) for f in FACTORS} for cfg in series}
-    comp = {s: stat(comp_series[s]) for s in SUBSETS}
+    # 不与上面逐股循环里的 `comp`（list）复用同名
+    comp_res = {s: stat(comp_series[s]) for s in SUBSETS}
     comp_ex = {s: stat(comp_series_ex[s]) for s in SUBSETS}
     out = {
         "source": args.vipdoc, "stocks": len(stocks), "samples": n_used,
@@ -244,7 +246,7 @@ def main() -> int:
         "flagged_share_mean": round(sum(flagged_share) / len(flagged_share), 4)
         if flagged_share else None,
         "ic": res,
-        "composite_ic": comp,
+        "composite_ic": comp_res,
         "composite_ic_jump_excluded": comp_ex,
         "runtime_sec": round(time.time() - t0, 1),
         "note": "标签统一用前复权价（收益必须先复权）；raw_factor=未复权价算因子；"
@@ -260,7 +262,7 @@ def main() -> int:
               f"{a['ic_mean']:+.6f}/{a['t']:+.2f}  {x['ic_mean']:+.6f}/{x['t']:+.2f}")
     print(f"\n{'子集（复权价）':18s} {'IC / t（全样本）':>24s} {'IC / t（剔跳空）':>24s}")
     for s in SUBSETS:
-        a, x = comp[s], comp_ex[s]
+        a, x = comp_res[s], comp_ex[s]
         print(f"{s:18s} {a['ic_mean']:+.6f}/{a['t']:+.2f}      "
               f"{x['ic_mean']:+.6f}/{x['t']:+.2f}")
     text = json.dumps(out, ensure_ascii=False, indent=1)

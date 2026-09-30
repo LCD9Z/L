@@ -18,7 +18,7 @@ import math
 import os
 import sys
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -49,10 +49,7 @@ def _load_suspension(path: str) -> Dict[str, List[Tuple[str, str]]]:
 def _suspended(susp: Dict[str, List[Tuple[str, str]]], code: str,
                d0: str, d1: str) -> bool:
     """[d0, d1] 区间内是否存在停牌段。"""
-    for s, e in susp.get(code, ()):  # noqa: E501
-        if not (e < d0 or s > d1):
-            return True
-    return False
+    return any(not (e < d0 or s > d1) for s, e in susp.get(code, ()))
 
 
 def main() -> int:
@@ -97,8 +94,8 @@ def main() -> int:
     combos = ["L0M0", "L0M1", "L1M0", "L1M1"]
     ic_series: Dict[str, Dict[str, List[float]]] = {
         k: {fac: [] for fac in FACTORS} for k in combos}
-    masked_cnt = {k: 0 for k in combos}
-    total_cnt = {k: 0 for k in combos}
+    masked_cnt = dict.fromkeys(combos, 0)
+    total_cnt = dict.fromkeys(combos, 0)
     reasons = {"no_next": 0, "buy_limit": 0, "hold_down": 0, "susp": 0}
 
     print("[2/3] 逐截面计算 IC ...", flush=True)

@@ -30,12 +30,9 @@ import argparse
 import csv
 import hashlib
 import json
-import os
 import random
 import shutil
-import sys
 import time
-from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -372,7 +369,6 @@ def main() -> int:
     print("[3/5] 推导复权因子事件与停牌区间 ...", flush=True)
     with (out / "benchmark.csv").open(encoding="utf-8", newline="") as f:
         calendar = sorted(row["date"] for row in csv.DictReader(f))
-    cal_set = set(calendar)
 
     ca_rows: List[List[Any]] = []
     sus_rows: List[List[Any]] = []
@@ -404,6 +400,10 @@ def main() -> int:
             end = min(end, info["delist_date"])
         have = set(qfq)
         gap_start: Optional[str] = None
+        # 上一日历日。显式初始化：进入下方 elif 分支的前提是前一轮已执行
+        # 循环末尾的 `prev_day = d`，故运行时必已赋值；此处初始化仅为让静态
+        # 分析可证（否则 F821「可能未定义」），并抵御未来加 continue 的改坏。
+        prev_day: Optional[str] = None
         for d in calendar:
             if d < start or d > end:
                 continue
@@ -411,11 +411,11 @@ def main() -> int:
                 if gap_start is None:
                     gap_start = d
             elif gap_start is not None:
-                sus_rows.append([code, gap_start, prev_day, 
+                sus_rows.append([code, gap_start, prev_day,
                                  sum(1 for x in calendar if gap_start <= x < d)])
                 gap_start = None
             prev_day = d
-        if gap_start is not None:
+        if gap_start is not None and prev_day is not None:
             sus_rows.append([code, gap_start, prev_day,
                              sum(1 for x in calendar if gap_start <= x <= prev_day)])
 
@@ -434,7 +434,7 @@ def main() -> int:
     # ---- Pass 4: PIT 股票池快照 --------------------------------------------
     print("[4/5] 构建 PIT 股票池快照 ...", flush=True)
     stock_cal: Set[str] = set(calendar)
-    for code, info in per_stock.items():
+    for code, _info in per_stock.items():
         with (out / "stocks" / f"{code}.csv").open(encoding="utf-8", newline="") as f:
             for r in csv.DictReader(f):
                 stock_cal.add(r["date"])
@@ -460,13 +460,14 @@ def main() -> int:
     print("[5/5] 写证据清单、生成档案 ...", flush=True)
     shutil.copyfile(st_events_path, out / "st_events.csv")
     with (out / "pool_v2.csv").open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(next(iter(per_stock.values())).keys()))
-        w.writeheader()
+        # 变量名不与上面 `w = csv.writer(f)`（Writer）复用
+        dw = csv.DictWriter(f, fieldnames=list(next(iter(per_stock.values())).keys()))
+        dw.writeheader()
         for info in sorted(per_stock.values(), key=lambda x: x["code"]):
-            w.writerow(info)
+            dw.writerow(info)
 
     missing_delisted = n_delisted - stats["kept_delisted"] + stats["short_hist_delisted"] * 0
-    evidence = {
+    evidence: Dict[str, Any] = {
         "pit_universe": True,
         "lifecycle": True,
         "delisted_history": True,

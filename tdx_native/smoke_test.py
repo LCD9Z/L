@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import os
 import struct
-import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SMOKE_DIR = os.path.join(HERE, "_smoke")     # 合成数据落这里（不删除，避免沙箱删除守卫）
@@ -27,8 +26,8 @@ def _write_day(path, rows):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "wb") as f:
         for d, o, h, l, c, a, v in rows:
-            f.write(REC.pack(int(d), int(round(o * 100)), int(round(h * 100)),
-                             int(round(l * 100)), int(round(c * 100)), float(a),
+            f.write(REC.pack(int(d), round(o * 100), round(h * 100),
+                             round(l * 100), round(c * 100), float(a),
                              int(v), 0))
 
 
@@ -78,7 +77,7 @@ def test_factors():
 
 
 def test_screen_end2end():
-    from . import day_reader, screen
+    from . import screen
     # 三只：A 超跌反转(高得分)、B 中规中矩、C 20日大涨(应被 V1 剔除)
     for code, drift, amount in (("600001", -0.03, 300_000_000.0),   # A 跌
                                 ("600002", 0.001, 300_000_000.0),  # B 平

@@ -19,9 +19,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import time
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 from . import adjust
 from . import day_reader
@@ -56,7 +55,7 @@ def run(vipdoc: str, top_n: int = 20, exclude_ret20_top: float = 0.0,
     st_removed = 0
     candidates: List[Dict[str, float]] = []
     adjusted_cnt = 0
-    for code, market, path, bars in fresh:
+    for code, market, _path, bars in fresh:
         nm = names.get(code, "")
         if nm and ("ST" in nm.upper()):
             st_removed += 1
@@ -83,7 +82,7 @@ def run(vipdoc: str, top_n: int = 20, exclude_ret20_top: float = 0.0,
     if exclude_ret20_top > 0:
         cut = 1.0 - exclude_ret20_top
         rr = five_factor.pct_rank([c["ret20"] for c in candidates])
-        kept = [c for c, r in zip(candidates, rr) if r <= cut]
+        kept = [c for c, r in zip(candidates, rr, strict=True) if r <= cut]
         print(f"      V1 尾部剔除（ret20 最高 {exclude_ret20_top:.0%}）: "
               f"{len(candidates)} -> {len(kept)}", flush=True)
         candidates = kept
@@ -122,8 +121,9 @@ def run(vipdoc: str, top_n: int = 20, exclude_ret20_top: float = 0.0,
     print("\n[3/3] 声明：", result["disclaimer"])
 
     if out:
-        with open(out, "w", encoding="utf-8", newline="\n") as f:
-            json.dump(result, f, ensure_ascii=False, indent=1)
+        # 变量名不与上面的因子 dict `f` 复用（复用会让类型推断崩塌）
+        with open(out, "w", encoding="utf-8", newline="\n") as fp:
+            json.dump(result, fp, ensure_ascii=False, indent=1)
         print(f"已写入: {out}")
     return result
 

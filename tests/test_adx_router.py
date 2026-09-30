@@ -7,7 +7,6 @@
 3. confirm_days 平滑确定性回放；
 4. 默认关闭 / 数据不足 / 手动覆盖的回退语义。
 """
-import math
 
 import pytest
 

@@ -24,7 +24,7 @@ from __future__ import annotations
 import argparse
 import csv
 import os
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from . import day_reader
 
@@ -56,6 +56,35 @@ def _last_close_before(bars_by_date: Dict[str, dict], date: str,
     return best[1] if best else None
 
 
+def _ret_at(cal: List[str], bars: Dict[str, Dict[str, Any]], i: int, k: int,
+            entry_date: str, entry_open: float
+            ) -> Optional[Tuple[Optional[str], Optional[float],
+                                Optional[float], Optional[int]]]:
+    """信号日 ``i`` 起第 ``k`` 个交易日的 ``(date, close, ret, k)``。
+
+    三态返回：
+
+    - ``None`` —— 尚未到期（主日历长度不足 ``i + k``）
+    - ``("pending", None, None, None)`` —— 已到期，但个股在目标日无 bar，
+      且回溯不到任何有效收盘（通常为长期停牌）
+    - ``(date|None, close, ret, k|None)`` —— 正常；``date`` 为 ``None``
+      表示用「不晚于目标日的最后一根收盘」顺延（目标日停牌），此时 ``k`` 也为 ``None``
+
+    提取为模块级函数（原为循环内闭包）：显式接收全部依赖，消除闭包捕获
+    循环变量的 B023 隐患，并使其可被单元测试直接覆盖。
+    """
+    if i + k >= len(cal):
+        return None
+    dk = cal[i + k]
+    c = _price_at(bars, dk, "close")
+    if c is None:
+        c = _last_close_before(bars, dk, after=entry_date)
+        if c is None:
+            return ("pending", None, None, None)
+        return (None, c, c / entry_open - 1, None)
+    return (dk, c, c / entry_open - 1, k)
+
+
 def run(vipdoc: str, tracking_csv: str, out_csv: str) -> Dict:
     cal = _load_calendar(vipdoc)
     cal_pos = {d: i for i, d in enumerate(cal)}
@@ -81,7 +110,7 @@ def run(vipdoc: str, tracking_csv: str, out_csv: str) -> Dict:
             return None
         return c / o - 1
 
-    out_rows = []
+    out_rows: List[Dict[str, Any]] = []
     stats = {"pending": 0, "suspended": 0, "filled_t20": 0, "filled_t5": 0,
              "skipped": 0}
     cache: Dict[str, Dict[str, dict]] = {}
@@ -104,38 +133,27 @@ def run(vipdoc: str, tracking_csv: str, out_csv: str) -> Dict:
 
         # 建仓：T+1 开盘，停牌则顺延（最多 5 个交易日）
         # 日历尚未更新到建仓日（as_of 即日历最后一根）→ 整行 pending
-        entry_date = entry_open = None
+        entry_date: Optional[str] = None
+        entry_open: Optional[float] = None
         if i + 1 >= len(cal):
             stats["pending"] += 1
             out_rows.append({**r, "status": "pending",
                              "t5_status": "not_due", "t20_status": "not_due"})
             continue
         for j in range(i + 1, min(i + 6, len(cal))):
-            o = _price_at(bars, cal[j], "open")
-            if o:
-                entry_date, entry_open = cal[j], o
+            op = _price_at(bars, cal[j], "open")
+            if op:
+                entry_date, entry_open = cal[j], op
                 break
-        if entry_open is None:
+        if entry_open is None or entry_date is None:
             stats["suspended"] += 1
             out_rows.append({**r, "status": "suspended"})
             continue
 
-        def ret_at(k: int):
-            """返回 (date, close, ret) 或 None（未到期）。"""
-            if i + k >= len(cal):
-                return None
-            dk = cal[i + k]
-            c = _price_at(bars, dk, "close")
-            if c is None:
-                c = _last_close_before(bars, dk, after=entry_date)
-                dk_actual = None
-                if c is None:
-                    return ("pending", None, None, None)
-                return (None, c, c / entry_open - 1, None)
-            return (dk, c, c / entry_open - 1, k)
-
-        t5 = ret_at(5)
-        t20 = ret_at(20)
+        # 上面已收窄为 (str, float)；显式绑定后传入模块级函数，
+        # 既消除循环内闭包的 B023 隐患，也让该逻辑可被单元测试直接覆盖。
+        t5 = _ret_at(cal, bars, i, 5, entry_date, entry_open)
+        t20 = _ret_at(cal, bars, i, 20, entry_date, entry_open)
 
         row = {**r,
                "t1_date": entry_date, "t1_open": f"{entry_open:.4f}"}
@@ -179,19 +197,19 @@ def run(vipdoc: str, tracking_csv: str, out_csv: str) -> Dict:
                "t5": t5s, "t20": t20s}
 
     # 指数参照（按已 filled 的 as_of 去重）
-    idx_ref = {}
-    for o in out_rows:
-        if o.get("t20_ret"):
-            ir = idx_ret(o["as_of"], 20)
+    idx_ref: Dict[str, float] = {}
+    for orow in out_rows:
+        if orow.get("t20_ret"):
+            ir = idx_ret(orow["as_of"], 20)
             if ir is not None:
-                idx_ref.setdefault(o["as_of"], ir)
+                idx_ref.setdefault(orow["as_of"], ir)
     if idx_ref:
         summary["index_t20_mean"] = sum(idx_ref.values()) / len(idx_ref)
 
     # 写出
-    fieldnames = []
-    for o in out_rows:
-        for k in o:
+    fieldnames: List[str] = []
+    for orow in out_rows:
+        for k in orow:
             if k not in fieldnames:
                 fieldnames.append(k)
     with open(out_csv, "w", encoding="utf-8", newline="") as f:

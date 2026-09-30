@@ -18,14 +18,18 @@ from __future__ import annotations
 
 import math
 import statistics
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 DIRECTIONS = {"ret20": -1, "vol20": -1, "amihud20": 1, "loga20": -1, "maxret20": -1}
 LIQ_MIN = 100_000_000.0          # 20 日均成交额 ≥ 1 亿
 
 
-def compute_factors(bars: List[Dict[str, float]]) -> Optional[Dict[str, float]]:
-    """从升序 bar 列表计算五因子。数据不足或流动性不足返回 None。"""
+def compute_factors(bars: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """从升序 bar 列表计算五因子。数据不足或流动性不足返回 None。
+
+    返回值为**混合类型** dict（因子值为 float；调用方还会塞入 ``code`` /
+    ``name`` 等 str 字段），故标注 ``Dict[str, Any]`` 而非 ``Dict[str, float]``。
+    """
     closes = [b["close"] for b in bars]
     amounts = [b["amount"] for b in bars]
     n = len(closes)
@@ -68,14 +72,14 @@ def pct_rank(values: List[float]) -> List[float]:
     return ranks
 
 
-def composite_score(candidates: List[Dict[str, float]]) -> None:
+def composite_score(candidates: List[Dict[str, Any]]) -> None:
     """就地给 candidates 加上 'score'（五因子方向化分位均值，越高越好）。
 
     正向因子取 rank_pct，反向因子取 1-rank_pct，与 H-F5 研究口径一致。
     """
     for key in DIRECTIONS:
         rk = pct_rank([c[key] for c in candidates])
-        for c, r in zip(candidates, rk):
+        for c, r in zip(candidates, rk, strict=True):
             c["rank_" + key] = r if DIRECTIONS[key] > 0 else 1.0 - r
     for c in candidates:
         c["score"] = sum(c["rank_" + key] for key in DIRECTIONS) / len(DIRECTIONS)

@@ -30,8 +30,8 @@ def test_cost_defaults_match_current_rules():
     assert c.min_commission == pytest.approx(5.0)
     # 常量与字段必须一致，防止只改一处
     assert STAMP_DUTY_CHANGE_DATE == "2023-08-28"
-    assert STAMP_DUTY_SELL_BEFORE == pytest.approx(0.001)
-    assert TRANSFER_FEE_RATE == pytest.approx(0.00001)
+    assert pytest.approx(0.001) == STAMP_DUTY_SELL_BEFORE
+    assert pytest.approx(0.00001) == TRANSFER_FEE_RATE
 
 
 def test_stamp_rate_is_piecewise_by_date():

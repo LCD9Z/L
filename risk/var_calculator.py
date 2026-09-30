@@ -29,8 +29,8 @@ def _percentile(sorted_vals: Sequence[float], q_pct: float) -> float:
     if n == 1:
         return float(sorted_vals[0])
     rank = (n - 1) * (q_pct / 100.0)
-    lo = int(math.floor(rank))
-    hi = int(math.ceil(rank))
+    lo = math.floor(rank)
+    hi = math.ceil(rank)
     if lo == hi:
         return float(sorted_vals[lo])
     frac = rank - lo
@@ -52,7 +52,7 @@ def ewma_var(returns: Sequence[float], confidence: float = 0.99,
     if total <= 0:
         raise ValueError("invalid weights")
     weights = [w / total for w in weights]
-    pairs = sorted(zip(returns, weights), key=lambda t: t[0])
+    pairs = sorted(zip(returns, weights, strict=True), key=lambda t: t[0])
     alpha = 1.0 - confidence
     cum = 0.0
     var_index = -1
@@ -133,7 +133,8 @@ class EnhancedVaRCalculator:
         var = self.calculate_var(returns, confidence)
         if var is None:
             return None, None
-        vals = self._clean_window(returns)
+        # var 非 None 已保证窗口合格；`or []` 仅为类型收窄（不改行为）
+        vals = self._clean_window(returns) or []
         tail = [v for v in vals if v < var]
         if not tail:
             return var, None

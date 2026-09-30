@@ -11,7 +11,7 @@
 """
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 Event = Tuple[str, float, float, float, float]   # date, cash_ps, bonus_ps, rights_price, rights_ps
 
@@ -28,7 +28,7 @@ def event_factor(prev_close: float, ev: Event) -> float:
     return num / den
 
 
-def qfq_factors(bars: List[dict], events: List[Event]) -> Dict[str, float]:
+def qfq_factors(bars: List[Dict[str, Any]], events: List[Event]) -> Dict[str, float]:
     """返回 {date: 前复权因子}（乘在原价上得复权价）。
 
     `events` 需按日期升序，且应包含与 bars 时间范围相交的全部事件。
@@ -36,7 +36,6 @@ def qfq_factors(bars: List[dict], events: List[Event]) -> Dict[str, float]:
     if not bars:
         return {}
     dates = [b["date"] for b in bars]
-    idx = {d: i for i, d in enumerate(dates)}
     # 每个事件的 k 与其生效日期
     eff: List[Tuple[str, float]] = []
     for ev in events:
@@ -51,7 +50,7 @@ def qfq_factors(bars: List[dict], events: List[Event]) -> Dict[str, float]:
             continue
         eff.append((ed, event_factor(prev_close, ev)))
     if not eff:
-        return {d: 1.0 for d in dates}
+        return dict.fromkeys(dates, 1.0)
     # factor(date) = Π k_e ，对所有 ed > date
     eff.sort(key=lambda x: x[0])
     out: Dict[str, float] = {}
@@ -66,7 +65,8 @@ def qfq_factors(bars: List[dict], events: List[Event]) -> Dict[str, float]:
     return out
 
 
-def apply_qfq(bars: List[dict], events: List[Event]) -> List[dict]:
+def apply_qfq(bars: List[Dict[str, Any]],
+              events: List[Event]) -> List[Dict[str, Any]]:
     """返回复权后的 bar 副本（只改价格列，amount/volume 不变）。"""
     if not events:
         return bars

@@ -21,7 +21,6 @@ import argparse
 import csv
 import hashlib
 import json
-import os
 import time
 from pathlib import Path
 from typing import Dict, List, Set
@@ -80,10 +79,11 @@ def main() -> int:
             prev_close = {c: v for c, v in cur.items() if c in members}
             continue
         rets: List[float] = []
-        for c, px in cur.items():
-            if c not in members:
+        # 循环变量不与上面的 `c = float(r["close"])` 复用（复用会让类型推断崩塌）
+        for code_m, px in cur.items():
+            if code_m not in members:
                 continue
-            p = prev_close.get(c)
+            p = prev_close.get(code_m)
             if p and p > 0:
                 rets.append(px / p - 1.0)
         prev_close = {c: v for c, v in cur.items() if c in members}
