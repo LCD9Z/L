@@ -91,8 +91,11 @@ def build_report(vipdoc: str, events_cache: str = "", names_csv: str = "",
         "|---|------|------|------|-------|-------|----------|---------|---------|",
     ]
     for i, t in enumerate(res["top"], 1):
+        from .run_daily import _xueqiu_code  # 延迟导入避免循环
+        xq = _xueqiu_code(t["code"])
         lines.append(
-            f"| {i} | {t['code']} | {t.get('name') or '-'} | {t['score']:.4f} | "
+            f"| {i} | [{t['code']}](https://xueqiu.com/S/{xq}) | "
+            f"{t.get('name') or '-'} | {t['score']:.4f} | "
             f"{t['ret20']:+.2%} | {t['vol20']:.4f} | {t['maxret20']:+.2%} | "
             f"{t['liq20'] / 1e8:.2f}亿 | {'；'.join(t.get('risk_flags') or ['-'])} |")
     lines += ["", "## 跟踪校准", "",
@@ -108,16 +111,27 @@ def build_report(vipdoc: str, events_cache: str = "", names_csv: str = "",
     with open(json_path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(payload, f, ensure_ascii=False, indent=1)
 
+    # 幂等登记：同一 as_of 的已登记代码不重复写入（重复运行只补新增）
+    existing = set()
+    if os.path.exists(track_path):
+        with open(track_path, encoding="utf-8", newline="") as f:
+            for row in csv.reader(f):
+                if row and str(row[0]) == str(as_of):
+                    existing.add(str(row[1]))
+    new_rows = [t for t in res["top"] if t["code"] not in existing]
     new_file = not os.path.exists(track_path)
     with open(track_path, "a", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
         if new_file:
             w.writerow(["as_of", "code", "name", "score", "liq20",
                         "ret20", "vol20", "maxret20", "risk_flags"])
-        for t in res["top"]:
+        for t in new_rows:
             w.writerow([as_of, t["code"], t.get("name", ""), t["score"],
                         t["liq20"], t["ret20"], t["vol20"], t["maxret20"],
                         "|".join(t.get("risk_flags") or [])])
+    skipped = len(res["top"]) - len(new_rows)
+    if skipped:
+        print(f"跟踪登记：{as_of} 已有 {skipped} 条，新增 {len(new_rows)} 条（幂等）")
 
     print(f"\n报告：{md_path}\n跟踪：{track_path}")
     return payload

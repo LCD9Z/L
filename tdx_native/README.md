@@ -25,10 +25,42 @@ python -m tdx_native.screen --vipdoc D:/new_tdx/vipdoc --top 20 \
 
 # 带名称映射（启用名称显示 + ST 剔除）
 python -m tdx_native.screen --vipdoc D:/new_tdx/vipdoc --top 20 \
-    --names D:/names.csv --events-cache data/gbbq_events.csv
+    --names data/names.csv --events-cache data/gbbq_events.csv
 ```
 
 > `--build` 需要 `pytdx`（gbbq 是 3DES 加密），只做一次；跑分全程纯标准库。
+
+## 每日一键运行（推荐方式）
+
+```bash
+# 一次性准备（已完成可跳过）：
+#   1) 权息缓存：python -m tdx_native.gbbq_reader --build ...
+#   2) 名称表：python -m tdx_native.fetch_names --out data/names.csv
+
+# 每个交易日收盘后（15:05 之后）一条命令：
+python -m tdx_native.run_daily
+# 可选推送到飞书群机器人：
+python -m tdx_native.run_daily --feishu-webhook https://open.feishu.cn/...
+```
+
+`run_daily` 一次完成四件事（固定执行配置 C20+V1+V2+前复权+ST 剔除）：
+
+1. **生成推荐报告** `reports/daily/recommend_{日期}.md`（含雪球链接、风险标签）
+2. **导出通达信自选股** `selected_stocks_{日期}.txt`（客户端 Ctrl+D → 批量导入）
+3. **登记跟踪样本** 到 `tracking.csv`（幂等：同日重复运行只补新增）
+4. **回填到期样本** 到 `tracking_filled.csv`（T+5/T+20 真实收盘收益 + 胜率统计）
+
+内置**未收盘保护**：检测到今日 bar 而时间未过 15:05 时拒绝运行，
+避免半日数据污染口径。
+
+**Windows 自动调度**（可选）：项目根有 `run_daily.bat`（日志落
+`reports/daily/run.log`）。注册每日 15:30 任务：
+
+```
+schtasks /create /tn TDXDaily /tr "C:\Users\T430\Desktop\1.0\run_daily.bat" /sc weekly /d MON,TUE,WED,THU,FRI /st 15:30
+```
+
+前提：交易日盘中至少开一次通达信客户端让它把 `.day` 下载到最新（或手动盘后下载）。
 
 ## 目录
 
@@ -39,6 +71,10 @@ python -m tdx_native.screen --vipdoc D:/new_tdx/vipdoc --top 20 \
 | `gbbq_reader.py` | 权息（gbbq）解密与缓存（`--build` 需 pytdx）+ 纯标准库读取 |
 | `adjust.py` | 前复权（基于权息事件，纯标准库） |
 | `screen.py` | 入口：扫描 → 过滤 → 复权 → 打分 → Top-N 输出 |
+| `fetch_names.py` | 从通达信行情服务器拉代码→名称表（pytdx，容忍空页全量扫描） |
+| `daily_report.py` | 日度推荐报告（md + json + tracking.csv 幂等登记） |
+| `backfill.py` | L3 跟踪回填：T+5/T+20 真实收盘收益、胜率、指数参照 |
+| `run_daily.py` | 每日一键：推荐 + 自选股导出 + 回填 +（可选）飞书推送 |
 | `smoke_test.py` | 冒烟自测（.day 往返 / 因子精确值 / 端到端） |
 | `_smoke/` | 自测生成的合成数据（不删除） |
 
@@ -61,7 +97,11 @@ python -m tdx_native.screen --vipdoc D:/new_tdx/vipdoc --top 20 \
    即**在 20 日横截面因子层面影响可忽略**；但回测 P&L 与个股权息仍必须复权
    （案例：000028 在 2026-06-24 原始 -13.70% 的"暴跌"，复权后仅 -2.47%）。
 2. **幸存者偏差**：本地 TDX 通常只含存续标的，不含已退市股。
-3. **无名称/ST 信息**：`.day` 不存名称与 ST 标记；不提供 `--names` 时**不做 ST 剔除**。
+3. **名称/ST 依赖 names.csv**：`.day` 不存名称。已生成 `data/names.csv`
+   （2026-09-30，47,846 条，universe 覆盖 93.4%，未命中多为已退市股）。
+   **北交所在测试的 20 台行情服务器上均不可用** → 北交所标的无名称、
+   不做 ST 剔除（已知局限）；沪深 ST 剔除正常（209 只 ST 中当日剔除 198 只）。
+   名称表变化缓慢，约每季度重跑 `fetch_names` 一次。
 4. **数据区间**：本机 TDX 覆盖约 2021-08 ~ 至今（约 1250 个交易日）。
 5. **不构成投资建议**：五因子是统计特征，非收益承诺；本包从不宣称 alpha 或跑赢基准。
 
@@ -102,5 +142,17 @@ python -m tdx_native.screen --vipdoc D:/new_tdx/vipdoc --top 20 \
 ## 与本项目其余资产的关系
 
 - 因子方向与判定证据：`reports/v2_factor_study.json`（五因子 t≥5）
-- 已验证的最稳组合配置：C20 + V1 尾部剔除 + 持有 20 日（见 `STEP1_3_EXECUTION_REPORT.md` §11/§18）
-- 本包是「推荐系统」定位下的**选股侧引擎**，配套的 L3 跟踪校准见 `tracking.py`
+- 已验证的最稳组合配置：C20 + V1 尾部剔除 + 跳空过滤 + 持有 20 日（见 `STEP1_3_EXECUTION_REPORT.md` §11/§18/§25）
+- 本包是「推荐系统」定位下的**选股侧引擎**，L3 跟踪校准即 `backfill.py`（T+5/T+20）
+
+## 借鉴来源（2026-09-30 GitHub 产品化调研，详见 GITHUB_ASHARE_QUANT_SURVEY.md 续篇）
+
+| 来源 | 借鉴点 |
+|------|--------|
+| sngyai/Sequoia-X（7.6k★） | 收盘后一键运行；飞书 Webhook 卡片格式；雪球个股链接；名称表思路（其用 baostock，本包改 pytdx 零新增依赖） |
+| oficcejo/tdx-local2 | 直接读 `.day` 不转储（验证本包架构方向）；通达信自选股 txt 导出 |
+| ArvinLovegood/go-stock（7.7k★） | 「AI 分析工具」定位中对推送报警的产品化形态（参考，未采用 AI 生成——预注册纪律禁止随意生成策略） |
+
+工程上刻意**未借鉴**的部分：Sequoia-X 的策略集（海龟/旗形等 6 种技术形态策略）
+没有引入——本项目的纪律是预注册 + 证伪，不新增未经验证的策略；tdx-local2 的
+AI 生成选股代码同理。
