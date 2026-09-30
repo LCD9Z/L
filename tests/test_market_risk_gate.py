@@ -247,3 +247,68 @@ def test_cooldown_does_not_leak_beyond_series():
     g = build_market_gate(risk, cooldown_days=10, trading_days=_DAYS)
     assert g("2024-01-20") == 0.0
     assert g("2024-02-15") == 1.0, "序列外日期不得被判为冷却中"
+
+
+# ---------------------------------------------------------------------------
+# 过滤器形态（candidate_filter）
+#
+# 用户要求「转成过滤器」。⚠️ 关键：filter 与 gate（position_scaler）**语义不同**：
+#   gate   → 新开仓预算=0 → 当日**不建仓**（空仓）
+#   filter → 该股不进候选池 → 系统**顺位选下一只**（换股）
+# 只有「排除全池」时两者才等价。本组测试把差异锁住，防日后误用。
+# ---------------------------------------------------------------------------
+
+from risk.market_risk_gate import build_market_filter  # noqa: E402
+
+
+def test_filter_excludes_blocked_day_for_all_codes():
+    """全池阻断：任何 code 在阻断日都返回 False。"""
+    risk = {"2024-02-05": {"state": "EXTREME"}}
+    f = build_market_filter(risk)
+    assert f("000001", [], "2024-02-05") is False
+    assert f("600519", [], "2024-02-05") is False
+
+
+def test_filter_allows_normal_day():
+    risk = {"2024-02-05": {"state": "EXTREME"}, "2024-01-02": {"state": "NORMAL"}}
+    f = build_market_filter(risk)
+    assert f("000001", [], "2024-01-02") is True
+
+
+def test_filter_unknown_day_does_not_block():
+    """⚠️ 缺失即不干预 —— 未知日期必须放行。"""
+    f = build_market_filter({"2024-02-05": {"state": "EXTREME"}})
+    assert f("000001", [], "1999-01-01") is True
+
+
+def test_filter_does_not_distinguish_codes():
+    """市场级 filter 是**全池**判定 —— 不得因个股不同而给出不同结果。"""
+    risk = {"2024-02-05": {"state": "EXTREME"}}
+    f = build_market_filter(risk)
+    assert f("000001", [{"close": 1}], "2024-02-05") == f("600519", [], "2024-02-05")
+
+
+def test_filter_cooldown_blocks_subsequent_days():
+    risk = {"2024-01-05": {"state": "EXTREME"}}
+    f = build_market_filter(risk, cooldown_days=3, trading_days=_DAYS)
+    assert f("000001", [], "2024-01-05") is False
+    assert f("000001", [], "2024-01-08") is False
+    assert f("000001", [], "2024-01-09") is True
+
+
+def test_filter_and_gate_agree_on_blocked_day():
+    """阻断日：filter 放行集合为空 ≡ gate 预算为 0（两者都导致当日不建仓）。"""
+    risk = {"2024-02-05": {"state": "EXTREME"}}
+    f = build_market_filter(risk)
+    g = build_market_gate(risk)
+    assert f("000001", [], "2024-02-05") is False
+    assert g("2024-02-05") == 0.0
+
+
+def test_filter_is_side_effect_free():
+    """⚠️ 回测热路径逐股逐日调用 → filter 内**不得有 I/O**。多次调用结果必须一致。"""
+    risk = {"2024-02-05": {"state": "EXTREME"}}
+    f = build_market_filter(risk)
+    first = f("000001", [], "2024-02-05")
+    for _ in range(50):
+        assert f("000001", [], "2024-02-05") == first

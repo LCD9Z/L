@@ -201,6 +201,64 @@ def load_bars_for_risk(dataset_dir: str, codes: Optional[Iterable[str]] = None,
     return out
 
 
+def build_market_filter(risk_by_day: Dict[str, Dict[str, Any]],
+                        *,
+                        block_states: Tuple[str, ...] = ("EXTREME",),
+                        cooldown_days: int = 0,
+                        trading_days: Optional[Sequence[str]] = None):
+    r"""把逐日风险状态包成 ``portfolio_backtest`` 的 ``candidate_filter``。
+
+    签名 ``(code, hist, day) -> bool``：返回 ``False`` 表示该股当日**不进候选池**。
+
+    ## ⚠️ 与 ``build_market_gate``（position_scaler）的语义差异 —— 这是关键
+
+    | | `position_scaler`（gate） | `candidate_filter`（filter） |
+    |---|---|---|
+    | 签名 | `(day) -> float` | `(code, hist, day) -> bool` |
+    | 阻断方式 | **新开仓预算 = 0** → 当日**不建仓** | 该股**不进候选池** → 系统**顺位选下一只** |
+    | 全池阻断时 | 空仓 | 候选池空 → 空仓（**等价**） |
+    | 部分阻断时 | 不适用（无逐股能力） | **换股**，持仓数可能仍填满 → **交易数可能上升** |
+    | 卖出 | 不影响 | 不影响 |
+
+    **三条必须注意的坑**：
+
+    1. **「排除全池」才等价于「不开仓」**。若只想在风险日少买，
+       用 filter 会变成**换股**（买排名更低的票），与「降敞口」不是一回事。
+    2. **filter 可能增加交易数**（换股 = 卖出 + 买入），
+       而项目已测出**成本拖累 16.58pp/年**是最大确定性损耗 —— 换股会**加剧**它。
+       gate 则直接减少建仓，不产生额外交易。
+    3. **`candidate_filter` 在 `portfolio_backtest` 里对每只股票逐日调用**，
+       故本函数内**不做任何 I/O**（预计算查表），否则回测会慢几个数量级。
+
+    :param cooldown_days: 同 ``build_market_gate``，冷却交易日数（0 = 关闭）。
+    :param trading_days: 交易日序列（升序），``cooldown_days > 0`` 时必需。
+    """
+    days_sorted: List[str] = sorted(trading_days) if trading_days else []
+    day_index = {d: i for i, d in enumerate(days_sorted)}
+
+    cooled: set = set()
+    if cooldown_days > 0 and days_sorted:
+        block_idx = [day_index[d] for d in days_sorted
+                     if (risk_by_day.get(d) or {}).get("state") in block_states]
+        for i in block_idx:
+            for k in range(i, min(i + cooldown_days + 1, len(days_sorted))):
+                cooled.add(days_sorted[k])
+
+    # 预计算「被阻断的日期集合」—— 回测热路径里只做集合查找，零 I/O
+    blocked_days: set = {
+        d for d, v in risk_by_day.items()
+        if (v or {}).get("state") in block_states
+    } | cooled
+
+    def flt(code: str, hist: List[Dict[str, Any]], day: str) -> bool:
+        # 注意：`code` / `hist` 刻意未使用 —— 市场级 filter 是**全池**判定，
+        # 不区分个股。若将来要做「风险日只排除高波动股」，才需要读 hist。
+        del code, hist
+        return str(day) not in blocked_days
+
+    return flt
+
+
 def build_market_gate(risk_by_day: Dict[str, Dict[str, Any]],
                       *,
                       block_states: Tuple[str, ...] = ("EXTREME",),
