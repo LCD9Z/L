@@ -137,11 +137,11 @@ def neutralize_by_day(raw: Dict[str, Dict[str, float]], composite: Dict[str, flo
             for i, c in enumerate(codes)}
 
 
-def build_score_panel(data, days, keep_ret20=False, keep_raw=False):
-    """返回 (composite_panel, ret20_rank_panel, raw_panel)。
+def build_score_panel(data, days, keep_ret20=False, keep_raw=False, subsets=None):
+    """返回 (panels, ret20_rank_panel, raw_panel)。
 
-    composite_panel: 逐日五因子等权合成分（越高越好，∈ (0,1]）
-    ret20_rank_panel: 逐日 ret_20 的百分位秩（用于 V1 尾部剔除：剔除动量最高分位）
+    panels: {子集名: {day: {code: 合成分}}}；subsets 为 None 时只算 "S5_all"+DIRECTIONS 全集
+    ret20_rank_panel: 逐日 ret_20 的百分位秩（用于 V1 尾部剔除）
     raw_panel: 逐日原始因子值（用于风格中性化的回归）
 
     性能：预先建 date→下标 映射与 date→close/amount 映射，避免在逐日循环里
@@ -153,6 +153,8 @@ def build_score_panel(data, days, keep_ret20=False, keep_raw=False):
     panel: Dict[str, Dict[str, float]] = {}
     ret_rank: Dict[str, Dict[str, float]] = {}
     raws: Dict[str, Dict[str, Dict[str, float]]] = {}
+    panels: Dict[str, Dict[str, Dict[str, float]]] = {
+        s: {} for s in (subsets or {"S5_all": list(DIRECTIONS)})}
     for d in days:
         k = pos[d]
         win = days[max(0, k - 21): k + 1]
@@ -174,15 +176,43 @@ def build_score_panel(data, days, keep_ret20=False, keep_raw=False):
         ranks = {k2: _ranks([(c, v[k2]) for c, v in raw.items()]) for k2 in DIRECTIONS}
         # 方向化分位：正向因子取 rank_pct，反向因子取 1-rank_pct → 合成分落在
         # (0, 1]，分数越高越好（与"高分为优"的选股约定一致）。
-        panel[d] = {
-            c: sum((ranks[k2][c] if DIRECTIONS[k2] > 0 else 1.0 - ranks[k2][c])
-                   for k2 in DIRECTIONS) / len(DIRECTIONS)
-            for c in raw}
+        for sname, keys in (subsets or {"S5_all": list(DIRECTIONS)}).items():
+            panels[sname][d] = {
+                c: sum((ranks[k2][c] if DIRECTIONS[k2] > 0 else 1.0 - ranks[k2][c])
+                       for k2 in keys) / len(keys)
+                for c in raw}
         if keep_ret20:
             ret_rank[d] = ranks["ret20"]
         if keep_raw:
             raws[d] = raw
-    return panel, ret_rank, raws
+    return panels, ret_rank, raws
+
+
+def _limit_for_bar(code: str, bar: Dict[str, Any]) -> float:
+    """该股在给定 bar 当日的涨跌停幅度（ST 5%、主板 10%、双创 20%、北交所 30%）。"""
+    c = str(code).zfill(6)
+    is_st = str(bar.get("is_st", "0")) == "1"
+    if c.startswith(("83", "87", "43", "92")):
+        return 0.30
+    if c.startswith(("300", "301", "688", "689")):
+        return 0.20
+    return 0.05 if is_st else 0.10
+
+
+def make_jump_filter(lookback: int = 21):
+    """V2 过滤：信号日回溯 lookback 根内若出现超涨跌停跳空则剔除。"""
+    def f(code, hist, day):
+        seg = hist[-lookback:]
+        for k in range(1, len(seg)):
+            p0 = float(seg[k - 1].get("close") or 0)
+            p1 = float(seg[k].get("close") or 0)
+            if p0 <= 0 or p1 <= 0:
+                continue
+            lim = _limit_for_bar(code, seg[k]) - 0.002
+            if abs(p1 / p0 - 1) > lim:
+                return False
+        return True
+    return f
 
 
 def main() -> int:
@@ -210,6 +240,11 @@ def main() -> int:
                     help="容量约束：单笔买入名义 ≤ 信号日成交额 × 比例（H-TC 的 T2）")
     ap.add_argument("--impact-model", action="store_true",
                     help="用 sqrt 冲击成本（k·σ·√(Q/V)）替换阶梯滑点，见 IMPACT_COST_PREREG.md")
+    ap.add_argument("--compare-factors", default="",
+                    help="H-F4：附加一个因子子集臂，如 'ret20,vol20,loga20,maxret20'"
+                         "（同时输出 S5_all 与子集两臂），见 FACTOR_SUBSET_PREREG.md")
+    ap.add_argument("--exclude-jump", action="store_true",
+                    help="H-V2：在 V1 基础上再剔除信号日前 21 根内含超涨跌停跳空的候选")
     ap.add_argument("--out", default="")
     args = ap.parse_args()
 
@@ -272,9 +307,20 @@ def main() -> int:
         warmup = 60 if args.style_switch else 0
         i0 = max(0, days_all.index(w) - warmup)
         panel_days = days_all[i0:]
-        panel, ret_rank, raws = build_score_panel(
-            restricted, panel_days, keep_ret20=True, keep_raw=bool(args.neutralize))
-        print(f"      因子面板 {len(panel)} 天", flush=True)
+        subset_specs = {"S5_all": list(DIRECTIONS)}
+        if args.compare_factors:
+            keys = [k.strip() for k in args.compare_factors.split(",") if k.strip()]
+            for k in keys:
+                if k not in DIRECTIONS:
+                    raise SystemExit(f"未知因子 {k}，可选 {list(DIRECTIONS)}")
+            subset_specs["S_subset"] = keys
+        panels, ret_rank, raws = build_score_panel(
+            restricted, panel_days, keep_ret20=True,
+            keep_raw=bool(args.neutralize), subsets=subset_specs)
+        panel = panels["S5_all"]
+        print(f"      因子面板 {len(panel)} 天"
+              + (f"（另含子集 {subset_specs['S_subset']}）" if args.compare_factors else ""),
+              flush=True)
 
         # --- 风格中性化：composite ~ 1 + beta(60d) + size(log 成交额) 取残差 ---
         if args.neutralize:
@@ -388,6 +434,20 @@ def main() -> int:
                                              "score_func": lambda c, h, d: _ss(c, h, d, False)}))
             arms.append(("SS_inv_falsify", {"threshold": 0.0,
                                             "score_func": lambda c, h, d: _ss(c, h, d, True)}))
+        elif args.compare_factors:
+            def _mk(pan):
+                def sc(code, hist, day, _p=pan):
+                    v = _p.get(day, {}).get(code)
+                    if v is None:
+                        return {"score": 0.0, "risk": 9.0}
+                    return {"score": float(v) * 100.0, "risk": 5.0}
+                return sc
+
+            arms.append(("A_baseline", {"threshold": 70}))
+            arms.append(("B_fivefactor", {"threshold": 0.0,
+                                          "score_func": _mk(panels["S5_all"])}))
+            arms.append(("B_subset", {"threshold": 0.0,
+                                      "score_func": _mk(panels["S_subset"])}))
         elif args.exclude_ret20_top > 0:
             cut = 1.0 - args.exclude_ret20_top
 
@@ -397,6 +457,11 @@ def main() -> int:
 
             arms.append(("A_baseline", {"threshold": 70}))
             arms.append(("A_plus_V1", {"threshold": 70, "candidate_filter": flt}))
+            if args.exclude_jump:
+                def flt2(code, hist, day, _f=flt):
+                    return _f(code, hist, day) and make_jump_filter()(code, hist, day)
+                arms.append(("A_plus_V1_V2", {"threshold": 70,
+                                              "candidate_filter": flt2}))
         else:
             arms.append(("A_baseline", {"threshold": 70}))
             arms.append(("B_fivefactor", {"threshold": 0.0, "score_func": score_b}))

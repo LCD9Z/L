@@ -29,14 +29,30 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FACTORS = ["ret20", "vol20", "amihud20", "loga20", "maxret20"]
 CONFIGS = ["raw_factor", "adj_factor"]
 
+#: 方向（与冻结引擎一致）：ret20/vol20/loga20/maxret20 反向，amihud20 正向
+DIRECTION = {"ret20": -1, "vol20": -1, "amihud20": 1, "loga20": -1, "maxret20": -1}
+
+#: 事前设定的因子子集候选（不得事后增删；见 FACTOR_SUBSET_PREREG.md）
+SUBSETS = {
+    "S5_all": ["ret20", "vol20", "amihud20", "loga20", "maxret20"],
+    "S4_no_amihud": ["ret20", "vol20", "loga20", "maxret20"],
+    "S4_no_loga": ["ret20", "vol20", "amihud20", "maxret20"],
+    "S3_core": ["ret20", "vol20", "maxret20"],
+    "S2_vol_max": ["vol20", "maxret20"],
+}
+
 
 def _factors_at(closes: List[float], amounts: List[float], i: int
                 ) -> Optional[Dict[str, float]]:
-    """以下标 i 为信号日计算五因子（需 i>=21）。"""
+    """以下标 i 为信号日计算五因子（与 `five_factor.compute_factors` 逐字一致）。
+
+    注意 ret20 的回溯是 **20 根**（closes[i-20]），不是 21 根 —— 曾误用 i-21，
+    已由与冻结引擎的逐股交叉校验抓出并修正。
+    """
     if i < 21 or i + 1 >= len(closes):
         return None
     c = closes[i]
-    if c <= 0 or closes[i - 21] <= 0:
+    if c <= 0 or closes[i - 20] <= 0:
         return None
     rets = [closes[k] / closes[k - 1] - 1 for k in range(i - 19, i + 1)]
     liq20 = sum(amounts[i - 19:i + 1]) / 20.0
@@ -49,7 +65,7 @@ def _factors_at(closes: List[float], amounts: List[float], i: int
     if len(amihud) < 15:
         return None
     return {
-        "ret20": c / closes[i - 21] - 1,
+        "ret20": c / closes[i - 20] - 1,
         "vol20": statistics.pstdev(rets),
         "amihud20": sum(amihud) / len(amihud),
         "loga20": math.log1p(liq20),
@@ -173,6 +189,8 @@ def main() -> int:
     series: Dict[str, Dict[str, List[float]]] = {
         cfg: {f: [] for f in FACTORS} for cfg in CONFIGS}
     series["raw_flag_excluded"] = {f: [] for f in FACTORS}
+    comp_series: Dict[str, List[float]] = {s: [] for s in SUBSETS}
+    comp_series_ex: Dict[str, List[float]] = {s: [] for s in SUBSETS}
     flagged_share = []
 
     for d in sorted(buckets):
@@ -196,6 +214,18 @@ def main() -> int:
                 ic3 = _spearman([raw[k] for k in keep], [fwd[k] for k in keep])
                 if ic3 is not None:
                     series["raw_flag_excluded"][f].append(ic3)
+        # 子集合成分的 IC（方向化分位均值，复权价口径）
+        for sname, keys in SUBSETS.items():
+            rk = {k: _rank(list(b["adj_factor"][k])) for k in keys}
+            comp = [sum((rk[k][idx] / n if DIRECTION[k] > 0 else 1.0 - rk[k][idx] / n)
+                        for k in keys) / len(keys) for idx in range(n)]
+            ic_c = _spearman(comp, fwd)
+            if ic_c is not None:
+                comp_series[sname].append(ic_c)
+            if len(keep) >= args.min_cross_section:
+                ic_ce = _spearman([comp[k] for k in keep], [fwd[k] for k in keep])
+                if ic_ce is not None:
+                    comp_series_ex[sname].append(ic_ce)
 
     def stat(v: List[float]) -> Dict:
         if len(v) < 2:
@@ -206,12 +236,16 @@ def main() -> int:
         return {"ic_mean": round(m, 6), "t": round(t, 2), "n": len(v)}
 
     res = {cfg: {f: stat(series[cfg][f]) for f in FACTORS} for cfg in series}
+    comp = {s: stat(comp_series[s]) for s in SUBSETS}
+    comp_ex = {s: stat(comp_series_ex[s]) for s in SUBSETS}
     out = {
         "source": args.vipdoc, "stocks": len(stocks), "samples": n_used,
         "cross_sections": len(buckets),
         "flagged_share_mean": round(sum(flagged_share) / len(flagged_share), 4)
         if flagged_share else None,
         "ic": res,
+        "composite_ic": comp,
+        "composite_ic_jump_excluded": comp_ex,
         "runtime_sec": round(time.time() - t0, 1),
         "note": "标签统一用前复权价（收益必须先复权）；raw_factor=未复权价算因子；"
                 "raw_flag_excluded=未复权且剔除窗口内含超涨跌停跳空的样本。",
@@ -224,6 +258,11 @@ def main() -> int:
         x = res["raw_flag_excluded"][f]
         print(f"{f:14s} {r['ic_mean']:+.6f}/{r['t']:+.2f}  "
               f"{a['ic_mean']:+.6f}/{a['t']:+.2f}  {x['ic_mean']:+.6f}/{x['t']:+.2f}")
+    print(f"\n{'子集（复权价）':18s} {'IC / t（全样本）':>24s} {'IC / t（剔跳空）':>24s}")
+    for s in SUBSETS:
+        a, x = comp[s], comp_ex[s]
+        print(f"{s:18s} {a['ic_mean']:+.6f}/{a['t']:+.2f}      "
+              f"{x['ic_mean']:+.6f}/{x['t']:+.2f}")
     text = json.dumps(out, ensure_ascii=False, indent=1)
     if args.out:
         with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
