@@ -9,8 +9,8 @@
 | 指标 | 值 |
 |------|----|
 | 子包数 | **19** |
-| 已入包模块 | **67**（约 6,646 行） |
-| 根目录 `.py` | **56**（约 5,760 行） |
+| 已入包模块 | **70**（约 7,266 行） |
+| 根目录 `.py` | **56**（约 5,783 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -213,7 +213,7 @@ A 股公司行为（corporate action）与复权因子子包。
 | `factors/factor_registry.py` | 76 |
 | `factors/factor_validation.py` | 130 |
 
-### `fetch/`　（6 模块，约 928 行）
+### `fetch/`　（7 模块，约 1,070 行）
 
 **职责**：L2 数据管道实现层（由 data_fetcher.py 拆分）。
 
@@ -246,6 +246,7 @@ L2 数据管道实现层（由 data_fetcher.py 拆分）。
 
 | 模块 | 行数 |
 |------|-----:|
+| `fetch/akshare_source.py` | 142 |
 | `fetch/cli.py` | 41 |
 | `fetch/common.py` | 120 |
 | `fetch/kline.py` | 257 |
@@ -346,7 +347,7 @@ Point-in-time (PIT) 研究数据子集。
 | `pit/pit_trading_filter.py` | 57 |
 | `pit/pit_universe_builder.py` | 91 |
 
-### `regime/`　（2 模块，约 51 行）
+### `regime/`　（3 模块，约 324 行）
 
 **职责**：市场状态（regime）识别与回测验证。
 
@@ -368,6 +369,7 @@ Point-in-time (PIT) 研究数据子集。
 
 | 模块 | 行数 |
 |------|-----:|
+| `regime/adx_router.py` | 273 |
 | `regime/regime_backtest_report.py` | 35 |
 | `regime/regime_validation.py` | 16 |
 
@@ -405,7 +407,7 @@ HTML 研究报告生成子包。
 | `reporting/report_markdown.py` | 90 |
 | `reporting/report_styles.py` | 463 |
 
-### `risk/`　（4 模块，约 128 行）
+### `risk/`　（5 模块，约 317 行）
 
 **职责**：风险与可执行性子包。
 
@@ -445,6 +447,7 @@ HTML 研究报告生成子包。
 | `risk/liquidity.py` | 38 |
 | `risk/risk_budget.py` | 22 |
 | `risk/risk_engine.py` | 22 |
+| `risk/var_calculator.py` | 189 |
 
 ### `router/`　（2 模块，约 108 行）
 
@@ -570,7 +573,7 @@ Stage-2 Alpha 重排 / 富集 / 消融实验。
 | `tdx/tdx_inventory.py` | 22 |
 | `tdx/tdx_lifecycle.py` | 82 |
 
-### `track/`　（4 模块，约 343 行）
+### `track/`　（4 模块，约 359 行）
 
 **职责**：L3 回测闭环 · 实现层（由 tracking.py 拆分）。
 
@@ -601,7 +604,7 @@ L3 回测闭环 · 实现层（由 tracking.py 拆分）。
 
 | 模块 | 行数 |
 |------|-----:|
-| `track/costs.py` | 65 |
+| `track/costs.py` | 81 |
 | `track/schema.py` | 46 |
 | `track/stats.py` | 163 |
 | `track/store.py` | 69 |
@@ -714,18 +717,18 @@ TuShare 数据接入（可选依赖）。
 | `agents_base.py` | 89 | 4 | 1 |
 | `agents_decision.py` | 153 | 1 | 1 |
 | `agents_researchers.py` | 192 | 1 | 1 |
-| `backtest_engine.py` | 96 | 3 | 2 |
+| `backtest_engine.py` | 116 | 3 | 2 |
 | `cycle_price_action.py` | 63 | 2 | 0 |
 | `daily_stock_pick.py` | 242 | 0 | 6 |
 | `execution_rules.py` | 18 | 2 | 1 |
 | `historical_universe.py` | 33 | 3 | 0 |
 | `industry_context.py` | 50 | 1 | 2 |
 | `market_regime.py` | 39 | 1 | 1 |
-| `orchestrator.py` | 337 | 1 | 1 |
+| `orchestrator.py` | 328 | 1 | 1 |
 | `phase22_alpha_runner.py` | 15 | 0 | 2 |
 | `phase41_data_workbench.py` | 123 | 0 | 2 |
 | `pool_manager.py` | 166 | 1 | 1 |
-| `portfolio_backtest.py` | 83 | 1 | 3 |
+| `portfolio_backtest.py` | 93 | 1 | 3 |
 | `professional_committee.py` | 89 | 1 | 1 |
 | `prompt_engine.py` | 187 | 0 | 3 |
 | `real_alpha_pipeline.py` | 196 | 0 | 4 |
@@ -733,7 +736,7 @@ TuShare 数据接入（可选依赖）。
 | `release_gate.py` | 156 | 1 | 1 |
 | `stock_scoring.py` | 173 | 2 | 2 |
 | `v3_data_bus.py` | 65 | 0 | 3 |
-| `walk_forward.py` | 96 | 1 | 3 |
+| `walk_forward.py` | 98 | 1 | 3 |
 
 ### 零出边单例（不成族，刻意留根）
 

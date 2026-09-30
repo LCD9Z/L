@@ -6,18 +6,38 @@ import math
 from dataclasses import dataclass
 from exchange_rules import limit_ratio as _exchange_limit_ratio, limit_prices as _exchange_limit_prices
 
+# A股费用规则口径（权威出处，勿凭记忆改动）：
+# - 印花税：财政部/税务总局公告，自 2023-08-28 起减半征收，卖出单边 0.5‰；
+#   此前为卖出单边 1‰。回测跨越生效日时按交易日分段计费。
+# - 过户费：中国结算公告，自 2022-04-29 起沪深两市 A股统一按成交金额 0.01‰ 双向收取。
+STAMP_DUTY_CHANGE_DATE = "2023-08-28"
+STAMP_DUTY_SELL_BEFORE = 0.001          # 旧税率：卖出单边 1‰（2023-08-28 之前）
+TRANSFER_FEE_RATE = 0.00001             # 过户费 0.01‰ 双向（沪深两市均收）
+
 @dataclass
 class Costs:
     commission_rate: float = 0.0003
     min_commission: float = 5.0
     stamp_duty_sell: float = 0.0005
     slippage_rate: float = 0.0005
+    transfer_fee_rate: float = TRANSFER_FEE_RATE
+    stamp_duty_change_date: str = STAMP_DUTY_CHANGE_DATE
+    stamp_duty_sell_before: float = STAMP_DUTY_SELL_BEFORE
 
 
-def _trade_cost(notional, side, c):
+def _stamp_rate(c, trade_date=None):
+    """卖出印花税率：trade_date 早于生效日时用旧税率；未提供日期按现行税率。"""
+    change = getattr(c, 'stamp_duty_change_date', None)
+    if not trade_date or not change or str(trade_date) >= str(change):
+        return c.stamp_duty_sell
+    return c.stamp_duty_sell_before
+
+
+def _trade_cost(notional, side, c, trade_date=None):
     commission = max(c.min_commission, notional * c.commission_rate)
-    tax = notional * c.stamp_duty_sell if side == 'sell' else 0.0
-    return commission + tax
+    tax = notional * _stamp_rate(c, trade_date) if side == 'sell' else 0.0
+    transfer = notional * c.transfer_fee_rate if getattr(c, 'transfer_fee_rate', 0.0) else 0.0
+    return commission + tax + transfer
 
 
 def _valid_bar(b):
@@ -73,8 +93,8 @@ def backtest(code, bars, horizon=5, initial_capital=100000.0, costs=None, signal
         exitp=float(bars[exit_i]['close'])*(1-costs.slippage_rate)
         shares=math.floor(equity/entry/100)*100
         if shares<=0: break
-        buy_notional=shares*entry; buy_cost=_trade_cost(buy_notional,'buy',costs)
-        sell_notional=shares*exitp; sell_cost=_trade_cost(sell_notional,'sell',costs)
+        buy_notional=shares*entry; buy_cost=_trade_cost(buy_notional,'buy',costs,bars[entry_i]['date'])
+        sell_notional=shares*exitp; sell_cost=_trade_cost(sell_notional,'sell',costs,bars[exit_i]['date'])
         pnl=sell_notional-sell_cost-buy_notional-buy_cost
         equity += pnl
         ret=pnl/(buy_notional+buy_cost)*100

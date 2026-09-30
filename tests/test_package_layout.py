@@ -50,7 +50,7 @@ PACKAGES = {
     ],
     "reporting": ["report_generator", "report_markdown", "report_styles"],
     "runtime": ["runtime_env", "runtime_profile"],
-    "risk": ["a_share_risk", "risk_engine", "risk_budget", "liquidity"],
+    "risk": ["a_share_risk", "risk_engine", "risk_budget", "liquidity", "var_calculator"],
     "validation": [
         "validation_suite", "performance", "phase13_risk", "robustness",
         "strategy_validation", "benchmark", "stress_test", "health_monitor",
@@ -58,11 +58,11 @@ PACKAGES = {
     "stage2": ["stage2_scoring", "stage2_ablation", "stage2_enrichment"],
     "alpha": ["alpha_experiment", "alpha_survival_lab"],
     "phase62": ["phase62_series", "phase62_tdx_index"],
-    "regime": ["regime_backtest_report", "regime_validation"],
+    "regime": ["regime_backtest_report", "regime_validation", "adx_router"],
     "tushare_client": ["tushare_provider", "tushare_ashare_events"],
     "notify": ["feishu_notifier", "lark_notify"],
     "router": ["provider_router", "quant_skill_router"],
-    "fetch": ["transport", "common", "quote", "kline", "news", "cli"],
+    "fetch": ["transport", "common", "quote", "kline", "news", "cli", "akshare_source"],
     "track": ["costs", "schema", "store", "stats"],
     "console": ["display", "teams"],
 }

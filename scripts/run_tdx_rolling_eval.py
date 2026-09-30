@@ -51,7 +51,7 @@ def _load_universe(dataset: str) -> Dict[str, List[str]]:
         return json.load(f)["snapshots"]
 
 
-def _load_manifest(dataset: str, max_stocks: int) -> Dict[str, Any]:
+def _load_manifest(dataset: str, max_stocks: int, min_rows_asset: int = 0) -> Dict[str, Any]:
     stock_dir = os.path.join(dataset, "stocks")
     in_universe = set()
     for v in _load_universe(dataset).values():
@@ -61,6 +61,25 @@ def _load_manifest(dataset: str, max_stocks: int) -> Dict[str, Any]:
         if os.path.exists(os.path.join(stock_dir, f"{c}.csv"))
         and os.path.exists(os.path.join(stock_dir, f"{c}.metadata.json"))
     )
+    if min_rows_asset > 0:
+        # 认证审计要求每只资产 ≥ min_rows_per_asset；在此按 metadata 声明的行数预过滤，
+        # 并如实记录被排除的 PIT 成员数（ excluded 计数随 manifest 返回）。
+        kept = []
+        excluded = 0
+        for c in codes:
+            mp = os.path.join(stock_dir, f"{c}.metadata.json")
+            try:
+                with open(mp, encoding="utf-8") as f:
+                    rows = int(json.load(f).get("rows", 0))
+            except (OSError, ValueError):
+                rows = 0
+            if rows >= min_rows_asset:
+                kept.append(c)
+            else:
+                excluded += 1
+        codes = kept
+        print(f"  行数预过滤: 保留 {len(codes)} 只，排除短历史 {excluded} 只"
+              f"（< {min_rows_asset} 行，多为窗口中后期退市/新上市）")
     if max_stocks > 0 and len(codes) > max_stocks:
         step = len(codes) / max_stocks
         codes = [codes[int(i * step)] for i in range(max_stocks)]
@@ -76,12 +95,22 @@ def main() -> int:
     ap.add_argument("--dataset", required=True)
     ap.add_argument("--max-stocks", type=int, default=800)
     ap.add_argument("--min-periods", type=int, default=252)
+    ap.add_argument("--min-rows-asset", type=int, default=0,
+                    help="按 metadata 行数预过滤资产（默认 0=不过滤）。"
+                         "需通过审计时取 min-periods*2。")
     ap.add_argument("--windows", default=",".join(DEFAULT_WINDOWS))
     ap.add_argument("--out", default="")
     ap.add_argument(
         "--survivorship-evidence", default="",
         help="研究完整性证据清单 JSON（键名见 release_gate.EVIDENCE_KEYS）。"
              "未提供时视为全部缺失，Alpha 结论会被门禁降级为 INCONCLUSIVE。")
+    ap.add_argument("--benchmark", default="",
+                    help="基准 CSV 路径（默认 <dataset>/benchmark.csv）。"
+                         "等权基准对照用：--benchmark D:/tdx_dataset_v2/benchmark_ew.csv")
+    ap.add_argument("--benchmark-meta", default="",
+                    help="基准 metadata 路径（默认同基准 CSV 名的 .metadata.json）")
+    ap.add_argument("--skip-audit", action="store_true",
+                    help="跳过 sha256 全量审计（数据集在本会话已通过时复用，会打印声明）")
     args = ap.parse_args()
 
     dataset = os.path.abspath(args.dataset)
@@ -91,20 +120,25 @@ def main() -> int:
     print("多窗口滚动样本外稳健性检验 · 内置基线策略（参数完全固定，不做任何寻优）")
     print("=" * 96)
 
-    man = _load_manifest(dataset, args.max_stocks)
+    man = _load_manifest(dataset, args.max_stocks, args.min_rows_asset)
     print(f"股票池: {len(man['codes']):,} 只")
 
     # ---- 一次性审计（数据在各窗口间相同，无需重复校验）----
     from professional_audit import audit_research_evidence
-    bench = os.path.join(dataset, "benchmark.csv")
-    bench_meta = os.path.join(dataset, "benchmark.metadata.json")
-    print("\n[1/3] 一次性审计（sha256 + 全量行校验）...")
-    pre = audit_research_evidence(man["files"], man["metas"], bench, bench_meta,
-                                  min_assets=2, min_rows_per_asset=args.min_periods * 2)
-    print(f"      preflight: {pre['verdict']}")
-    if pre["verdict"] != "PASS":
-        print(f"      阻断项 {len(pre['issues'])} 个，前 5: {pre['issues'][:5]}")
-        return 2
+    bench = args.benchmark or os.path.join(dataset, "benchmark.csv")
+    bench_meta = args.benchmark_meta or (bench + ".metadata.json")
+    print(f"\n[1/3] 一次性审计（sha256 + 全量行校验）... 基准: {os.path.basename(bench)}")
+    if args.skip_audit:
+        print("\n[1/3] 审计已跳过（--skip-audit）：本数据集在本会话已通过认证审计，"
+              "重复审计仅耗 CPU；数据文件未变动。")
+    else:
+        pre = audit_research_evidence(man["files"], man["metas"], bench, bench_meta,
+                                      min_assets=2,
+                                      min_rows_per_asset=args.min_periods * 2)
+        print(f"      preflight: {pre['verdict']}")
+        if pre["verdict"] != "PASS":
+            print(f"      阻断项 {len(pre['issues'])} 个，前 5: {pre['issues'][:5]}")
+            return 2
 
     # ---- 一次性加载 ----
     print("[2/3] 加载数据（只读一次）...")

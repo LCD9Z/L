@@ -159,8 +159,9 @@ def _zero_cost_patch():
     """
     import portfolio_backtest as pb
     orig = (pb._trade_cost, pb.dynamic_slippage)
-    pb._trade_cost = lambda notional, side, c: 0.0
-    pb.dynamic_slippage = lambda rows, base=0.0005: 0.0
+    # _trade_cost 现支持可选的第 4 参 trade_date（印花税分段），用 *args 兼容
+    pb._trade_cost = lambda *args, **kwargs: 0.0
+    pb.dynamic_slippage = lambda *args, **kwargs: 0.0
     return orig
 
 
@@ -175,6 +176,13 @@ def main() -> int:
     ap.add_argument("--max-stocks", type=int, default=400)
     ap.add_argument("--windows", default=",".join(DEFAULT_WINDOWS))
     ap.add_argument("--top-frac", type=float, default=0.20)
+    ap.add_argument("--top-n", type=int, default=5,
+                    help="同时持仓上限（C20 分散实验取 20）")
+    ap.add_argument("--position-pct", type=float, default=0.25,
+                    help="单仓占初始资金上限（C20 分散实验取 0.05）")
+    ap.add_argument("--benchmark", default="",
+                    help="基准 CSV（默认 <dataset>/benchmark.csv；"
+                         "等权基准用 D:/tdx_dataset_v2/benchmark_ew.csv）")
     ap.add_argument("--horizon", type=int, default=5)
     ap.add_argument("--all-csv", action="store_true",
                     help="从目录全部 CSV 取码（含早前残留），仅用于稳健性交叉验证")
@@ -209,8 +217,10 @@ def main() -> int:
     with open(os.path.join(dataset, "pit_universe.json"), encoding="utf-8") as fh:
         universe = json.load(fh)["snapshots"]
     import csv as _csv
-    with open(os.path.join(dataset, "benchmark.csv"), encoding="utf-8") as fh:
+    bench_path = args.benchmark or os.path.join(dataset, "benchmark.csv")
+    with open(bench_path, encoding="utf-8") as fh:
         bench_all = list(_csv.DictReader(fh))
+    print(f"      基准: {os.path.basename(bench_path)}")
 
     print("[2/3] 逐变体 × 逐窗口回测（净收益）...")
     rows: List[Dict[str, Any]] = []
@@ -234,7 +244,9 @@ def main() -> int:
                     restricted[code] = kept
             bench = [b for b in bench_all if b["date"] >= w]
             res = portfolio_backtest(restricted, universe_snapshot_map=universe,
-                                     threshold=70, top_n=5, horizon=args.horizon,
+                                     threshold=70, top_n=args.top_n,
+                                     max_position_pct=args.position_pct,
+                                     horizon=args.horizon,
                                      start_signal_date=w, candidate_filter=flt)
             s_ret = _curve_returns(res.get("equity_curve", []))
             b_ret = {b["date"]: 0.0 for b in bench}
@@ -283,7 +295,9 @@ def main() -> int:
                 if ever:
                     restricted[code] = kept
             g = portfolio_backtest(restricted, universe_snapshot_map=universe,
-                                   threshold=70, top_n=5, horizon=args.horizon,
+                                   threshold=70, top_n=args.top_n,
+                                   max_position_pct=args.position_pct,
+                                   horizon=args.horizon,
                                    start_signal_date=w, candidate_filter=flt)
             net_row = next((r for r in rows
                             if r["variant"] == vname and r["window"] == w), None)

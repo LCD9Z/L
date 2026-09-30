@@ -103,7 +103,7 @@ def backfill_pending(conn, today=None, horizon_override=None, costs=None,
             )
             still += 1
         else:
-            ret = net_return_pct(rec_price, close_n, eff_costs)
+            ret = net_return_pct(rec_price, close_n, eff_costs, as_of=r["rec_date"])
             conn.execute(
                 "UPDATE recommendations SET backfilled=1, rec_price=?, close_n=?,"
                 " return_pct=?, backfill_date=? WHERE id=?",

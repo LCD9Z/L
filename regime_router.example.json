@@ -1,0 +1,13 @@
+{
+  "enabled": false,
+  "adx_period": 14,
+  "confirm_days": 1,
+  "oscillation_lt": 20.0,
+  "trending_ge": 25.0,
+  "position_ratios": {
+    "明确": 1.0,
+    "萌芽": 0.5,
+    "震荡": 0.3
+  },
+  "manual_override": null
+}
