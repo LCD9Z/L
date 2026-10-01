@@ -31,6 +31,7 @@ from typing import Any, Dict, List
 from . import backfill as backfill_mod
 from . import daily_report
 from . import day_reader
+from . import screen
 
 
 def _market_prefix(code: str) -> str:
@@ -60,50 +61,73 @@ def guard_unfinished_session(vipdoc: str) -> None:
             "盘中数据会污染因子口径，请在 15:05 之后运行。")
 
 
-def _due_exits(filled_csv: str, today: str) -> List[Dict[str, Any]]:
-    """返回**今日到期应卖出**的持仓（T+20 到期日 == today）。
+def _due_exits(filled_csv: str, today: str,
+               tolerance_days: int = 15) -> List[Dict[str, Any]]:
+    """返回**已到期应卖出**的持仓（按逾期天数升序）。
 
-    为什么需要：系统此前只回答"买什么"，但持有期是 20 个交易日，
-    到期后必须卖出。没有卖出提示，实际使用闭环就缺了一半——
-    用户拿得到买入清单，却不知道该在什么时候离场。
+    为什么不能只匹配"今天到期"：到期日那天任务可能没跑——数据未更新被跳过、
+    电脑关机、或恰好是节假日。只匹配当天会让这些持仓**永远不会被提示**，
+    用户就白白错过离场时点。因此覆盖 ``today`` 之前 ``tolerance_days``
+    个自然日内到期的全部记录，并标注逾期天数。
 
-    数据来源是回填产物（``tracking_filled.csv``），其中 ``t20_date``
-    就是该笔持仓的第 20 个交易日（交易日历口径，与回测一致）。
+    为什么需要卖出提示：系统此前只回答"买什么"，但持有期是 20 个交易日，
+    到期后必须卖出。没有这一步，实际使用闭环就缺了一半。
+
+    每条记录附带 ``_overdue_days``（0 = 今日到期）。
     """
     if not os.path.exists(filled_csv):
+        return []
+    try:
+        t0 = _dt.datetime.strptime(today, "%Y%m%d").date()
+    except ValueError:
         return []
     out: List[Dict[str, Any]] = []
     with open(filled_csv, encoding="utf-8", newline="") as f:
         for r in csv.DictReader(f):
-            if (r.get("t20_date") or "").strip() == today:
-                out.append(r)
+            d = (r.get("t20_date") or "").strip()
+            if len(d) != 8 or not d.isdigit():
+                continue
+            try:
+                due = _dt.datetime.strptime(d, "%Y%m%d").date()
+            except ValueError:
+                continue
+            delta = (t0 - due).days
+            if 0 <= delta <= tolerance_days:
+                out.append({**r, "_overdue_days": delta})
+    out.sort(key=lambda r: (r["_overdue_days"], r.get("code", "")))
     return out
 
 
 def export_exits(rows: List[Dict[str, Any]], out_dir: str, today: str) -> str:
     """把到期卖出清单写成 markdown。"""
     path = os.path.join(out_dir, f"exits_{today}.md")
+    overdue = [r for r in rows if int(r.get("_overdue_days") or 0) > 0]
     lines = [
         f"# 到期卖出清单 · {today}",
         "",
-        "> 以下持仓按「持有 20 个交易日」规则**今日到期**。本清单仅为执行提醒，",
+        "> 以下持仓按「持有 20 个交易日」规则已到期。本清单仅为执行提醒，",
         "> 不构成投资建议，也不含任何择时判断。",
         "",
     ]
+    if overdue:
+        lines += [
+            f"> ⚠️ 其中 {len(overdue)} 条**已逾期**——通常是到期日当天任务没跑"
+            "（数据未更新 / 关机 / 节假日）。补跑会自动把它们捞回来。",
+            "",
+        ]
     if not rows:
         lines.append("今日无到期持仓。")
     else:
-        lines += ["| 代码 | 名称 | 买入日 | 买入价 | 收益 | 风险标签 |",
-                  "|------|------|--------|--------|------|---------|"]
+        lines += ["| 代码 | 名称 | 买入日 | 买入价 | 到期日 | 状态 | 收益 |",
+                  "|------|------|--------|--------|--------|------|------|"]
         for r in rows:
+            od = int(r.get("_overdue_days") or 0)
+            state = "今日到期" if od == 0 else f"⚠️ 逾期 {od} 天"
+            ret = f"{float(r['t20_ret']):+.2%}" if r.get("t20_ret") else "n/a"
             lines.append(
                 f"| {r.get('code', '')} | {r.get('name') or '-'} | "
                 f"{r.get('t1_date', '')} | {r.get('t1_open', '')} | "
-                f"{float(r['t20_ret']):+.2%} | {r.get('risk_flags') or '-'} |"
-                if r.get("t20_ret") else
-                f"| {r.get('code', '')} | {r.get('name') or '-'} | "
-                f"{r.get('t1_date', '')} | {r.get('t1_open', '')} | - | "
-                f"{r.get('risk_flags') or '-'} |")
+                f"{r.get('t20_date', '')} | {state} | {ret} |")
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines) + "\n")
     return path
@@ -197,6 +221,21 @@ def run(vipdoc: str, top_n: int = 20, out_dir: str = "reports/daily",
         print(f"[提示] {names_csv} 不存在：将无名称显示、不做 ST 剔除。"
               "建议先运行 python -m tdx_native.fetch_names")
 
+    # 数据完整性预检：残缺池会产出"看起来完全正常"的报告与跟踪记录，
+    # 属于本项目最警惕的静默失效。宁可拒绝产出，也不写脏数据。
+    pf = screen.preflight(vipdoc)
+    if pf["problems"]:
+        msg = "；".join(pf["problems"])
+        if not force:
+            raise SystemExit(
+                f"[拒绝] 数据完整性预检未通过：{msg}\n"
+                "通达信 .day 可能未下载完整——请打开客户端重新下载后再跑。\n"
+                "（确认数据无误可加 --force 强制继续）")
+        print(f"[警告] 数据完整性预检未通过：{msg}（--force 已强制继续）")
+    else:
+        print(f"预检通过：{pf['stocks_found']} 只，"
+              f"{pf['fresh_ratio']:.0%} 更新至 {pf['as_of']}")
+
     print("=" * 60)
     print("[1/4] 生成每日推荐（C20+V1+V2+前复权+ST 剔除）")
     payload = daily_report.build_report(
@@ -225,8 +264,11 @@ def run(vipdoc: str, top_n: int = 20, out_dir: str = "reports/daily",
         print(f"[4/4] 到期卖出提醒：{len(exits)} 只 → {ex_path}")
         for r in exits:
             ret = f"{float(r['t20_ret']):+.2%}" if r.get("t20_ret") else "n/a"
-            print(f"      {r['code']} {r.get('name') or '':<8} "
-                  f"买入 {r.get('t1_date', '')} @{r.get('t1_open', '')} 收益 {ret}")
+            od = int(r.get("_overdue_days") or 0)
+            tag = "今日" if od == 0 else f"逾期{od}天"
+            print(f"      [{tag}] {r['code']} {r.get('name') or '':<8}"
+                  f" 买入 {r.get('t1_date', '')} @{r.get('t1_open', '')}"
+                  f" 收益 {ret}")
     else:
         print(f"[4/4] 今日无到期持仓（{ex_path}）")
 

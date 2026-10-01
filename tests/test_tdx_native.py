@@ -30,6 +30,7 @@ from tdx_native import day_reader
 from tdx_native import five_factor
 from tdx_native import gbbq_reader
 from tdx_native import run_daily
+from tdx_native import screen as screen_mod
 
 REC = struct.Struct("<IIIIIfII")
 
@@ -384,23 +385,29 @@ def _write_filled(path: str, rows) -> None:
                         t20d, ret, ""])
 
 
-def test_due_exits_only_matches_today(tmp_path):
-    """只有 t20_date == today 的持仓算「今日到期」；未到期的不进清单。"""
+def test_due_exits_covers_overdue_window(tmp_path):
+    """不仅覆盖「今日到期」，也要捞回容忍窗口内已逾期的项。
+
+    动机：到期日当天任务可能没跑（数据未更新 / 关机 / 节假日）。
+    只匹配当天会让这些持仓**永远不被提示**，用户就错过了离场时点。
+    """
     p = str(tmp_path / "filled.csv")
     _write_filled(p, [
-        ("20260601", "600000", "浦发银行", "20260630", "-0.050000"),
-        ("20260601", "000001", "平安银行", "20260701", "0.010000"),
-        ("20260601", "300750", "宁德时代", "", ""),          # 未到期
+        ("20260601", "600000", "浦发银行", "20260630", "-0.050000"),  # 今日到期
+        ("20260601", "000001", "平安银行", "20260625", "0.010000"),   # 逾期 5 天
+        ("20260601", "300750", "宁德时代", "20260501", "-0.020000"),  # 逾期 60 天 → 超窗
+        ("20260601", "600519", "贵州茅台", "", ""),                    # 未到期
     ])
     got = run_daily._due_exits(p, "20260630")
-    assert [r["code"] for r in got] == ["600000"]
+    assert [r["code"] for r in got] == ["600000", "000001"]
+    assert [r["_overdue_days"] for r in got] == [0, 5]
 
 
-def test_due_exits_empty_today_returns_empty(tmp_path):
-    """没有当天到期的持仓 → 空清单（不该误报）。"""
+def test_due_exits_excludes_not_yet_due(tmp_path):
+    """到期日在 today 之后的持仓不进清单。"""
     p = str(tmp_path / "filled.csv")
-    _write_filled(p, [("20260601", "600000", "浦发银行", "20260630", "-0.05")])
-    assert run_daily._due_exits(p, "20260701") == []
+    _write_filled(p, [("20260601", "600000", "浦发银行", "20260730", "-0.05")])
+    assert run_daily._due_exits(p, "20260630") == []
 
 
 def test_due_exits_missing_file_returns_empty(tmp_path):
@@ -409,14 +416,27 @@ def test_due_exits_missing_file_returns_empty(tmp_path):
 
 
 def test_export_exits_writes_table_with_return(tmp_path):
-    """有到期持仓时写出表格，且收益按百分比格式呈现。"""
+    """有到期持仓时写出表格，收益按百分比格式呈现。"""
     rows = [{"code": "600000", "name": "浦发银行", "t1_date": "20260602",
-             "t1_open": "10.0000", "t20_ret": "-0.050000", "risk_flags": ""}]
+             "t1_open": "10.0000", "t20_date": "20260630",
+             "t20_ret": "-0.050000", "_overdue_days": 0}]
     p = run_daily.export_exits(rows, str(tmp_path), "20260630")
     text = open(p, encoding="utf-8").read()
     assert "600000" in text
     assert "-5.00%" in text
+    assert "今日到期" in text
     assert "不构成投资建议" in text
+
+
+def test_export_exits_marks_overdue_items(tmp_path):
+    """逾期项要显式标注天数，并说明"补跑会自动捞回"。"""
+    rows = [{"code": "000001", "name": "平安银行", "t1_date": "20260602",
+             "t1_open": "10.0000", "t20_date": "20260625",
+             "t20_ret": "0.010000", "_overdue_days": 5}]
+    p = run_daily.export_exits(rows, str(tmp_path), "20260630")
+    text = open(p, encoding="utf-8").read()
+    assert "逾期 5 天" in text
+    assert "已逾期" in text
 
 
 def test_export_exits_empty_writes_notice(tmp_path):
@@ -424,3 +444,57 @@ def test_export_exits_empty_writes_notice(tmp_path):
     p = run_daily.export_exits([], str(tmp_path), "20260701")
     text = open(p, encoding="utf-8").read()
     assert "今日无到期持仓" in text
+
+
+# ---------------------------------------------------------------------------
+# 7. screen.preflight —— 写入前的数据完整性闸门（防「静默失效」）
+# ---------------------------------------------------------------------------
+
+def test_preflight_flags_empty_directory(tmp_path):
+    """目录空空 → 必须报问题。残缺池绝不能静默通过。"""
+    pf = screen_mod.preflight(str(tmp_path))
+    assert pf["stocks_found"] == 0
+    assert pf["problems"]
+
+
+def test_preflight_flags_small_universe(tmp_path):
+    """股票池远小于阈值（数据没下全）→ 报问题。"""
+    d = tmp_path / "sh" / "lday"
+    d.mkdir(parents=True)
+    for i in range(10):
+        _write_day(str(d / f"sh60000{i}.day"),
+                   _flat_rows([20260101 + j for j in range(30)]))
+    pf = screen_mod.preflight(str(tmp_path))
+    assert pf["stocks_found"] == 10
+    assert any("股票池仅" in p for p in pf["problems"])
+
+
+def test_preflight_passes_when_fresh(tmp_path, monkeypatch):
+    """池规模达标 + 全部数据新鲜 → 通过（无 problems）。"""
+    monkeypatch.setattr(screen_mod, "MIN_UNIVERSE_STOCKS", 5)
+    d = tmp_path / "sh" / "lday"
+    d.mkdir(parents=True)
+    dates = [20260101 + i for i in range(30)]
+    for i in range(6):
+        _write_day(str(d / f"sh60000{i}.day"), _flat_rows(dates))
+    pf = screen_mod.preflight(str(tmp_path))
+    assert pf["problems"] == []
+    assert pf["fresh_ratio"] == 1.0
+    assert pf["as_of"] == "20260130"
+
+
+def test_preflight_flags_stale_data(tmp_path, monkeypatch):
+    """部分标的数据滞后 → 报「下载未完成」（比只看文件数量可靠）。"""
+    monkeypatch.setattr(screen_mod, "MIN_UNIVERSE_STOCKS", 5)
+    monkeypatch.setattr(screen_mod, "MIN_FRESH_RATIO", 0.9)
+    d = tmp_path / "sh" / "lday"
+    d.mkdir(parents=True)
+    fresh = [20260101 + i for i in range(30)]      # 到 20260130
+    stale = [20251201 + i for i in range(30)]      # 停在 20251230
+    for i in range(8):
+        _write_day(str(d / f"sh60000{i}.day"), _flat_rows(fresh))
+    for i in range(8, 10):
+        _write_day(str(d / f"sh60000{i}.day"), _flat_rows(stale))
+    pf = screen_mod.preflight(str(tmp_path))
+    assert pf["fresh_ratio"] == 0.8
+    assert any("下载未完成" in p for p in pf["problems"])

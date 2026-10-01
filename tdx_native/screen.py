@@ -20,12 +20,54 @@ from __future__ import annotations
 import argparse
 import json
 import time
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from . import adjust
 from . import day_reader
 from . import five_factor
 from . import gbbq_reader
+
+
+# A 股当前约 5,600 只；低于此值几乎必然意味着 .day 下载不完整
+MIN_UNIVERSE_STOCKS = 4800
+# 至少这么多比例的标的数据要更新到最新交易日（停牌股自然落后，日常 <1%）
+MIN_FRESH_RATIO = 0.85
+
+
+def preflight(vipdoc: str) -> Dict[str, Any]:
+    """数据完整性预检（**不写任何文件**）。
+
+    为什么需要：若某日通达信只下载了部分 ``.day``，系统会**静默地**用残缺池
+    选股，产出一份看起来完全正常的报告与跟踪记录——这正是本项目最警惕的
+    「静默失效」。因此在写入任何产物之前先过这道闸门。
+
+    检查两项：
+    1. 股票池规模不得异常缩水（``MIN_UNIVERSE_STOCKS``）；
+    2. 至少 ``MIN_FRESH_RATIO`` 比例的标的数据已更新到全池最新交易日
+       （反映"下载是否跑完"，比只看文件数量可靠）。
+
+    返回 ``{stocks_found, as_of, at_as_of, fresh_ratio, problems}``；
+    ``problems`` 为空列表表示通过。
+    """
+    stocks = day_reader.scan_stocks(vipdoc)
+    n = len(stocks)
+    if n == 0:
+        return {"stocks_found": 0, "as_of": "", "at_as_of": 0,
+                "fresh_ratio": 0.0,
+                "problems": ["未扫描到任何 A 股 .day 文件（路径是否正确？）"]}
+    last_dates = [b[-1]["date"] for _, _, _, b in stocks]
+    as_of = max(last_dates)
+    at_as_of = sum(1 for d in last_dates if d == as_of)
+    fresh = at_as_of / n
+    problems: List[str] = []
+    if n < MIN_UNIVERSE_STOCKS:
+        problems.append(f"股票池仅 {n} 只（阈值 {MIN_UNIVERSE_STOCKS}）")
+    if fresh < MIN_FRESH_RATIO:
+        problems.append(
+            f"仅 {fresh:.0%} 的标的数据更新到 {as_of}"
+            f"（阈值 {MIN_FRESH_RATIO:.0%}，疑似下载未完成）")
+    return {"stocks_found": n, "as_of": as_of, "at_as_of": at_as_of,
+            "fresh_ratio": fresh, "problems": problems}
 
 
 def run(vipdoc: str, top_n: int = 20, exclude_ret20_top: float = 0.0,
