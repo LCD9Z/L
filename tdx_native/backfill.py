@@ -7,8 +7,10 @@
 - 交易日历：上证指数 sh000001 的 .day（与全市场 IC 研究同源）
 - 停牌处理：个股目标日无 bar 时取**不晚于**目标日的最后一根收盘；
   建仓日无 bar 时顺延至下一有 bar 日；建仓后再无 bar 则记 suspended
-- 基准：上证指数同期（T+1 open → T+k close）收益，仅作市场参照，
-  非严格等权基准（等权基准见 STEP1_3 报告的回测部分）
+- 基准：**全市场等权**同期（T+1 open → T+k close）收益，作为主参照。
+  另附上证指数作附加参照。**必须用等权而非指数**——指数由大市值权重股主导，
+  而本选股池系统性偏中小盘（`loga20` 方向 −1），口径不同会得出相反结论：
+  同一批样本实测「指数口径 −2.13%」vs「等权口径 +3.06%」。
 - 幂等：tracking.csv 只追加不修改（append-only 纪律）；本脚本每次
   **全量重算**产出独立的 tracking_filled.csv，源数据只增不减，
   重跑即得最新状态，无状态污染。
@@ -83,6 +85,37 @@ def _ret_at(cal: List[str], bars: Dict[str, Dict[str, Any]], i: int, k: int,
             return ("pending", None, None, None)
         return (None, c, c / entry_open - 1, None)
     return (dk, c, c / entry_open - 1, k)
+
+
+def _ew_ret(cal: List[str], cal_pos: Dict[str, int], as_of: str, k: int,
+            path_map: Dict[str, str],
+            cache: Dict[str, Dict[str, dict]]) -> Optional[float]:
+    """**全市场等权**基准收益（as_of 后 T+1 开盘 → T+k 收盘）。
+
+    为什么不用指数：指数（如上证）由大市值权重股主导，而本选股池系统性
+    偏中小盘（``loga20`` 规模因子方向为 −1）。用指数衡量会**系统性错估超额**，
+    而跟踪校准正是要拿它来判断推荐质量，口径错了整个闭环就偏了。
+
+    停牌/缺数据的标的自动跳过（等权即"每个可交易标的同权"）；
+    有效样本 < 100 只时返回 None（不足以免偏）。
+    """
+    i = cal_pos.get(as_of)
+    if i is None or i + k >= len(cal) or i + 1 >= len(cal):
+        return None
+    d1, dk = cal[i + 1], cal[i + k]
+    rets: List[float] = []
+    for code, p in path_map.items():
+        bars = cache.get(code)
+        if bars is None:
+            bars = {b["date"]: b for b in day_reader.read_day_tail(p, 260)}
+            cache[code] = bars
+        o = _price_at(bars, d1, "open")
+        c = _price_at(bars, dk, "close")
+        if o and c and o > 0:
+            rets.append(c / o - 1)
+    if len(rets) < 100:
+        return None
+    return sum(rets) / len(rets)
 
 
 def run(vipdoc: str, tracking_csv: str, out_csv: str) -> Dict:
@@ -196,7 +229,28 @@ def run(vipdoc: str, tracking_csv: str, out_csv: str) -> Dict:
     summary = {"records": len(rows), **stats,
                "t5": t5s, "t20": t20s}
 
-    # 指数参照（按已 filled 的 as_of 去重）
+    # 参照基准（按已 filled 的 as_of 去重）
+    # 主参照 = 全市场等权（与选股池的中小盘倾向同口径）；
+    # 附加参照 = 上证指数（便于与公开行情对照）
+    filled_asofs = sorted({o["as_of"] for o in out_rows
+                           if o.get("t20_ret") and o["as_of"] in cal_pos})
+    if filled_asofs:
+        # 一次性读入覆盖最老 as_of 所需的尾部长度，多个 as_of 复用
+        oldest = min(cal_pos[a] for a in filled_asofs)
+        need = max(60, min(len(cal) - oldest + 25, 1500))
+        ew_cache: Dict[str, Dict[str, dict]] = {}
+        for code, p in paths.items():
+            b = day_reader.read_day_tail(p, need)
+            if b:
+                ew_cache[code] = {y["date"]: y for y in b}
+        ew_ref: Dict[str, float] = {}
+        for a in filled_asofs:
+            v = _ew_ret(cal, cal_pos, a, 20, paths, ew_cache)
+            if v is not None:
+                ew_ref[a] = v
+        if ew_ref:
+            summary["ew_t20_mean"] = sum(ew_ref.values()) / len(ew_ref)
+
     idx_ref: Dict[str, float] = {}
     for orow in out_rows:
         if orow.get("t20_ret"):
@@ -226,9 +280,15 @@ def run(vipdoc: str, tracking_csv: str, out_csv: str) -> Dict:
         if s:
             print(f"{tag}: n={s['n']} 均值={s['mean']:+.2%} "
                   f"中位={s['median']:+.2%} 胜率={s['win']:.0%}")
+    if "ew_t20_mean" in summary:
+        print(f"全市场等权同期 T+20 均值：{summary['ew_t20_mean']:+.2%}（主参照）")
+        if summary.get("t20"):
+            print(f"  推荐池 − 等权基准 = "
+                  f"{summary['t20']['mean'] - summary['ew_t20_mean']:+.2%}"
+                  "  ← 跟踪校准的核心指标")
     if "index_t20_mean" in summary:
-        print(f"指数同期 T+20 均值：{summary['index_t20_mean']:+.2%}（参照）")
-    else:
+        print(f"上证指数同期 T+20 均值：{summary['index_t20_mean']:+.2%}（附加参照）")
+    if "ew_t20_mean" not in summary and "index_t20_mean" not in summary:
         print("暂无到期样本——推荐记录会随每日运行积累，到期后自动回填。")
     return summary
 
