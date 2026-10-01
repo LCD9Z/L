@@ -29,6 +29,7 @@ from tdx_native import daily_report
 from tdx_native import day_reader
 from tdx_native import five_factor
 from tdx_native import gbbq_reader
+from tdx_native import run_daily
 
 REC = struct.Struct("<IIIIIfII")
 
@@ -363,3 +364,63 @@ def test_risk_flags_clean_stock_has_no_board_flag():
     bars = [_bar(f"2026010{i}", 10.0 + i * 0.01) for i in range(1, 6)]
     flags = daily_report._risk_flags("600000", "sh", 5e8, bars)
     assert not any("北交所" in f or "双创" in f or "流动性偏低" in f for f in flags)
+
+
+# ---------------------------------------------------------------------------
+# 6. run_daily —— 到期卖出提示（闭环的"离场"一侧）
+# ---------------------------------------------------------------------------
+
+def _write_filled(path: str, rows) -> None:
+    """写合成 tracking_filled.csv。
+
+    rows: [(as_of, code, name, t20_date, t20_ret)]
+    """
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["as_of", "code", "name", "t1_date", "t1_open",
+                    "t20_date", "t20_ret", "risk_flags"])
+        for as_of, code, name, t20d, ret in rows:
+            w.writerow([as_of, code, name, "20260602", "10.0000",
+                        t20d, ret, ""])
+
+
+def test_due_exits_only_matches_today(tmp_path):
+    """只有 t20_date == today 的持仓算「今日到期」；未到期的不进清单。"""
+    p = str(tmp_path / "filled.csv")
+    _write_filled(p, [
+        ("20260601", "600000", "浦发银行", "20260630", "-0.050000"),
+        ("20260601", "000001", "平安银行", "20260701", "0.010000"),
+        ("20260601", "300750", "宁德时代", "", ""),          # 未到期
+    ])
+    got = run_daily._due_exits(p, "20260630")
+    assert [r["code"] for r in got] == ["600000"]
+
+
+def test_due_exits_empty_today_returns_empty(tmp_path):
+    """没有当天到期的持仓 → 空清单（不该误报）。"""
+    p = str(tmp_path / "filled.csv")
+    _write_filled(p, [("20260601", "600000", "浦发银行", "20260630", "-0.05")])
+    assert run_daily._due_exits(p, "20260701") == []
+
+
+def test_due_exits_missing_file_returns_empty(tmp_path):
+    """回填产物不存在时不抛错（首次运行 / 数据未更新被跳过的场景）。"""
+    assert run_daily._due_exits(str(tmp_path / "nope.csv"), "20260630") == []
+
+
+def test_export_exits_writes_table_with_return(tmp_path):
+    """有到期持仓时写出表格，且收益按百分比格式呈现。"""
+    rows = [{"code": "600000", "name": "浦发银行", "t1_date": "20260602",
+             "t1_open": "10.0000", "t20_ret": "-0.050000", "risk_flags": ""}]
+    p = run_daily.export_exits(rows, str(tmp_path), "20260630")
+    text = open(p, encoding="utf-8").read()
+    assert "600000" in text
+    assert "-5.00%" in text
+    assert "不构成投资建议" in text
+
+
+def test_export_exits_empty_writes_notice(tmp_path):
+    """无到期持仓时明确写「今日无到期持仓」，而不是留空文件。"""
+    p = run_daily.export_exits([], str(tmp_path), "20260701")
+    text = open(p, encoding="utf-8").read()
+    assert "今日无到期持仓" in text

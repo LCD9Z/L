@@ -43,12 +43,15 @@ python -m tdx_native.run_daily
 python -m tdx_native.run_daily --feishu-webhook https://open.feishu.cn/...
 ```
 
-`run_daily` 一次完成四件事（固定执行配置 C20+V1+V2+前复权+ST 剔除）：
+`run_daily` 一次完成五件事（固定执行配置 C20+V1+V2+前复权+ST 剔除）：
 
 1. **生成推荐报告** `reports/daily/recommend_{日期}.md`（含雪球链接、风险标签）
 2. **导出通达信自选股** `selected_stocks_{日期}.txt`（客户端 Ctrl+D → 批量导入）
 3. **登记跟踪样本** 到 `tracking.csv`（幂等：同日重复运行只补新增）
-4. **回填到期样本** 到 `tracking_filled.csv`（T+5/T+20 真实收盘收益 + 胜率统计）
+4. **回填到期样本** 到 `tracking_filled.csv`（T+5/T+20 真实收盘收益 + 胜率统计
+   + **全市场等权基准**对照）
+5. **到期卖出提醒** `exits_{日期}.md`（持有 20 日到期的持仓清单——
+   补上"何时离场"这一半闭环）
 
 内置**未收盘保护**：检测到今日 bar 而时间未过 15:05 时拒绝运行，
 避免半日数据污染口径。

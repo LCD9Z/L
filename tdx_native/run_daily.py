@@ -26,6 +26,7 @@ import json
 import os
 import time
 import urllib.request
+from typing import Any, Dict, List
 
 from . import backfill as backfill_mod
 from . import daily_report
@@ -57,6 +58,55 @@ def guard_unfinished_session(vipdoc: str) -> None:
         raise SystemExit(
             f"[拒绝] 检测到今日({today})bar 已存在但尚未收盘（{now:%H:%M}）。\n"
             "盘中数据会污染因子口径，请在 15:05 之后运行。")
+
+
+def _due_exits(filled_csv: str, today: str) -> List[Dict[str, Any]]:
+    """返回**今日到期应卖出**的持仓（T+20 到期日 == today）。
+
+    为什么需要：系统此前只回答"买什么"，但持有期是 20 个交易日，
+    到期后必须卖出。没有卖出提示，实际使用闭环就缺了一半——
+    用户拿得到买入清单，却不知道该在什么时候离场。
+
+    数据来源是回填产物（``tracking_filled.csv``），其中 ``t20_date``
+    就是该笔持仓的第 20 个交易日（交易日历口径，与回测一致）。
+    """
+    if not os.path.exists(filled_csv):
+        return []
+    out: List[Dict[str, Any]] = []
+    with open(filled_csv, encoding="utf-8", newline="") as f:
+        for r in csv.DictReader(f):
+            if (r.get("t20_date") or "").strip() == today:
+                out.append(r)
+    return out
+
+
+def export_exits(rows: List[Dict[str, Any]], out_dir: str, today: str) -> str:
+    """把到期卖出清单写成 markdown。"""
+    path = os.path.join(out_dir, f"exits_{today}.md")
+    lines = [
+        f"# 到期卖出清单 · {today}",
+        "",
+        "> 以下持仓按「持有 20 个交易日」规则**今日到期**。本清单仅为执行提醒，",
+        "> 不构成投资建议，也不含任何择时判断。",
+        "",
+    ]
+    if not rows:
+        lines.append("今日无到期持仓。")
+    else:
+        lines += ["| 代码 | 名称 | 买入日 | 买入价 | 收益 | 风险标签 |",
+                  "|------|------|--------|--------|------|---------|"]
+        for r in rows:
+            lines.append(
+                f"| {r.get('code', '')} | {r.get('name') or '-'} | "
+                f"{r.get('t1_date', '')} | {r.get('t1_open', '')} | "
+                f"{float(r['t20_ret']):+.2%} | {r.get('risk_flags') or '-'} |"
+                if r.get("t20_ret") else
+                f"| {r.get('code', '')} | {r.get('name') or '-'} | "
+                f"{r.get('t1_date', '')} | {r.get('t1_open', '')} | - | "
+                f"{r.get('risk_flags') or '-'} |")
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(lines) + "\n")
+    return path
 
 
 def feishu_push(webhook: str, payload: dict) -> bool:
@@ -148,7 +198,7 @@ def run(vipdoc: str, top_n: int = 20, out_dir: str = "reports/daily",
               "建议先运行 python -m tdx_native.fetch_names")
 
     print("=" * 60)
-    print("[1/3] 生成每日推荐（C20+V1+V2+前复权+ST 剔除）")
+    print("[1/4] 生成每日推荐（C20+V1+V2+前复权+ST 剔除）")
     payload = daily_report.build_report(
         vipdoc, events_cache=events_cache, names_csv=names_csv,
         top_n=top_n, exclude_ret20_top=0.20, jump_filter=True,
@@ -160,14 +210,25 @@ def run(vipdoc: str, top_n: int = 20, out_dir: str = "reports/daily",
     with open(wl_path, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(_market_prefix(t["code"]) + t["code"]
                           for t in payload["top"]) + "\n")
-    print(f"[2/3] 通达信自选股已导出：{wl_path}"
+    print(f"[2/4] 通达信自选股已导出：{wl_path}"
           "（客户端 Ctrl+D → 批量导入）")
 
-    print("[3/3] 回填到期跟踪样本")
-    backfill_mod.run(
-        vipdoc,
-        os.path.join(out_dir, "tracking.csv"),
-        os.path.join(out_dir, "tracking_filled.csv"))
+    print("[3/4] 回填到期跟踪样本")
+    filled_csv = os.path.join(out_dir, "tracking_filled.csv")
+    backfill_mod.run(vipdoc, track_path, filled_csv)
+
+    # 到期卖出提示：补上"何时离场"这一半闭环
+    today = time.strftime("%Y%m%d")
+    exits = _due_exits(filled_csv, today)
+    ex_path = export_exits(exits, out_dir, today)
+    if exits:
+        print(f"[4/4] 到期卖出提醒：{len(exits)} 只 → {ex_path}")
+        for r in exits:
+            ret = f"{float(r['t20_ret']):+.2%}" if r.get("t20_ret") else "n/a"
+            print(f"      {r['code']} {r.get('name') or '':<8} "
+                  f"买入 {r.get('t1_date', '')} @{r.get('t1_open', '')} 收益 {ret}")
+    else:
+        print(f"[4/4] 今日无到期持仓（{ex_path}）")
 
     if feishu_webhook:
         print("推送飞书卡片 …")
