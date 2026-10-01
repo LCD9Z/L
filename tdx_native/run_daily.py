@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import datetime as _dt
 import json
 import os
@@ -109,10 +110,38 @@ def feishu_push(webhook: str, payload: dict) -> bool:
         return False
 
 
+def _data_as_of(vipdoc: str) -> str:
+    """全池最新交易日（用上证指数日历近似）。"""
+    idx = os.path.join(vipdoc, "sh", "lday", "sh000001.day")
+    last = day_reader.read_day_tail(idx, 1)
+    return last[-1]["date"] if last else ""
+
+
+def _last_tracked_as_of(track_path: str) -> str:
+    """tracking.csv 中已登记的最大 as_of。"""
+    if not os.path.exists(track_path):
+        return ""
+    latest = ""
+    with open(track_path, encoding="utf-8", newline="") as f:
+        for row in csv.reader(f):
+            if row and str(row[0]).isdigit():
+                latest = max(latest, str(row[0]))
+    return latest
+
+
 def run(vipdoc: str, top_n: int = 20, out_dir: str = "reports/daily",
         names_csv: str = "data/names.csv", events_cache: str = "data/gbbq_events.csv",
-        feishu_webhook: str = "", skip_report: bool = False) -> int:
+        feishu_webhook: str = "", force: bool = False) -> int:
     guard_unfinished_session(vipdoc)
+
+    # 数据未更新保护：避免节假日/未开通达信时重复产出同一份报告
+    track_path = os.path.join(out_dir, "tracking.csv")
+    cur = _data_as_of(vipdoc)
+    prev = _last_tracked_as_of(track_path)
+    if not force and cur and prev and cur == prev:
+        print(f"[跳过] 数据未更新（最新交易日仍为 {cur}，已登记过）。"
+              "节假日或未更新通达信数据时属正常；如需强制重跑加 --force")
+        return 0
 
     if names_csv and not os.path.exists(names_csv):
         print(f"[提示] {names_csv} 不存在：将无名称显示、不做 ST 剔除。"
@@ -158,10 +187,12 @@ def main() -> int:
     ap.add_argument("--events-cache", default="data/gbbq_events.csv")
     ap.add_argument("--feishu-webhook", default="",
                     help="可选：飞书群机器人 Webhook URL")
+    ap.add_argument("--force", action="store_true",
+                    help="即使数据未更新（as_of 与上次相同）也强制重跑")
     args = ap.parse_args()
     return run(args.vipdoc, top_n=args.top, out_dir=args.out_dir,
                names_csv=args.names, events_cache=args.events_cache,
-               feishu_webhook=args.feishu_webhook)
+               feishu_webhook=args.feishu_webhook, force=args.force)
 
 
 if __name__ == "__main__":

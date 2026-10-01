@@ -53,14 +53,24 @@ python -m tdx_native.run_daily --feishu-webhook https://open.feishu.cn/...
 内置**未收盘保护**：检测到今日 bar 而时间未过 15:05 时拒绝运行，
 避免半日数据污染口径。
 
-**Windows 自动调度**（可选）：项目根有 `run_daily.bat`（日志落
-`reports/daily/run.log`）。注册每日 15:30 任务：
+**Windows 自动调度**：✅ **已注册**（2026-10-01）——计划任务 `TDXDaily`，
+每周一至周五 **15:30** 自动运行 `run_daily.bat`。
+运维细节（查看结果 / 手动操作 / 故障排查）见 **[`DAILY_OPERATION.md`](../DAILY_OPERATION.md)**。
 
-```
-schtasks /create /tn TDXDaily /tr "C:\Users\T430\Desktop\1.0\run_daily.bat" /sc weekly /d MON,TUE,WED,THU,FRI /st 15:30
-```
+前提：交易日盘后至少开一次通达信客户端让它把 `.day` 下载到最新。
+未更新时脚本会检测到并打印跳过信息退出（不会用过期数据产出像今天的报告）。
 
-前提：交易日盘中至少开一次通达信客户端让它把 `.day` 下载到最新（或手动盘后下载）。
+内置**数据未更新保护**与**未收盘保护**：前者避免节假日重复产出，
+后者避免把半日数据写入 `tracking.csv` 污染样本。
+
+```bash
+# 数据未更新时如需强制重跑
+python -m tdx_native.run_daily --force
+
+# 手动操作计划任务
+Disable-ScheduledTask -TaskName TDXDaily      # 暂停
+Unregister-ScheduledTask -TaskName TDXDaily -Confirm:$false   # 删除
+```
 
 ## 目录
 
