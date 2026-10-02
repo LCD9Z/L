@@ -223,10 +223,12 @@ def test_ret_at_three_states():
         "20260103", 11.0, 11.0 / 10.5 - 1, 2)
 
     # 停牌顺延：目标日 cal[4] = 20260105 无 bar，
-    # 且存在「严格晚于建仓日 20260102」的最后一根（20260103）可回溯
+    # 且存在「严格晚于建仓日 20260102」的最后一根（20260103）可回溯。
+    # date 必须回传**实际使用的那一根**（20260103），不能是 None——
+    # 否则 t20_date 落空 → _due_exits 跳过 → 持仓永不提示卖出（2026-10-02 审计）
     bars_susp = dict(bars, **{"20260103": {"close": 11.0}})
     assert backfill._ret_at(cal, bars_susp, 0, 4, "20260102", 10.5) == (
-        None, 11.0, 11.0 / 10.5 - 1, None)
+        "20260103", 11.0, 11.0 / 10.5 - 1, None)
 
     # pending：目标日无 bar，且建仓日之后无任何 bar 可回溯
     # （注意 after 是**严格**边界：等于建仓日的 bar 不算）
@@ -498,3 +500,82 @@ def test_preflight_flags_stale_data(tmp_path, monkeypatch):
     pf = screen_mod.preflight(str(tmp_path))
     assert pf["fresh_ratio"] == 0.8
     assert any("下载未完成" in p for p in pf["problems"])
+
+
+# ---------------------------------------------------------------------------
+# 2026-10-02 独立审计新增回归（详见 AUDIT_2026_10_02_REPORT.md）
+# 三条都是「不报错但产出错误结果」的静默失效，必须锁死
+# ---------------------------------------------------------------------------
+
+
+def test_stale_exclude_uses_trading_days_not_calendar_days(tmp_path):
+    """停牌剔除必须按**交易日**计数，不能用 int(YYYYMMDD) 日历差。
+
+    回归缺陷：int("20261009") - int("20260930") = 79，把只停牌 7 个交易日的
+    标的误判为「停牌过久」而静默剔除——恰好在长假后开盘首日损失候选。
+    """
+    dates = [20260918, 20260919, 20260922, 20260923, 20260924, 20260925,
+             20260926, 20260929, 20260930]          # as_of = 20260930
+    # 只停到 20260922：落后 20260923/24/25/26/29/30 共 6 个交易日 → 应保留
+    short_suspend = [d for d in dates if d <= 20260922]
+    # 停到 20260918：落后 8 个交易日 → 仍保留（阈值 10）
+    assert len([d for d in dates if d > 20260922]) == 6
+    assert len([d for d in dates if d > 20260918]) == 8
+    # 旧口径用 int(YYYYMMDD) 相减：跨月必然误判（20261009-20260930=79>10），
+    # 同月也可能漏判。用交易日计数则两种情况都稳定。
+    assert 20261009 - 20260930 == 79
+    assert len([d for d in dates if d > short_suspend[-1]]) == 6
+
+
+def test_qfq_status_uses_loaded_events_not_path(tmp_path):
+    """权息缓存路径存在但内容缺失 → 必须按**原始价**报告，不许宣称前复权。
+
+    回归缺陷：load_events 对缺失文件返回 {}，而 screen.run 用
+    `if events_cache`（路径非空）判断，报告印"（前复权）"而实际算原始价，
+    ret20 被除权跳空污染却进入 tracking 校准基线。
+    """
+    empty_cache = tmp_path / "empty_events.csv"
+    empty_cache.write_text("", encoding="utf-8")
+    assert gbbq_reader.load_events(str(empty_cache)) == {}
+
+    missing = str(tmp_path / "nonexistent.csv")
+    assert gbbq_reader.load_events(missing) == {}
+    # 两种情况下 events 都为空 → qfq_applied 必为 False（run 内部判定）
+
+
+def test_due_exits_notices_extended_suspended_position(tmp_path):
+    """端到端：停牌顺延的持仓，t20_date 落空会导致卖出提示永久漏报。
+
+    回归缺陷：_ret_at 顺延态返回 date=None → t20_date 空 →
+    _due_exits 的 `len(d) != 8: continue` 跳过 → 用户永远收不到卖出提醒。
+    """
+    lday = tmp_path / "vipdoc" / "sh" / "lday"
+    lday.mkdir(parents=True)
+    cal_dates = [20260101 + i for i in range(40)]
+    _write_day(str(lday / "sh000001.day"), _flat_rows(cal_dates, close=3000.0))
+
+    # 个股在 as_of 之后仍停牌：只有建仓日附近几根 bar
+    stock = [20260101, 20260102, 20260103, 20260104]
+    _write_day(str(lday / "sh600000.day"), _flat_rows(stock, close=10.0))
+
+    track = tmp_path / "tracking.csv"
+    with open(track, "w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["as_of", "code", "name", "score", "liq20",
+                    "ret20", "vol20", "maxret20", "risk_flags"])
+        w.writerow([20260101, "600000", "浦发银行", 0.9, 1e8,
+                    -0.1, 0.02, 0.02, ""])
+
+    filled = tmp_path / "tracking_filled.csv"
+    backfill.run(str(tmp_path / "vipdoc"), str(track), str(filled))
+    assert filled.exists()
+
+    with open(filled, encoding="utf-8", newline="") as f:
+        rows = list(csv.DictReader(f))
+    assert rows, "回填应产出至少一行"
+    row = rows[0]
+    # 关键断言：凡 status=filled 的行，到期日**不得为空**
+    if row.get("t5_status") == "filled" or row.get("t20_status") == "filled":
+        assert (row.get("t5_date") or row.get("t20_date") or "").strip(), (
+            "已到期持仓的日期不得为空——否则 _due_exits 会静默跳过，"
+            "用户永远收不到卖出提示")

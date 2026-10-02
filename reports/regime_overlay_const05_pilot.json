@@ -1,0 +1,47 @@
+{
+ "windows": [
+  {
+   "oos_start": "2024-01-02",
+   "assets": 381,
+   "baseline": {
+    "total_return_pct": -66.853,
+    "max_drawdown_pct": 71.818,
+    "trades": 616,
+    "win_rate_pct": 42.21,
+    "annualized_excess": -0.5190067643729939,
+    "verdict": "INCONCLUSIVE"
+   },
+   "overlay": {
+    "total_return_pct": -41.123,
+    "max_drawdown_pct": 54.126,
+    "trades": 617,
+    "win_rate_pct": 41.49,
+    "annualized_excess": -0.31344259929601076,
+    "verdict": "INCONCLUSIVE"
+   },
+   "const05": {
+    "total_return_pct": -51.84,
+    "max_drawdown_pct": 57.444,
+    "trades": 617,
+    "win_rate_pct": 41.65,
+    "annualized_excess": -0.39533636766149954,
+    "verdict": "INCONCLUSIVE"
+   },
+   "excess_delta_pp": 20.556,
+   "regime_day_counts": {
+    "明确": 276,
+    "萌芽": 124,
+    "震荡": 253
+   }
+  }
+ ],
+ "args": {
+  "dataset": "D:/tdx_dataset",
+  "max_stocks": 400,
+  "min_periods": 252,
+  "windows": "2024-01-02",
+  "config": "",
+  "out": "reports/regime_overlay_const05_pilot.json",
+  "survivorship_evidence": ""
+ }
+}

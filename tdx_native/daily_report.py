@@ -51,9 +51,12 @@ def build_report(vipdoc: str, events_cache: str = "", names_csv: str = "",
     res = screen.run(vipdoc, top_n=top_n, exclude_ret20_top=exclude_ret20_top,
                      names_csv=names_csv, events_cache=events_cache)
     as_of = res["as_of"]
+    # 复权状态取 screen.run 的**实际**结果，不看路径字符串（2026-10-02 审计）
+    qfq = bool(res.get("qfq_applied"))
 
     # 为入选标的补风险标签（只读这 N 只的尾部，成本极低）
     paths = {c: p for c, m, p in day_reader.scan_paths(vipdoc)}
+    jump_dropped = 0
     for item in res["top"]:
         p = paths.get(item["code"])
         bars = day_reader.read_day_tail(p, 40) if p else []
@@ -65,9 +68,17 @@ def build_report(vipdoc: str, events_cache: str = "", names_csv: str = "",
                 and abs(float(seg[k]["close"]) / float(seg[k - 1]["close"]) - 1) > lim
                 for k in range(1, len(seg)))
             if bad:
-                item["excluded_by_jump"] = True
+                # 真正剔除：此前只打标记、从不移除，是死代码（2026-10-02 审计）
+                jump_dropped += 1
+                continue
         item["risk_flags"] = _risk_flags(item["code"], item["market"],
                                          item["liq20"], bars)
+    if jump_filter:
+        res["top"] = [t for t in res["top"] if "risk_flags" in t]
+        res["universe"]["v2_jump_removed"] = jump_dropped
+        if jump_dropped:
+            print(f"V2 跳空过滤：剔除 {jump_dropped} 只"
+                  f"（剩余 {len(res['top'])} 只）")
 
     os.makedirs(out_dir, exist_ok=True)
     md_path = os.path.join(out_dir, f"recommend_{as_of}.md")
@@ -83,9 +94,13 @@ def build_report(vipdoc: str, events_cache: str = "", names_csv: str = "",
         "",
         f"- 股票池：{res['universe']['stocks_found']} 只 A 股，打分 {res['universe']['scored']} 只",
         f"- 剔除：ST {res['universe']['st_removed']} 只"
-        + (f"，V1 尾部剔除 {exclude_ret20_top:.0%}" if exclude_ret20_top else ""),
+        + (f"，V1 尾部剔除 {exclude_ret20_top:.0%}" if exclude_ret20_top else "")
+        + (f"，V2 跳空剔除 {jump_dropped} 只"
+           if jump_filter and jump_dropped else "")
+        + (f"（另有 {res['universe']['names_missing']} 只无名称映射，"
+           f"ST 剔除对其失效）" if res['universe'].get('names_missing') else ""),
         "- 数据源：通达信原生 `.day`"
-        + ("（前复权）" if events_cache else "（原始价）"),
+        + ("（前复权）" if qfq else "（**原始价**，ret20 含除权跳空污染）"),
         "",
         "| # | 代码 | 名称 | 得分 | ret20 | vol20 | maxret20 | 20日均额 | 风险标签 |",
         "|---|------|------|------|-------|-------|----------|---------|---------|",

@@ -75,31 +75,51 @@ def run(vipdoc: str, top_n: int = 20, exclude_ret20_top: float = 0.0,
     t0 = time.time()
     names = day_reader.load_names(names_csv)
     events = gbbq_reader.load_events(events_cache) if events_cache else {}
-    if events_cache:
+    # 复权状态必须按**实际加载到的数据**判定，不能按路径字符串：
+    # load_events 对缺失/空文件返回 {}，若用 `if events_cache` 会在权息缓存
+    # 丢失时仍宣称"启用前复权"，而 ret20 实为含除权跳空的原始价，
+    # 污染 tracking 校准基线（2026-10-02 审计）。
+    if events_cache and not events:
+        print(f"      ⚠️ 权息缓存未取到数据（{events_cache}）——实际按**原始价**计算，"
+              f"ret20 含除权跳空污染，勿与历史前复权结果直接比较", flush=True)
+    if events:
         print(f"      已载入权息事件 {sum(len(v) for v in events.values())} 条"
               f"（覆盖 {len(events)} 只）→ 启用前复权", flush=True)
 
     stocks = day_reader.scan_stocks(vipdoc)
     print(f"[1/3] 扫描到真实 A 股股票 {len(stocks)} 只", flush=True)
 
-    # 统一截止日：全池最新交易日；停牌过久（落后 >10 交易日）的剔除
+    # 统一截止日：全池最新交易日；停牌过久（落后 >10 **交易日**）的剔除。
+    # 注意：必须用交易日计数，不能用 int(YYYYMMDD) 相减——那是日历日，
+    # 跨月边界会把 7 个交易日的停牌算成 79 天（20261009-20260930），静默误杀。
     last_dates = [b[-1]["date"] for _, _, _, b in stocks]
     as_of = max(last_dates)
+    # 全体出现过的交易日集合（升序），用于把"落后几个交易日"算准
+    all_dates = sorted({bar["date"] for _, _, _, bars_ in stocks for bar in bars_})
     fresh = []
+    stale = 0
     for code, market, path, bars in stocks:
-        if bars[-1]["date"] < as_of and int(as_of) - int(bars[-1]["date"]) > 10:
-            continue
+        if bars[-1]["date"] < as_of:
+            gap = len([d for d in all_dates if d > bars[-1]["date"]])
+            if gap > 10:
+                stale += 1
+                continue
         bars = [b for b in bars if b["date"] <= as_of]
         fresh.append((code, market, path, bars))
-    print(f"      截止日 {as_of}；剔除停牌过久后 {len(fresh)} 只", flush=True)
+    print(f"      截止日 {as_of}；剔除停牌超 10 个交易日后 {len(fresh)} 只"
+          f"（剔除 {stale}）", flush=True)
 
     # ST 剔除（仅在有名称映射时可用）
     st_removed = 0
+    names_missing = 0
     candidates: List[Dict[str, float]] = []
     adjusted_cnt = 0
     for code, market, _path, bars in fresh:
         nm = names.get(code, "")
-        if nm and ("ST" in nm.upper()):
+        if not nm:
+            # 无名称 → ST 判断短路，剔除失效。必须计数披露，不能静默
+            names_missing += 1
+        elif "ST" in nm.upper():
             st_removed += 1
             continue
         if events and events.get(code):
@@ -115,9 +135,15 @@ def run(vipdoc: str, top_n: int = 20, exclude_ret20_top: float = 0.0,
         f["market"] = market
         f["name"] = nm
         candidates.append(f)
-    print(f"      打分前 {len(candidates)} 只（ST 剔除 {st_removed} 只"
-          f"{'，无名称映射未做 ST 剔除' if not names else ''}；"
+    print(f"      打分前 {len(candidates)} 只（ST 剔除 {st_removed} 只；"
           f"复权 {adjusted_cnt} 只）", flush=True)
+    if names and names_missing:
+        # 名称表覆盖不全 → 这部分标的的 ST 剔除静默失效，须显式告警
+        miss_pct = names_missing / max(1, len(fresh))
+        if miss_pct > 0.05:
+            print(f"      ⚠️ 名称表缺 {names_missing} 只（{miss_pct:.1%}）——"
+                  f"这些标的**未做 ST 剔除**（名称表 {names_csv or '未提供'}）",
+                  flush=True)
 
     five_factor.composite_score(candidates)
 
@@ -144,8 +170,11 @@ def run(vipdoc: str, top_n: int = 20, exclude_ret20_top: float = 0.0,
     result = {
         "as_of": as_of,
         "source": vipdoc,
+        "qfq_applied": adjusted_cnt > 0,   # 实际复权过的标的数 > 0（下游据此判定）
         "universe": {"stocks_found": len(stocks), "scored": len(candidates),
-                     "st_removed": st_removed, "top_n": top_n},
+                     "st_removed": st_removed, "top_n": top_n,
+                     "qfq_adjusted": adjusted_cnt, "stale_removed": stale,
+                     "names_missing": names_missing},
         "top": [_fmt(c) for c in top],
         "runtime_sec": round(time.time() - t0, 1),
         "disclaimer": ("五因子为统计特征，非收益承诺；"

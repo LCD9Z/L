@@ -1,0 +1,178 @@
+{
+ "dataset": "D:/tdx_dataset_v2",
+ "stocks": 796,
+ "horizon": 5,
+ "step": 5,
+ "ic": {
+  "L0M0": {
+   "ret_20": {
+    "ic_mean": -0.048821,
+    "ic_std": 0.148174,
+    "t": -7.47,
+    "n_periods": 514
+   },
+   "vol_20": {
+    "ic_mean": -0.07729,
+    "ic_std": 0.176934,
+    "t": -9.9,
+    "n_periods": 514
+   },
+   "amihud_20": {
+    "ic_mean": 0.032509,
+    "ic_std": 0.141085,
+    "t": 5.22,
+    "n_periods": 514
+   },
+   "log_amount_20": {
+    "ic_mean": -0.067649,
+    "ic_std": 0.149353,
+    "t": -10.27,
+    "n_periods": 514
+   },
+   "max_ret_20": {
+    "ic_mean": -0.075231,
+    "ic_std": 0.140067,
+    "t": -12.18,
+    "n_periods": 514
+   }
+  },
+  "L0M1": {
+   "ret_20": {
+    "ic_mean": -0.050912,
+    "ic_std": 0.152079,
+    "t": -7.59,
+    "n_periods": 514
+   },
+   "vol_20": {
+    "ic_mean": -0.079303,
+    "ic_std": 0.176957,
+    "t": -10.16,
+    "n_periods": 514
+   },
+   "amihud_20": {
+    "ic_mean": 0.031218,
+    "ic_std": 0.144447,
+    "t": 4.9,
+    "n_periods": 514
+   },
+   "log_amount_20": {
+    "ic_mean": -0.066431,
+    "ic_std": 0.15103,
+    "t": -9.97,
+    "n_periods": 514
+   },
+   "max_ret_20": {
+    "ic_mean": -0.078038,
+    "ic_std": 0.14041,
+    "t": -12.6,
+    "n_periods": 514
+   }
+  },
+  "L1M0": {
+   "ret_20": {
+    "ic_mean": -0.040699,
+    "ic_std": 0.149105,
+    "t": -6.19,
+    "n_periods": 514
+   },
+   "vol_20": {
+    "ic_mean": -0.063212,
+    "ic_std": 0.17844,
+    "t": -8.03,
+    "n_periods": 514
+   },
+   "amihud_20": {
+    "ic_mean": 0.028223,
+    "ic_std": 0.141954,
+    "t": 4.51,
+    "n_periods": 514
+   },
+   "log_amount_20": {
+    "ic_mean": -0.056006,
+    "ic_std": 0.150543,
+    "t": -8.43,
+    "n_periods": 514
+   },
+   "max_ret_20": {
+    "ic_mean": -0.062801,
+    "ic_std": 0.142646,
+    "t": -9.98,
+    "n_periods": 514
+   }
+  },
+  "L1M1": {
+   "ret_20": {
+    "ic_mean": -0.041068,
+    "ic_std": 0.15431,
+    "t": -6.03,
+    "n_periods": 514
+   },
+   "vol_20": {
+    "ic_mean": -0.063646,
+    "ic_std": 0.180302,
+    "t": -8.0,
+    "n_periods": 514
+   },
+   "amihud_20": {
+    "ic_mean": 0.027064,
+    "ic_std": 0.145454,
+    "t": 4.22,
+    "n_periods": 514
+   },
+   "log_amount_20": {
+    "ic_mean": -0.054214,
+    "ic_std": 0.15239,
+    "t": -8.07,
+    "n_periods": 514
+   },
+   "max_ret_20": {
+    "ic_mean": -0.063634,
+    "ic_std": 0.145212,
+    "t": -9.94,
+    "n_periods": 514
+   }
+  }
+ },
+ "abs_ic_decay_L1M1_vs_L0M0": {
+  "ret_20": 0.1588,
+  "vol_20": 0.1765,
+  "amihud_20": 0.1675,
+  "log_amount_20": 0.1986,
+  "max_ret_20": 0.1542
+ },
+ "median_decay": 0.1675,
+ "factors_t_below_2_in_L1M1": 0,
+ "sample_counts": {
+  "L0M0": {
+   "used": 293185,
+   "masked": 0
+  },
+  "L0M1": {
+   "used": 285561,
+   "masked": 7624
+  },
+  "L1M0": {
+   "used": 293185,
+   "masked": 0
+  },
+  "L1M1": {
+   "used": 285561,
+   "masked": 7624
+  }
+ },
+ "mask_share": {
+  "L0M0": 0.0,
+  "L0M1": 0.026,
+  "L1M0": 0.0,
+  "L1M1": 0.026
+ },
+ "mask_reasons": {
+  "no_next": 441,
+  "buy_limit": 3222,
+  "hold_down": 4250,
+  "susp": 392
+ },
+ "verdict": "部分成立",
+ "runtime_sec": 109.8,
+ "note": "公告窗口数据缺失未屏蔽，故测得衰减为下界；L1 = close[t+5]/open[t+1]-1。"
+}

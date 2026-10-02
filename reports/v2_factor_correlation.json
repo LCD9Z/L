@@ -1,0 +1,79 @@
+{
+ "dataset": "D:/tdx_dataset_v2",
+ "stocks": 498,
+ "cross_sections": 514,
+ "avg_cross_sectional_spearman": {
+  "ret20|vol20": 0.1843,
+  "ret20|amihud20": -0.0384,
+  "ret20|loga20": 0.1301,
+  "ret20|maxret20": 0.3899,
+  "vol20|amihud20": -0.074,
+  "vol20|loga20": 0.4403,
+  "vol20|maxret20": 0.8476,
+  "amihud20|loga20": -0.8876,
+  "amihud20|maxret20": -0.0923,
+  "loga20|maxret20": 0.3972
+ },
+ "factor_ic": {
+  "ret20": {
+   "ic_mean": -0.054287,
+   "ic_std": 0.148506,
+   "icir": -0.3656,
+   "t": -8.29,
+   "n_periods": 514
+  },
+  "vol20": {
+   "ic_mean": -0.081901,
+   "ic_std": 0.174845,
+   "icir": -0.4684,
+   "t": -10.62,
+   "n_periods": 514
+  },
+  "amihud20": {
+   "ic_mean": 0.036541,
+   "ic_std": 0.144421,
+   "icir": 0.253,
+   "t": 5.74,
+   "n_periods": 514
+  },
+  "loga20": {
+   "ic_mean": -0.068577,
+   "ic_std": 0.147835,
+   "icir": -0.4639,
+   "t": -10.52,
+   "n_periods": 514
+  },
+  "maxret20": {
+   "ic_mean": -0.08159,
+   "ic_std": 0.138893,
+   "icir": -0.5874,
+   "t": -13.32,
+   "n_periods": 514
+  }
+ },
+ "composite_equal_weight_ic": {
+  "ic_mean": 0.092656,
+  "ic_std": 0.153769,
+  "icir": 0.6026,
+  "t": 13.66,
+  "n_periods": 514
+ },
+ "composite_family_weighted_ic": {
+  "ic_mean": 0.092731,
+  "ic_std": 0.151383,
+  "icir": 0.6126,
+  "t": 13.89,
+  "n_periods": 514
+ },
+ "best_single_factor": {
+  "factor": "vol20",
+  "ic_mean": -0.081901,
+  "ic_std": 0.174845,
+  "icir": -0.4684,
+  "t": -10.62,
+  "n_periods": 514
+ },
+ "incremental_vs_best": 0.010755,
+ "runtime_sec": 47.9,
+ "note": "方向/权重事前设定（等权 1/5）；前瞻 5 日、每 5 日调仓无重叠；相关为截面 Spearman 的时间平均。"
+}

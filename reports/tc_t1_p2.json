@@ -1,0 +1,73 @@
+{
+ "windows": [
+  {
+   "window": "2023-07-03",
+   "assets": 347,
+   "A_baseline": {
+    "total_return_pct": -13.103,
+    "max_drawdown_pct": 36.29,
+    "trades": 765,
+    "win_rate_pct": 43.01,
+    "capacity_capped_buys": 0,
+    "annualized_excess": -0.15368551781809797,
+    "t_stat": -1.6963670214446185,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "A_plus_V1": {
+    "total_return_pct": 31.176,
+    "max_drawdown_pct": 15.209,
+    "trades": 630,
+    "win_rate_pct": 48.57,
+    "capacity_capped_buys": 0,
+    "annualized_excess": -0.02823755256076397,
+    "t_stat": -0.27839432580387147,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "delta_excess_pp": 12.54
+  },
+  {
+   "window": "2024-01-02",
+   "assets": 342,
+   "A_baseline": {
+    "total_return_pct": -13.662,
+    "max_drawdown_pct": 36.005,
+    "trades": 640,
+    "win_rate_pct": 44.22,
+    "capacity_capped_buys": 0,
+    "annualized_excess": -0.18342090894359817,
+    "t_stat": -1.7784490548473222,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "A_plus_V1": {
+    "total_return_pct": 27.479,
+    "max_drawdown_pct": 17.679,
+    "trades": 527,
+    "win_rate_pct": 48.96,
+    "capacity_capped_buys": 0,
+    "annualized_excess": -0.04018245043414982,
+    "t_stat": -0.36150299452521484,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "delta_excess_pp": 14.32
+  }
+ ],
+ "args": {
+  "dataset": "D:/tdx_dataset_v2",
+  "max_stocks": 400,
+  "min_rows": 504,
+  "top_n": 20,
+  "position_pct": 0.05,
+  "horizon": 20,
+  "windows": "2023-07-03,2024-01-02",
+  "benchmark": "",
+  "survivorship_evidence": "D:/tdx_dataset_v2/evidence.json",
+  "exclude_ret20_top": 0.2,
+  "neutralize": false,
+  "regime_switch": false,
+  "style_switch": false,
+  "max_participation": 0.0,
+  "out": "reports/tc_t1_p2.json"
+ },
+ "prereg": "FIVE_FACTOR_PREREG.md",
+ "runtime_sec": 1313.1
+}

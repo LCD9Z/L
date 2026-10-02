@@ -9,8 +9,16 @@
   建仓日无 bar 时顺延至下一有 bar 日；建仓后再无 bar 则记 suspended
 - 基准：**全市场等权**同期（T+1 open → T+k close）收益，作为主参照。
   另附上证指数作附加参照。**必须用等权而非指数**——指数由大市值权重股主导，
-  而本选股池系统性偏中小盘（`loga20` 方向 −1），口径不同会得出相反结论：
-  同一批样本实测「指数口径 −2.13%」vs「等权口径 +3.06%」。
+  而本选股池系统性偏中小盘（`loga20` 方向 −1），口径不同可能得出相反结论。
+
+  ⚠️ **该修正的实证证据不足，结论待重验**（2026-10-02 审计发现）：
+  当时记录的「指数口径 −2.13% vs 等权口径 +3.06%，结论直接相反」来自
+  ``reports/daily/_smoke_filled.csv`` 的**3 行冒烟夹具**（浦发/平安/宁德，
+  score 为手写 0.9/0.88/0.87），不是真实选股输出；而 ``_ew_ret()`` 要求
+  有效样本 ≥100 只才返回值，这 3 行不满足门槛。
+  真实 ``tracking_filled.csv`` 至今**未产生过一个等权基准数字**。
+  → 在真实 filled 样本 ≥20 个之前，**禁止引用 −2.13% / +3.06%**。
+  → 届时的正确对比：推荐池收益 vs 等权基准 vs 上证指数，三者同列。
 - 幂等：tracking.csv 只追加不修改（append-only 纪律）；本脚本每次
   **全量重算**产出独立的 tracking_filled.csv，源数据只增不减，
   重跑即得最新状态，无状态污染。
@@ -45,9 +53,13 @@ def _price_at(bars_by_date: Dict[str, dict], date: str,
     return float(b[field]) if b and b.get(field) else None
 
 
-def _last_close_before(bars_by_date: Dict[str, dict], date: str,
-                       after: str = "") -> Optional[float]:
-    """不晚于 date（且晚于 after）的最后一根收盘。"""
+def _last_close_before(bars_by_date: Dict[str, dict], date: str, after: str = "",
+                       with_date: bool = False):
+    """不晚于 date（且晚于 after）的最后一根收盘。
+
+    ``with_date=True`` 时返回 ``(date, close)``，供顺延场景回写真实成交日
+    （否则调用方拿不到日期，会让到期卖出提示漏报，见 ``_ret_at``）。
+    """
     best = None
     for d, b in bars_by_date.items():
         if d <= date and float(b.get("close") or 0) > 0:
@@ -55,7 +67,9 @@ def _last_close_before(bars_by_date: Dict[str, dict], date: str,
                 continue
             if best is None or d > best[0]:
                 best = (d, float(b["close"]))
-    return best[1] if best else None
+    if best is None:
+        return None
+    return (best[0], best[1]) if with_date else best[1]
 
 
 def _ret_at(cal: List[str], bars: Dict[str, Dict[str, Any]], i: int, k: int,
@@ -69,8 +83,10 @@ def _ret_at(cal: List[str], bars: Dict[str, Dict[str, Any]], i: int, k: int,
     - ``None`` —— 尚未到期（主日历长度不足 ``i + k``）
     - ``("pending", None, None, None)`` —— 已到期，但个股在目标日无 bar，
       且回溯不到任何有效收盘（通常为长期停牌）
-    - ``(date|None, close, ret, k|None)`` —— 正常；``date`` 为 ``None``
-      表示用「不晚于目标日的最后一根收盘」顺延（目标日停牌），此时 ``k`` 也为 ``None``
+    - ``(date, close, ret, k)`` —— 正常；``k`` 为 ``None`` 表示目标是「用不晚于
+      目标日的最后一根收盘」**顺延**（目标日停牌），此时 ``date`` 回传**实际使用
+      的那一根**的日期（不得为 ``None``：否则 ``tracking_filled.csv`` 的
+      ``t20_date`` 落空，``run_daily._due_exits`` 会静默跳过，持仓永不提示卖出）
 
     提取为模块级函数（原为循环内闭包）：显式接收全部依赖，消除闭包捕获
     循环变量的 B023 隐患，并使其可被单元测试直接覆盖。
@@ -80,10 +96,11 @@ def _ret_at(cal: List[str], bars: Dict[str, Dict[str, Any]], i: int, k: int,
     dk = cal[i + k]
     c = _price_at(bars, dk, "close")
     if c is None:
-        c = _last_close_before(bars, dk, after=entry_date)
-        if c is None:
+        got = _last_close_before(bars, dk, after=entry_date, with_date=True)
+        if got is None:
             return ("pending", None, None, None)
-        return (None, c, c / entry_open - 1, None)
+        used_date, c = got
+        return (used_date, c, c / entry_open - 1, None)
     return (dk, c, c / entry_open - 1, k)
 
 
@@ -221,8 +238,11 @@ def run(vipdoc: str, tracking_csv: str, out_csv: str) -> Dict:
             return None
         rets.sort()
         n = len(rets)
+        # 偶数样本取中位数须取中间两数均值（曾误写 rets[n // 2]，
+        # n=4 时返回 3.0 而非 2.5；小样本阶段偏差最大）
+        median = (rets[(n - 1) // 2] + rets[n // 2]) / 2
         return {"n": n, "mean": sum(rets) / n,
-                "median": rets[n // 2],
+                "median": median,
                 "win": sum(1 for x in rets if x > 0) / n}
 
     t5s, t20s = _summarize("t5_ret"), _summarize("t20_ret")

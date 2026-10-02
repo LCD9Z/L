@@ -23,6 +23,19 @@ reports/
 runtime_logs/
 *.log
 
+# --- 例外：研究证据必须入库 ---
+# reports/ 里混了两类东西，不能一刀切忽略（2026-10-02 审计发现）：
+#   ① 可再生的运行产物（daily/ 下的每日报告、tracking 回填、run.log）
+#   ② **研究证据**（各实验的原始 JSON）——这是结论可溯源的**唯一凭据**，
+#      丢失后 VERDICT/REPORT 里的每个数字都无法复核，负面结果也无法归档。
+# 纪律要求「负面结果必须归档」，前提是原始数据在库里。
+# 详见 reports/EVIDENCE_INDEX.md
+!reports/
+reports/*
+!reports/*.json
+!reports/*.md
+!reports/EVIDENCE_INDEX.md
+
 # --- 覆盖率产物（pytest --cov 与 CI 会生成） ---
 coverage.xml
 .coverage
