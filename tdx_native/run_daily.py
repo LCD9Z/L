@@ -191,16 +191,23 @@ def _data_as_of(vipdoc: str) -> str:
     return last[-1]["date"] if last else ""
 
 
-def _is_trading_day() -> bool:
-    """今天是否**本应**已有新数据（工作日且已过 15:05 收盘）。
+def _is_trading_day(vipdoc: str, last_known: str) -> bool:
+    """今天是否**本应**已有新数据。
 
-    只做工作日判断，不含法定节假日表——宁可误报一次让用户看一眼，
-    也不能连续多日静默跳过而无从察觉（2026-10-02 审计）。
+    判据：今天已过 15:05 收盘，且**交易日历里存在今天这个日期**。
+    —— 不硬编码法定节假日表（会每年过期）；直接问通达信数据
+    「今天算交易日吗」。``last_known`` 已知为尚未更新的最新交易日，
+    因此这里只需判断「今天比它新」。
     """
     now = _dt.datetime.now()
-    if now.weekday() >= 5:          # 周六/日
+    if now.weekday() >= 5:          # 周末直接排除（含调休上班的周六）
         return False
-    return (now.hour, now.minute) >= (15, 5)
+    if (now.hour, now.minute) < (15, 5):
+        return False
+    # 日历里出现过晚于 last_known 的日期 → 说明日历已覆盖今天
+    idx = os.path.join(vipdoc, "sh", "lday", "sh000001.day")
+    cal = [b["date"] for b in day_reader.read_day_tail(idx, 30)]
+    return any(d > last_known for d in cal)
 
 
 def _last_tracked_as_of(track_path: str) -> str:
@@ -231,7 +238,7 @@ def run(vipdoc: str, top_n: int = 20, out_dir: str = "reports/daily",
         # 却拿不到新数据，说明通达信没下载，用退出码 3 显式告警——
         # 退出码 0 会让 schtasks 记为成功，静默跳过即无人察觉
         # （2026-10-02 审计：run.log 连续 3 次跳过而无人知情）。
-        if _is_trading_day():
+        if _is_trading_day(vipdoc, cur):
             print(f"[告警] {cur} 是交易日却无新数据——通达信客户端可能未下载。"
                   f"请打开客户端更新行情后重跑。")
             return 3
