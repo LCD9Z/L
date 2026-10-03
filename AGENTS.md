@@ -76,6 +76,7 @@ C20 分散（top_n=20） + V1 尾部剔除（剔除当日 ret20 最高 20%）
 | **项目最终结论** | `STEP1_3_EXECUTION_REPORT.md`（§13–§25 为 14 项实验判定） |
 | **最新独立审计** | `AUDIT_2026_10_02_REPORT.md`（2026-10-02，修 8 处、撤回 1 结论） |
 | **原始证据与缺口** | `reports/EVIDENCE_INDEX.md`（59 份 JSON 索引 + 6 项待核清单） |
+| AOCI 代码认知索引 | `AOCI_INTEGRATION.md`（2026-10-04 引入，**已校验未启用**，只索引 `tdx_native/`） |
 | 推荐系统怎么用 | `DAILY_OPERATION.md`（运维手册）、`tdx_native/README.md` |
 | 候选过滤器调研结论 | `CANDIDATE_FILTERS_VERDICT.md` |
 | Sequoia-X 等外部项目借鉴 | `GITHUB_ASHARE_QUANT_SURVEY.md` |
@@ -147,3 +148,19 @@ python -m tdx_native.fetch_names --out data/names.csv
 
 **建议**：把精力放在**执行与工程**（数据完整性、跟踪校准、运维可靠性），
 而不是继续找因子。跟踪数据（`tracking_filled.csv`）才是这个系统最有价值的产出。
+
+---
+
+## 9. 代码认知工具（AOCI-CODE）
+
+本项目另引入了 **AOCI-CODE**（MCP 服务端），给 agent 提供**代码库结构索引**。
+
+**它和本文件是分工关系，不是替代关系**：
+- `AGENTS.md` 管**该不该**（纪律与禁区，人写、会过期）
+- AOCI 管**是什么**（代码结构与数据流，agent 撰写、机器校验、自动维护）
+
+状态与操作步骤见 [`AOCI_INTEGRATION.md`](AOCI_INTEGRATION.md)。当前**已下载校验、未启用**。
+
+> 若 AOCI 已建索引，本节可作为索引的**验证基准**：
+> 若 agent 在有索引时仍答错「`_ret_at` 停牌顺延怎么处理」，说明索引无效。
+

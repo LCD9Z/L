@@ -36,6 +36,21 @@ reports/*
 !reports/*.md
 !reports/EVIDENCE_INDEX.md
 
+# --- 工具二进制 ---
+# AOCI-CODE 24MB 可执行文件不入库（仓库会膨胀），只留文档与接入说明。
+# 校验值见 AOCI_INTEGRATION.md：sha256 4013002f...5c67
+tools/aoci/*.exe
+tools/aoci/aoci
+tools/aoci/LICENSE
+tools/aoci/NOTICE
+tools/aoci/PATENTS
+tools/aoci/THIRD-PARTY-NOTICES
+tools/aoci/TRADEMARKS
+# AOCI 认知资产**必须入库**（它按设计就靠 git 版本化），此处预留放行：
+#   !aoci.txt / !aoci.meta.txt / !aoci.code.txt
+# ⚠️ 但注意 AOCI 要求这些文件**不能**被 ignore——被忽略会被静默跳过、索引建不起来。
+# 当前尚未 init（2026-10-04），故先不写规则；启用时再按 AOCI 要求补。
+
 # --- 覆盖率产物（pytest --cov 与 CI 会生成） ---
 coverage.xml
 .coverage
