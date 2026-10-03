@@ -36,6 +36,13 @@ reports/*
 !reports/*.md
 !reports/EVIDENCE_INDEX.md
 
+# --- 凭据：绝不入库 ---
+# 飞书 Webhook 等同于该群发帖权限，谁拿到都能往群里发消息
+data/feishu_webhook.txt
+data/*.key
+data/*secret*
+.env
+
 # --- 工具二进制 ---
 # AOCI-CODE 24MB 可执行文件不入库（仓库会膨胀），只留文档与接入说明。
 # 校验值见 AOCI_INTEGRATION.md：sha256 4013002f...5c67

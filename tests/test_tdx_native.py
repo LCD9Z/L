@@ -579,3 +579,155 @@ def test_due_exits_notices_extended_suspended_position(tmp_path):
         assert (row.get("t5_date") or row.get("t20_date") or "").strip(), (
             "已到期持仓的日期不得为空——否则 _due_exits 会静默跳过，"
             "用户永远收不到卖出提示")
+
+
+# ---------------------------------------------------------------------------
+# 2026-10-04 飞书推送改造回归
+# 用户策略：**有异常才推**（正常产出静默）
+# ---------------------------------------------------------------------------
+
+
+def test_feishu_quiet_skips_when_no_exits(monkeypatch):
+    """正常产出且无到期待卖 → 静默，不发消息（用户要求"有异常才推"）。"""
+    sent = []
+    monkeypatch.setattr(run_daily, "_feishu_post",
+                        lambda w, c: sent.append(c) or True)
+    payload = {"as_of": "20260930", "top": [
+        {"code": "600000", "name": "浦发银行", "score": 0.9,
+         "ret20": -0.1}],
+        "universe": {"stocks_found": 5616, "scored": 3010}}
+    assert run_daily.feishu_push("https://x", payload) is True
+    assert sent == [], "静默模式下不应发出任何请求"
+
+
+def test_feishu_pushes_when_exits_present(monkeypatch):
+    """有到期待卖 → 必须推送，且卡片须含卖出段与逾期标注。"""
+    sent = []
+    monkeypatch.setattr(run_daily, "_feishu_post",
+                        lambda w, c: sent.append(c) or True)
+    payload = {
+        "as_of": "20260930",
+        "top": [{"code": "600000", "name": "浦发银行",
+                 "score": 0.9, "ret20": -0.1}],
+        "universe": {"stocks_found": 5616, "scored": 3010},
+        "exits": [{"code": "000001", "name": "平安银行",
+                   "t20_date": "20260925", "t20_ret": "-0.05",
+                   "_overdue_days": 5}],
+    }
+    assert run_daily.feishu_push("https://x", payload) is True
+    assert len(sent) == 1
+    body = str(sent[0])
+    assert "平安银行" in body
+    assert "逾期 5 天" in body
+    assert "到期待卖出" in body
+
+
+def test_feishu_top_limits_rows(monkeypatch):
+    """候选只列前 N 只（默认 5），避免手机上刷屏。"""
+    sent = []
+    monkeypatch.setattr(run_daily, "_feishu_post",
+                        lambda w, c: sent.append(c) or True)
+    top = [{"code": f"60000{i}", "name": f"股票{i}",
+            "score": 0.9 - i / 100, "ret20": -0.1} for i in range(20)]
+    payload = {"as_of": "20260930", "top": top,
+               "universe": {"stocks_found": 5616, "scored": 3010},
+               "feishu_quiet": False, "feishu_top": 5}
+    assert run_daily.feishu_push("https://x", payload) is True
+    body = str(sent[0])
+    assert "股票0" in body
+    assert "股票5" not in body, "第 6 只不应出现在卡片里"
+    assert "共 20 只" in body
+
+
+def test_read_webhook_priority(monkeypatch, tmp_path):
+    """Webhook 读取优先级：命令行 > 环境变量 > 文件；文件缺失返回空。"""
+    f = tmp_path / "wh.txt"
+    f.write_text("https://from-file\n", encoding="utf-8")
+    monkeypatch.setenv("TDX_FEISHU_WEBHOOK", "https://from-env")
+    assert run_daily._read_webhook("https://from-cli", str(f)) == "https://from-cli"
+    assert run_daily._read_webhook("", str(f)) == "https://from-env"
+    monkeypatch.delenv("TDX_FEISHU_WEBHOOK")
+    assert run_daily._read_webhook("", str(f)) == "https://from-file"
+    assert run_daily._read_webhook("", str(tmp_path / "none.txt")) == ""
+
+
+def test_feishu_alert_never_raises():
+    """告警推送失败不得抛异常——它本身是最后一道防线。"""
+    assert run_daily.feishu_alert("http://127.0.0.1:9/none", "测试",
+                                   ["x"]) is False
+
+
+# ---------------------------------------------------------------------------
+# 2026-10-04 飞书推送改造回归
+# 用户策略：**有异常才推**（正常产出静默）
+# ---------------------------------------------------------------------------
+
+
+def test_feishu_quiet_skips_when_no_exits(monkeypatch):
+    """正常产出且无到期待卖 → 静默，不发消息（用户要求"有异常才推"）。"""
+    sent = []
+    monkeypatch.setattr(run_daily, "_feishu_post",
+                        lambda w, c: sent.append(c) or True)
+    payload = {"as_of": "20260930", "top": [
+        {"code": "600000", "name": "浦发银行", "score": 0.9,
+         "ret20": -0.1}],
+        "universe": {"stocks_found": 5616, "scored": 3010}}
+    assert run_daily.feishu_push("https://x", payload) is True
+    assert sent == [], "静默模式下不应发出任何请求"
+
+
+def test_feishu_pushes_when_exits_present(monkeypatch):
+    """有到期待卖 → 必须推送，且卡片须含卖出段与逾期标注。"""
+    sent = []
+    monkeypatch.setattr(run_daily, "_feishu_post",
+                        lambda w, c: sent.append(c) or True)
+    payload = {
+        "as_of": "20260930",
+        "top": [{"code": "600000", "name": "浦发银行",
+                 "score": 0.9, "ret20": -0.1}],
+        "universe": {"stocks_found": 5616, "scored": 3010},
+        "exits": [{"code": "000001", "name": "平安银行",
+                   "t20_date": "20260925", "t20_ret": "-0.05",
+                   "_overdue_days": 5}],
+    }
+    assert run_daily.feishu_push("https://x", payload) is True
+    assert len(sent) == 1
+    body = str(sent[0])
+    assert "平安银行" in body
+    assert "逾期 5 天" in body
+    assert "到期待卖出" in body
+
+
+def test_feishu_top_limits_rows(monkeypatch):
+    """候选只列前 N 只（默认 5），避免手机上刷屏。"""
+    sent = []
+    monkeypatch.setattr(run_daily, "_feishu_post",
+                        lambda w, c: sent.append(c) or True)
+    top = [{"code": f"60000{i}", "name": f"股票{i}",
+            "score": 0.9 - i / 100, "ret20": -0.1} for i in range(20)]
+    payload = {"as_of": "20260930", "top": top,
+               "universe": {"stocks_found": 5616, "scored": 3010},
+               "feishu_quiet": False, "feishu_top": 5}
+    assert run_daily.feishu_push("https://x", payload) is True
+    body = str(sent[0])
+    assert "股票0" in body
+    assert "股票5" not in body, "第 6 只不应出现在卡片里"
+    assert "共 20 只" in body
+
+
+def test_read_webhook_priority(monkeypatch, tmp_path):
+    """Webhook 读取优先级：命令行 > 环境变量 > 文件；文件缺失返回空。"""
+    f = tmp_path / "wh.txt"
+    f.write_text("https://from-file\n", encoding="utf-8")
+    monkeypatch.setenv("TDX_FEISHU_WEBHOOK", "https://from-env")
+    assert run_daily._read_webhook("https://from-cli", str(f)) == "https://from-cli"
+    assert run_daily._read_webhook("", str(f)) == "https://from-env"
+    monkeypatch.delenv("TDX_FEISHU_WEBHOOK")
+    assert run_daily._read_webhook("", str(f)) == "https://from-file"
+    assert run_daily._read_webhook("", str(tmp_path / "none.txt")) == ""
+
+
+def test_feishu_alert_never_raises():
+    """告警推送失败不得抛异常——它本身是最后一道防线。"""
+    assert run_daily.feishu_alert("http://127.0.0.1:9/none", "测试",
+                                   ["x"]) is False
