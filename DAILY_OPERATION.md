@@ -141,3 +141,53 @@ Get-ScheduledTaskInfo -TaskName TDXDaily
   它不宣称 alpha，也不承诺跑赢基准。
 - 正因为如此，**跟踪数据（第三节→第七节）才是这个系统最重要的产出**——  
   它是用来检验推荐质量、而不是用来赚钱的。
+
+---
+
+## 九、飞书推送（可选，2026-10-04 启用）
+
+### 推送策略：**有异常才推**
+
+正常产出**不发消息**，只在下列情况推送：
+
+| 触发 | 卡片颜色 | 含义 |
+|------|---------|------|
+| **到期待卖出** | 红 | 有持仓满 20 个交易日，需卖出（附逾期天数） |
+| 交易日数据未更新 | 红 | 通达信可能没下载 |
+| 预检未通过 | 红 | 已拒绝产出（除非 `--force`） |
+| 每日候选清单 | 蓝 | 仅在有到期卖出时附带，或加 `--feishu-always` |
+
+> **设计意图**：静默失效是本项目最警惕的故障。正常时安静，异常时才响——
+> 这样一条告警才值得被看到。
+
+### 配置方法（一次性）
+
+1. 飞书建群（可以只有你自己）→ 群设置 → 群机器人 → **自定义机器人**
+2. 复制 Webhook 地址
+3. 存成 `data/feishu_webhook.txt`（**该文件已在 `.gitignore` 中，绝不入库**）
+   — 或设环境变量 `TDX_FEISHU_WEBHOOK`
+
+读取优先级：命令行 `--feishu-webhook` > 环境变量 > 文件。
+
+> ⚠️ **Webhook 等同于该群发帖权限**。别贴到公开地方，
+> 安全设置建议选「仅关键词」或「签名校验」而非「完全信任」。
+
+### 常用命令
+
+```bash
+# 静默跑（默认，不推）
+python -m tdx_native.run_daily
+
+# 每天推（调试用）
+python -m tdx_native.run_daily --feishu-always
+
+# 候选列 10 只而不是 5 只
+python -m tdx_native.run_daily --feishu-always --feishu-top 10
+
+# 只测推送（不重跑选股）
+python -c "from tdx_native.run_daily import feishu_push; \
+           feishu_push(open('data/feishu_webhook.txt').read().strip(), \
+           {'as_of':'测试','top':[],'universe':{},'feishu_quiet':False})"
+```
+
+未配置 Webhook 时**优雅降级**：照常产出，提示一句，异常仍写 `run.log`。
