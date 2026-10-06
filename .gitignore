@@ -37,6 +37,8 @@ reports/*
 !reports/EVIDENCE_INDEX.md
 !reports/external_v3/
 !reports/external_v3/*
+!reports/long_history/
+!reports/long_history/*
 
 # --- 凭据：绝不入库 ---
 # 飞书 Webhook 等同于该群发帖权限，谁拿到都能往群里发消息
