@@ -1050,3 +1050,156 @@ def test_backfill_out_csv_t5_returns_are_correct(tmp_path):
     for r in rows:
         assert abs(float(r["t5_ret"]) - 0.10) < 1e-6,             f"{r['code']} t5_ret 应为 +10%，实际 {r['t5_ret']}"
         assert r["t5_status"] == "filled"
+
+
+# ---------------------------------------------------------------------------
+# daily_report.build_report —— 报告生成编排层
+# 重点：V2 跳空过滤真的剔除（10-02 修复前是只写不读的死代码）、
+#       tracking 幂等登记、复权文案与实际状态一致
+# ---------------------------------------------------------------------------
+
+
+def _jump_market(tmp_path):
+    """构造一个含跳空标的的池子。
+
+    600001：正常（价格恒定）
+    600002：近 21 根内有一次涨停（+10%）→ 应被 V2 剔除
+    """
+    cal = [20260101 + i for i in range(40)]
+    rows_normal = [(d, 10.0, 10.0, 10.0, 10.0, 3e8, 1_000_000) for d in cal]
+    # 600002：在 index 30 处跳涨 10%
+    rows_jump = []
+    for i, d in enumerate(cal):
+        px = 11.0 if i >= 30 else 10.0
+        rows_jump.append((d, px, px, px, px, 3e8, 1_000_000))
+    vip = _make_market(tmp_path, {
+        "600001": ("sh", rows_normal),
+        "600002": ("sh", rows_jump),
+    })
+    # run_daily.guard_unfinished_session 会先读指数日历，夹具必须提供
+    idx = tmp_path / "sh" / "lday"
+    idx.mkdir(parents=True, exist_ok=True)
+    _write_day(str(idx / "sh000001.day"), _flat_rows(cal, close=3000.0))
+    return vip
+
+
+def test_build_report_v2_jump_filter_actually_removes(tmp_path):
+    """V2 跳空过滤必须真的**剔除**标的（10-02 前是只写不读的死代码）。
+
+    回归缺陷：excluded_by_jump 全项目只有 1 处写入、0 处读取，
+    文档与日志却宣称 V2 已启用，实际从未剔除任何一只。
+    """
+    vip = _jump_market(tmp_path)
+    out = tmp_path / "out"
+    # 不开 V2 → 两只都在
+    res_all = daily_report.build_report(vip, top_n=10, out_dir=str(out))
+    codes_all = [t["code"] for t in res_all["top"]]
+    # 开 V2 → 含跳空的应被剔
+    res_v2 = daily_report.build_report(vip, top_n=10, jump_filter=True,
+                                        out_dir=str(out))
+    codes_v2 = [t["code"] for t in res_v2["top"]]
+
+    assert "600002" in codes_all, "基准（不开 V2）应含 600002"
+    assert "600002" not in codes_v2, "V2 必须真的剔除含跳空的 600002"
+    assert res_v2["universe"].get("v2_jump_removed", 0) >= 1
+    assert "excluded_by_jump" not in str(res_v2["top"]), \
+        "被剔除的标的不得残留在名单里"
+
+
+def test_build_report_tracking_is_idempotent(tmp_path):
+    """同一 as_of 重跑两次，tracking.csv 不得重复登记。"""
+    vip = _jump_market(tmp_path)
+    out = tmp_path / "out"
+    daily_report.build_report(vip, top_n=10, out_dir=str(out))
+    track = out / "tracking.csv"
+    first = track.read_text(encoding="utf-8")
+    n_rows = len(first.strip().split("\n")) - 1        # 减表头
+
+    daily_report.build_report(vip, top_n=10, out_dir=str(out))
+    second = track.read_text(encoding="utf-8")
+    n_rows2 = len(second.strip().split("\n")) - 1
+
+    assert n_rows2 == n_rows, f"重跑后行数应不变：{n_rows} → {n_rows2}"
+    assert first == second, "重跑不应改变 tracking.csv 内容"
+
+
+def test_build_report_qfq_text_matches_actual(tmp_path):
+    """报告的复权标注必须与实际状态一致（10-02 修复的核心）。"""
+    vip = _jump_market(tmp_path)
+    out = tmp_path / "out"
+    # 权息缓存为空 → 实际未复权 → 报告必须写「不复权」
+    empty = tmp_path / "empty_ev.csv"
+    empty.write_text("", encoding="utf-8")
+    daily_report.build_report(vip, top_n=10, events_cache=str(empty),
+                              out_dir=str(out))
+    md = next(out.glob("recommend_*.md")).read_text(encoding="utf-8")
+    assert "（前复权）" not in md, "未实际复权却标「前复权」——这会污染校准基线"
+    assert "不复权" in md or "原始价" in md
+
+
+# ---------------------------------------------------------------------------
+# run_daily.run —— 主流程编排
+# 重点：陈旧跳过必须给非零退出码（否则 schtasks 记为成功 = 静默失效）
+# ---------------------------------------------------------------------------
+
+
+def test_run_daily_skips_when_data_unchanged(tmp_path, monkeypatch):
+    """数据未更新且已登记过 → 必须跳过，不得重复产出同一份报告。"""
+    vip = _jump_market(tmp_path)
+    out = tmp_path / "out"
+    out.mkdir()
+    # 造一份已含 as_of 的 tracking
+    cal = [20260101 + i for i in range(40)]
+    as_of = str(cal[-1])
+    (out / "tracking.csv").write_text(
+        "as_of,code,name,score,liq20,ret20,vol20,maxret20,risk_flags\n"
+        f"{as_of},600001,测试,0.9,1e8,-0.1,0.02,0.02,\n", encoding="utf-8")
+    monkeypatch.setattr(run_daily, "_data_as_of", lambda v: as_of)
+    monkeypatch.setattr(run_daily, "screen", type("S", (), {
+        "preflight": staticmethod(lambda v: {
+            "stocks_found": 2, "as_of": as_of, "fresh_ratio": 1.0,
+            "problems": []}),
+        "run": staticmethod(lambda *a, **k: {}),
+    }))
+    rc = run_daily.run(vip, out_dir=str(out), names_csv="", events_cache="")
+    assert rc == 0, "非交易日跳过应返回 0"
+
+
+def test_run_daily_trading_day_stale_returns_nonzero(tmp_path, monkeypatch):
+    """交易日数据未更新 → 必须返回**非零**退出码（10-02 修复的核心）。
+
+    回归缺陷：原本返回 0，schtasks 记为「成功」——
+    run.log 连续 3 次跳过而无人知情（10-02 审计发现）。
+    """
+    vip = _jump_market(tmp_path)
+    out = tmp_path / "out"
+    out.mkdir()
+    as_of = "20260140"
+    (out / "tracking.csv").write_text(
+        "as_of,code,name,score,liq20,ret20,vol20,maxret20,risk_flags\n"
+        f"{as_of},600001,测试,0.9,1e8,-0.1,0.02,0.02,\n", encoding="utf-8")
+    monkeypatch.setattr(run_daily, "_data_as_of", lambda v: as_of)
+    monkeypatch.setattr(run_daily, "_is_trading_day", lambda v, c: True)
+    rc = run_daily.run(vip, out_dir=str(out), names_csv="", events_cache="")
+    assert rc == 3, f"交易日陈旧应返回 3（显式告警），实际 {rc}"
+
+
+def test_run_daily_rejects_when_preflight_fails(tmp_path, monkeypatch):
+    """预检未通过 → 必须拒绝产出（raise SystemExit），不得写脏数据。"""
+    vip = _jump_market(tmp_path)
+    out = tmp_path / "out"
+    out.mkdir()
+    as_of = "20260140"
+    (out / "tracking.csv").write_text(
+        "as_of,code,name,score,liq20,ret20,vol20,maxret20,risk_flags\n"
+        f"{as_of},600001,测试,0.9,1e8,-0.1,0.02,0.02,\n", encoding="utf-8")
+    monkeypatch.setattr(run_daily, "_data_as_of", lambda v: "20260201")
+    monkeypatch.setattr(run_daily, "screen", type("S", (), {
+        "preflight": staticmethod(lambda v: {
+            "stocks_found": 2, "as_of": as_of, "fresh_ratio": 0.5,
+            "problems": ["下载未完成"]}),
+        "run": staticmethod(lambda *a, **k: {}),
+    }))
+    with pytest.raises(SystemExit) as e:
+        run_daily.run(vip, out_dir=str(out), names_csv="", events_cache="")
+    assert "预检" in str(e.value)
