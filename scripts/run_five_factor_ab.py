@@ -598,6 +598,12 @@ def main() -> int:
         med = sorted(deltas)[len(deltas) // 2]
         print(f"  后臂优于前臂的窗口: {n_pos} / {len(deltas)}，Δ超额中位 {med:+.2f}pp")
     out = {"windows": rows, "args": vars(args),
+           # 落盘**生效**的基准路径（2026-10-06 增补）。
+           # args.benchmark 默认为空串、真实值由上面的兜底逻辑解析为
+           # bench_path —— 不额外记录的话，42 份研究 JSON 里只有显式
+           # 传 --benchmark 的 3 份能看出用了哪个基准，其余无法追溯
+           # （见 reports/EVIDENCE_INDEX.md 第六节缺口清单）。
+           "benchmark": bench_path,
            "prereg": "FIVE_FACTOR_PREREG.md", "runtime_sec": round(time.time() - t0, 1)}
     text = json.dumps(out, ensure_ascii=False, indent=1, default=str)
     if args.out:

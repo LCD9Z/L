@@ -252,8 +252,10 @@ def main() -> int:
 
     if args.out:
         with open(args.out, "w", encoding="utf-8", newline="\n") as f:
-            json.dump({"windows": rows, "args": vars(args)}, f,
-                      ensure_ascii=False, indent=1, default=str)
+            json.dump({"windows": rows, "args": vars(args),
+                       # 生效基准路径（2026-10-06 增补）：默认为 benchmark.csv 即沪深300
+                       "benchmark": bench},
+                      f, ensure_ascii=False, indent=1, default=str)
         print(f"\n结果已写入: {args.out}")
     return 0
 

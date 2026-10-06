@@ -279,9 +279,17 @@ def main() -> int:
 
     if args.out:
         with open(args.out, "w", encoding="utf-8", newline="\n") as f:
-            json.dump({"windows": rows, "args": vars(args)}, f,
-                      ensure_ascii=False, indent=1, default=str)
+            json.dump({"windows": rows, "args": vars(args),
+                       # 落盘**生效**的基准路径（2026-10-06 增补）。
+                       # 本脚本 --benchmark 默认空串，真实值由上面的兜底逻辑
+                       # 解析为 bench（注意默认是 benchmark.csv 即**沪深300**，
+                       # **不是**等权全A）——不记录则事后无法判断某批结果
+                       # 用的哪个基准，这是跨口径比较出错的主要来源。
+                       # 见 reports/EVIDENCE_INDEX.md 第六节缺口清单。
+                       "benchmark": bench},
+                      f, ensure_ascii=False, indent=1, default=str)
         print(f"\n结果已写入: {args.out}")
+        print(f"生效基准: {bench}")
     return 0
 
 

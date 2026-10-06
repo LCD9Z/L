@@ -351,7 +351,9 @@ def main() -> int:
     if args.out:
         with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
             json.dump({"rows": rows, "summary": summary, "cost_comparison": cost_rows,
-                       "variants": VARIANTS, "args": vars(args)},
+                       "variants": VARIANTS, "args": vars(args),
+                       # 生效基准路径（2026-10-06 增补）
+                       "benchmark": bench_path},
                       fh, ensure_ascii=False, indent=1, default=str)
         print(f"\n结果已写入: {args.out}")
     return 0

@@ -228,7 +228,10 @@ def main() -> int:
     if args.out:
         with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
             json.dump({"rows": rows, "summary": summary, "seeds": seeds,
-                       "windows": windows, "args": vars(args)},
+                       "windows": windows, "args": vars(args),
+                       # 基准在本脚本中**硬编码**为 benchmark.csv 即沪深300
+                       # （2026-10-06 增补记录，否则事后无从判断口径）
+                       "benchmark": os.path.join(dataset, "benchmark.csv")},
                       fh, ensure_ascii=False, indent=1, default=str)
         print(f"\n结果已写入: {args.out}")
     print(f"总耗时 {time.time()-t0:.0f}s")

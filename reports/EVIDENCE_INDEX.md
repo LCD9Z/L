@@ -165,7 +165,7 @@
 
 ---
 
-## 六、证据缺口清单（2026-10-02 审计）
+## 六、证据缺口清单（2026-10-02 审计，2026-10-06 增补）
 
 以下结论**在仓库中找不到完整数据源**，引用时必须标注「⚠️ 待核」：
 
@@ -174,6 +174,7 @@
 | `STEP1_3_EXECUTION_REPORT.md:407-413` | H-IMPACT 5 窗口滑点模型对照（`impact_p*.json` 实为 V1 对照臂） |
 | `STEP1_3_EXECUTION_REPORT.md:551-556` | T1b 第 5 窗口（`t1b_p3.json` 缺失） |
 | `FORM_SCREEN_VERDICT.md:75` | 61.1% V1 尾部重叠（JSON 无此字段） |
+| **`STEP1_3_EXECUTION_REPORT.md` §九 ~ §二十四（部分）** | **基准口径未逐节标注**（2026-10-06 新增，**根因已修，历史 JSON 待补**）。正文仅 §十/§十一/§十三/§十七/§十九/§二十五 明确写了「等权全A」，其余章节靠默认兜底。<br>**已修**：`run_five_factor_ab.py` / `run_tdx_rolling_eval.py` / `run_cost_model_check.py` / `run_regime_overlay_study.py` / `run_tail_exclusion_study.py` / `run_concentration_study.py` / `run_sampling_sensitivity_study.py` 共 7 个脚本已在落盘时记录**生效基准路径**（`"benchmark"` 字段）。<br>**仍缺**：修复前跑的 42 份 JSON 中只有 3 份（`v2_ew_bench_*.json`）能看出基准。**引用旧 JSON 里的数字时，基准只能推断，不能确认** |
 | `DAILY_OPERATION.md:112` | 指数 −2.13% / 等权 +3.06%（来自 3 行冒烟夹具，非真实数据） |
 | `tdx_native/backfill.py:13` | 同上，已在该文件就地标注撤回 |
 
