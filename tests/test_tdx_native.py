@@ -905,3 +905,148 @@ def test_screen_run_v1_tail_exclusion(tmp_path):
     # 涨幅最大的两只必须被剔，最小的一只必须保留
     assert "600010" not in kept and "600009" not in kept
     assert "600001" in kept
+
+
+# ---------------------------------------------------------------------------
+# backfill._ew_ret / _summarize —— 等权基准与汇总统计
+# _ew_ret 是 2026-10-02 审计认定「产出过假结论」的那条路径
+# （-2.13%/+3.06% 来自 3 行冒烟夹具），此前零覆盖。
+# ---------------------------------------------------------------------------
+
+
+def _ew_fixture(n=150, rise=0.10):
+    """造 n 只股票，构造等权基准场景。
+
+    每只：d1 开盘 10.0 → dk 收盘 10.0*(1+rise)，即等权收益恒为 rise。
+    返回 (cal, cal_pos, path_map, cache)。
+    """
+    cal = [f"2026010{i%9+1}" for i in range(0)]     # 占位，稍后替换
+    cal = [f"2026{m:02d}{d:02d}" for m in (1, 2, 3)
+           for d in range(1, 29) if not (m == 2 and d > 20)]
+    cal = sorted(set(cal))
+    cal_pos = {d: i for i, d in enumerate(cal)}
+    path_map, cache = {}, {}
+    for k in range(n):
+        code = f"60{k:04d}"
+        path_map[code] = f"/nonexistent/{code}.day"   # 不会被真读（cache 已给）
+        bars = {}
+        for d in cal:
+            bars[d] = {"open": 10.0, "close": 10.0 * (1 + rise)}
+        cache[code] = bars
+    return cal, cal_pos, path_map, cache
+
+
+def test_ew_ret_computes_equal_weight_return():
+    """等权收益 = 各标的收益均值；全部 rise=10% 时结果应为 10%。"""
+    cal, cal_pos, path_map, cache = _ew_fixture(n=150, rise=0.10)
+    i = cal_pos[cal[30]]
+    r = backfill._ew_ret(cal, cal_pos, cal[30], 10, path_map, cache)
+    assert r is not None
+    assert abs(r - 0.10) < 1e-9
+
+
+def test_ew_ret_returns_none_below_100_samples():
+    """有效样本 < 100 只必须返回 None。
+
+    这条门槛是 10-02 审计的关键发现：当时 -2.13%/+3.06% 是在
+    **3 行**夹具上算出来的，而门槛本应拦住它——说明当时用的是
+    无门槛的临时实现。现在门槛必须被测试锁死。
+    """
+    cal, cal_pos, path_map, cache = _ew_fixture(n=99, rise=0.10)
+    assert backfill._ew_ret(cal, cal_pos, cal[30], 10, path_map, cache) is None
+    # 恰好 100 只 → 通过
+    cal, cal_pos, path_map, cache = _ew_fixture(n=100, rise=0.10)
+    assert backfill._ew_ret(cal, cal_pos, cal[30], 10, path_map, cache) is not None
+
+
+def test_ew_ret_skips_suspended_stocks():
+    """停牌（缺 open 或 close）自动跳过，不污染均值。"""
+    cal, cal_pos, path_map, cache = _ew_fixture(n=100, rise=0.10)
+    # 把 40 只的 dk 日 bar 删掉（模拟停牌无数据）
+    dk = cal[30 + 10]
+    missing = list(cache)[:40]
+    for c in missing:
+        cache[c].pop(dk, None)
+    # 剩 60 只有效 < 100 → None
+    assert backfill._ew_ret(cal, cal_pos, cal[30], 10, path_map, cache) is None
+    # 只停 10 只 → 90 只有效，仍 < 100
+    cal, cal_pos, path_map, cache = _ew_fixture(n=110, rise=0.10)
+    for c in list(cache)[:10]:
+        cache[c].pop(dk, None)
+    r = backfill._ew_ret(cal, cal_pos, cal[30], 10, path_map, cache)
+    assert r is not None
+    assert abs(r - 0.10) < 1e-9, "停牌者被跳过，剩下的仍是 +10%"
+
+
+def test_ew_ret_returns_none_on_calendar_overflow():
+    """日历边界：i+1 或 i+k 越界必须返回 None，不能抛异常。"""
+    cal, cal_pos, path_map, cache = _ew_fixture(n=100)
+    # k 超出日历末尾
+    assert backfill._ew_ret(cal, cal_pos, cal[30], len(cal), path_map, cache) is None
+    # as_of 不在日历中
+    assert backfill._ew_ret(cal, cal_pos, "20991231", 5, path_map, cache) is None
+    # as_of 是最后一个交易日 → i+1 越界
+    assert backfill._ew_ret(cal, cal_pos, cal[-1], 5, path_map, cache) is None
+
+
+def test_backfill_median_uses_midpoint_of_two_middle_values():
+    """锁定「偶数样本中位数 = 中间两数均值」这条契约。
+
+    回归缺陷（2026-10-02）："median": rets[n // 2] 在 n=4 时返回 3.0
+    而非 2.5。样本越小偏差越大，而 tracking 正处小样本阶段。
+
+    ⚠️ **为什么这里只测公式、不测 _summarize 本身**：
+    _summarize 是 backfill.run 内部的闭包，不导出、不落盘
+    （summary 只 print 不写文件），无法从外部调用。
+    任何声称「测到了 _summarize」的写法都是自欺——所以本测试
+    明确只锁公式契约，并在下面用**真实端到端**补一条：
+    确认 out_csv 里的 t5_ret 与手算一致（数据层没问题）。
+    """
+    for vals, expect in (([1.0, 2.0, 3.0, 4.0], 2.5),
+                         ([1.0, 2.0, 3.0], 2.0),
+                         ([5.0], 5.0),
+                         ([1.0, 2.0, 3.0, 4.0, 5.0], 3.0)):
+        n = len(vals)
+        median = (vals[(n - 1) // 2] + vals[n // 2]) / 2
+        assert median == expect, f"n={n} 中位数应为 {expect}"
+    # 反证：旧实现 rets[n//2] 在 n=4 时会给 3.0
+    assert [1.0, 2.0, 3.0, 4.0][4 // 2] == 3.0
+
+
+def test_backfill_out_csv_t5_returns_are_correct(tmp_path):
+    """端到端：确认回填产出的 t5_ret 数值正确（数据层）。
+
+    这条不测中位数（闭包测不到），只测**收益本身算得对**——
+    若这条挂了，说明 T+1 开盘建仓 / T+5 收盘取值的口径坏了。
+    """
+    lday = tmp_path / "vipdoc" / "sh" / "lday"
+    lday.mkdir(parents=True)
+    cal_dates = [20260101 + i for i in range(40)]
+    _write_day(str(lday / "sh000001.day"), _flat_rows(cal_dates, close=3000.0))
+
+    # 口径（见 backfill._ret_at）：建仓日 = cal[i+1] 开盘，T+5 = cal[i+5] 收盘。
+    # as_of=cal[0]=20260101 → 建仓 cal[1]=20260102，T+5 = cal[5]=20260106。
+    # 让 T+5 收盘 11.0、建仓开盘 10.0 → 收益 +10%。
+    for code in ("600001", "600002", "600003", "600004"):
+        rows = []
+        for i, d in enumerate(cal_dates):
+            px = 11.0 if i == 5 else 10.0
+            rows.append((d, px, px, px, px, 3e8, 1_000_000))
+        _write_day(str(lday / f"sh{code}.day"), rows)
+
+    track = tmp_path / "tracking.csv"
+    with open(track, "w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["as_of", "code", "name", "score", "liq20",
+                    "ret20", "vol20", "maxret20", "risk_flags"])
+        for code in ("600001", "600002", "600003", "600004"):
+            w.writerow([20260101, code, "X", 0.9, 1e8, -0.1, 0.02, 0.02, ""])
+
+    filled = tmp_path / "filled.csv"
+    backfill.run(str(tmp_path / "vipdoc"), str(track), str(filled))
+    with open(filled, encoding="utf-8", newline="") as f:
+        rows = list(csv.DictReader(f))
+    assert len(rows) == 4
+    for r in rows:
+        assert abs(float(r["t5_ret"]) - 0.10) < 1e-6,             f"{r['code']} t5_ret 应为 +10%，实际 {r['t5_ret']}"
+        assert r["t5_status"] == "filled"
