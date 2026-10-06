@@ -77,6 +77,7 @@ C20 分散（top_n=20） + V1 尾部剔除（剔除当日 ret20 最高 20%）
 | **最新独立审计** | `AUDIT_2026_10_02_REPORT.md`（2026-10-02，修 8 处、撤回 1 结论） |
 | **原始证据与缺口** | `reports/EVIDENCE_INDEX.md`（59 份 JSON 索引 + 6 项待核清单） |
 | AOCI 代码认知索引 | `AOCI_INTEGRATION.md`（2026-10-04 引入，**已校验未启用**，只索引 `tdx_native/`） |
+| 外部项目借鉴 | `EXTERNAL_REVIEW_2026_10_06.md`（V3 独立验证了因子方向）、`GITHUB_ASHARE_QUANT_SURVEY.md`（Sequoia-X）、`docs/external/`（归档源码） |
 | 推荐系统怎么用 | `DAILY_OPERATION.md`（运维手册）、`tdx_native/README.md` |
 | 候选过滤器调研结论 | `CANDIDATE_FILTERS_VERDICT.md` |
 | Sequoia-X 等外部项目借鉴 | `GITHUB_ASHARE_QUANT_SURVEY.md` |
