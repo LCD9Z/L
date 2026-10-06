@@ -731,3 +731,177 @@ def test_feishu_alert_never_raises():
     """告警推送失败不得抛异常——它本身是最后一道防线。"""
     assert run_daily.feishu_alert("http://127.0.0.1:9/none", "测试",
                                    ["x"]) is False
+
+
+# ---------------------------------------------------------------------------
+# screen.run —— 全项目最核心的生产函数，此前零覆盖
+# 2026-10-02 审计发现的 4 个高危缺陷有 3 个落在此函数或其下游，
+# 本节把它们逐条锁死。
+# ---------------------------------------------------------------------------
+
+
+def _make_market(tmp_path, spec):
+    """造一个小型 vipdoc。spec: {code: (market, rows)}。
+
+    文件名须带市场前缀（``sh600001.day``）——``scan_stocks`` 按
+    ``stem.startswith(market)`` 过滤，缺前缀会被静默跳过（返回 0 只）。
+    """
+    for code, (mkt, rows) in spec.items():
+        d = tmp_path / mkt / "lday"
+        d.mkdir(parents=True, exist_ok=True)
+        _write_day(str(d / f"{mkt}{code}.day"), rows)
+    return str(tmp_path)
+
+
+def _dates(n, start=20260101):
+    """生成 n 个连续递增的交易日（用真实日历间隔即可，run 只比大小）。"""
+    return [start + i for i in range(n)]
+
+
+def test_screen_run_st_removes_st_stocks(tmp_path):
+    """ST 股必须被剔除，且剔除数写进 universe.st_removed。"""
+    ds = _dates(30)
+    spec = {
+        "600001": ("sh", _flat_rows(ds, close=10.0)),
+        "600002": ("sh", _flat_rows(ds, close=20.0)),
+        "000003": ("sz", _flat_rows(ds, close=30.0)),
+    }
+    vip = _make_market(tmp_path, spec)
+    names = tmp_path / "names.csv"
+    names.write_text("code,name\n600001,ST浦发\n600002,浦发银行\n000003,平安银行\n",
+                     encoding="utf-8")
+    res = screen_mod.run(vip, top_n=10, names_csv=str(names))
+    codes = [t["code"] for t in res["top"]]
+    assert "600001" not in codes, "ST 股必须被剔除"
+    assert res["universe"]["st_removed"] == 1
+    assert "600002" in codes and "000003" in codes
+
+
+def test_screen_run_counts_missing_names(tmp_path):
+    """无名称映射的标的必须计数（其 ST 剔除失效），并写进 universe。"""
+    ds = _dates(30)
+    spec = {f"60000{i}": ("sh", _flat_rows(ds, close=10.0 + i)) for i in range(1, 5)}
+    vip = _make_market(tmp_path, spec)
+    # 名称表只覆盖 1 只 → 缺失率 75% > 5% 阈值
+    names = tmp_path / "names.csv"
+    names.write_text("code,name\n600001,某某股份\n", encoding="utf-8")
+    res = screen_mod.run(vip, top_n=10, names_csv=str(names))
+    assert res["universe"]["names_missing"] == 3
+    assert res["universe"]["st_removed"] == 0   # 缺名 → ST 短路，无法剔除
+
+
+def test_screen_run_stale_exclude_uses_trading_days(tmp_path):
+    """停牌剔除必须按**交易日**计，不得用 int(YYYYMMDD) 日历差。
+
+    回归缺陷（2026-10-02）：int(YYYYMMDD) 相减得到的是**日历日**，
+    注释却写「交易日」。两者在跨月/长假后严重背离。
+
+    本例用 2026 年 9-10 月真实工作日（跳过周末），24 根：
+      as_of = 20261028，标的停到 20261015
+      → 落后 **9 个交易日**（≤ 10，应保留）
+      → 但日历差 int(20261028)-int(20261015) = **13**（> 10，旧口径会误杀）
+
+    ⚠️ 夹具陷阱（前两版都踩了，导致变异测试**测不出**缺陷）：
+    ① 日期须用**真实日历**。用 20260901+i 连续整数时日历差与交易日差
+       一致，两种口径同判 → 测试无效。
+    ② 停留点必须落在「交易日差 ≤10 **且** 日历差 >10」的窗口，
+       否则两口径同判剔除或同判保留，同样无效。
+    ③ 每只须 **≥22 根** bar，否则 compute_factors 返回 None。
+    """
+    # 2026-09-25 起的 24 个真实工作日
+    full = [20260925, 20260928, 20260929, 20260930, 20261001, 20261002,
+            20261005, 20261006, 20261007, 20261008, 20261009, 20261012,
+            20261013, 20261014, 20261015, 20261016, 20261019, 20261020,
+            20261021, 20261022, 20261023, 20261026, 20261027, 20261028]
+    stop_idx = full.index(20261015)                 # 落后 9 个交易日
+    # 自我断言：确保夹具真能区分两种口径（否则本测试是无效的）
+    assert len([d for d in full if d > 20261015]) == 9
+    assert full[-1] - 20261015 == 13
+
+    vip = _make_market(tmp_path, {
+        "600001": ("sh", _flat_rows(full, close=10.0)),        # 全量
+        "600004": ("sh", _flat_rows(full[:stop_idx + 1], close=20.0)),
+    })
+    res = screen_mod.run(vip, top_n=10)
+    # 核心断言：新口径下**不剔除**（旧口径会因日历差 13 > 10 而误杀）
+    assert res["universe"]["stale_removed"] == 0,         "落后 9 个交易日（≤10）不应剔除；旧口径会因日历差 13 误杀"
+    # 注：600004 只有 15 根 bar（<22），进不了打分池——这与停牌剔除无关，
+    #     故不对它进不进 top 作断言。剔除行为只由 stale_removed 反映。
+
+
+# 说明：原先还有一个 test_screen_run_keeps_short_suspension，
+# 用 [20260901 + i] 连续整数日期 —— 该夹具下日历差与交易日差恒等，
+# 变异测试证明它**抓不住**任何口径缺陷，已删除。
+# 有效版本见上方 test_screen_run_stale_exclude_uses_trading_days
+# （真实工作日 + 可区分的停留点）。
+
+def test_screen_run_qfq_applied_reflects_events(tmp_path):
+    """qfq_applied 必须反映**实际复权**，而非权息路径字符串。
+
+    回归缺陷（2026-10-02）：用 `if events_cache` 判路径非空，
+    缓存文件缺失时仍宣称"启用前复权"。
+    """
+    ds = _dates(30)
+    vip = _make_market(tmp_path, {"600001": ("sh", _flat_rows(ds))})
+
+    # ① 权息缓存文件存在但为空 → events={} → 必须 False
+    empty = tmp_path / "empty_events.csv"
+    empty.write_text("", encoding="utf-8")
+    res = screen_mod.run(vip, top_n=5, events_cache=str(empty))
+    assert res["qfq_applied"] is False
+    assert "不复权" in res["disclaimer"]      # 未复权时如实声明
+    assert "前复权" not in res["disclaimer"]
+
+    # ② 给了含事件的缓存 → 必须 True（表头见 gbbq_reader:37）
+    ev = tmp_path / "ev.csv"
+    ev.write_text(
+        "code,date,cash,bonus,rights_price,rights_shares\n"
+        "600001,20260105,0.5,0,0,0\n", encoding="utf-8")
+    res2 = screen_mod.run(vip, top_n=5, events_cache=str(ev))
+    assert res2["qfq_applied"] is True
+    assert "前复权" in res2["disclaimer"]
+
+
+def test_screen_run_sort_is_deterministic(tmp_path):
+    """排序必须确定性：同样输入跑两次，Top-N 顺序逐位相同。
+
+    覆盖 `sort(key=(-score, code))` 的 tie-break——
+    10-02 审计确认真实数据上 3038 候选无抖动，此处锁死该不变量。
+    """
+    ds = _dates(30)
+    # 全部同价 → 五个因子全部并列 → score 必然并列，
+    # 此时排序完全依赖 code 的 tie-break，最能暴露排序缺陷
+    spec = {f"6000{i:02d}": ("sh", _flat_rows(ds, close=10.0)) for i in range(1, 9)}
+    vip = _make_market(tmp_path, spec)
+    a = screen_mod.run(vip, top_n=5)
+    b = screen_mod.run(vip, top_n=5)
+    assert [t["code"] for t in a["top"]] == [t["code"] for t in b["top"]]
+    # 并列时必须按 code 升序（而非 set 顺序或插入顺序）
+    assert [t["code"] for t in a["top"]] == sorted(t["code"] for t in a["top"])
+
+
+def test_screen_run_v1_tail_exclusion(tmp_path):
+    """V1 尾部剔除必须真的剔掉 ret20 最高的那一批，且剔的正是它们。
+
+    注意夹具：价格必须分段变化才能造出 ret20 梯度。
+    ``_flat_rows`` 价格恒定 → ret20 全为 0 → 剔除逻辑测不出来。
+    """
+    ds = _dates(30)
+    spec = {}
+    for i in range(1, 11):
+        rise = 1.0 + i * 0.10          # 10% ~ 110% 涨幅，单调递增
+        rows = ([(d, 10.0, 10.0, 10.0, 10.0, 3e8, 1_000_000) for d in ds[:10]]
+                + [(d, 10.0 * rise, 10.0 * rise, 10.0 * rise,
+                    10.0 * rise, 3e8, 1_000_000) for d in ds[10:]])
+        spec[f"6000{i:02d}"] = ("sh", rows)
+    vip = _make_market(tmp_path, spec)
+
+    full = screen_mod.run(vip, top_n=20)
+    cut = screen_mod.run(vip, top_n=20, exclude_ret20_top=0.2)
+
+    assert full["universe"]["scored"] == 10
+    assert cut["universe"]["scored"] == 8, "10 只剔 20% 应剩 8 只"
+    kept = {t["code"] for t in cut["top"]}
+    # 涨幅最大的两只必须被剔，最小的一只必须保留
+    assert "600010" not in kept and "600009" not in kept
+    assert "600001" in kept
