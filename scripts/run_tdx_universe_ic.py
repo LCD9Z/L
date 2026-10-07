@@ -189,10 +189,18 @@ def main() -> int:
     n_used = 0
 
     print("[2/4] 逐股计算因子（raw / adj 两套）...", flush=True)
+    bad_files: List[str] = []
     for n, (code, _market, path) in enumerate(stocks, 1):
         if n % 500 == 0:
             print(f"      {n}/{len(stocks)}  ({time.time()-t0:.0f}s)", flush=True)
-        bars = day_reader.read_day_all(path)
+        # 2026-10-07 加容错：单文件读取失败（PermissionError 等瞬时占用）
+        # 不得中断整个窗口 —— 首次跑 W1/W2 时正是因一个文件被占用而整窗作废。
+        # 失败必须显式计数并输出，不允许静默跳过（§2.4 纪律）。
+        try:
+            bars = day_reader.read_day_all(path)
+        except Exception as e:                       # noqa: BLE001
+            bad_files.append(f"{code}:{type(e).__name__}")
+            continue
         if len(bars) < 40:
             continue
         ev = events.get(code) or []
@@ -344,6 +352,9 @@ def main() -> int:
         "source": args.vipdoc, "stocks": len(stocks), "samples": n_used,
         "cross_sections": mg["cross_sections"],
         "flagged_share_mean": mg["flagged_share_mean"],
+        #: 读取失败而被跳过的文件（2026-10-07 加）。为 0 才说明本窗完整。
+        "bad_files": bad_files,
+        "bad_files_n": len(bad_files),
         "ic": res,
         "composite_ic": comp_res,
         "composite_ic_jump_excluded": comp_ex,
@@ -359,6 +370,9 @@ def main() -> int:
                 "2026-10-07 起 _factors_at 与生产 compute_factors 逐字一致"
                 "（原 amihud 分母固定 20 / 样本门槛 20 的偏差已修）。",
     }
+    if bad_files:
+        print(f"      ⚠️ {len(bad_files)} 个文件读取失败被跳过"
+              f"（前 5：{bad_files[:5]}）", flush=True)
     print("[4/4] 结果：")
     print(f"{'因子':14s} {'原始价 IC/t':>20s} {'复权价 IC/t':>20s} {'剔跳空 IC/t':>20s}")
     for f in FACTORS:
