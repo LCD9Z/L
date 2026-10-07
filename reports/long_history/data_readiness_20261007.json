@@ -1,0 +1,27 @@
+{
+ "checked_at": "2026-10-07 14:50:01",
+ "purpose": "回答「数据是否已下载完整」",
+ "daily_run_readiness": {
+  "preflight_passed": true,
+  "stocks_found": 5616,
+  "as_of": "20260930",
+  "fresh_ratio": 0.996,
+  "problems": [],
+  "verdict": "每日推荐运行**数据充足**"
+ },
+ "history_backfill": {
+  "sampled": 800,
+  "first_bar_ge_2021_pct": 39.6,
+  "expected_new_listing_pct": 17.8,
+  "unbackfilled_old_stocks_pct_est": 21.8,
+  "completion_est_pct": 78,
+  "verdict": "20 年回溯**未完成**，约五分之一老股仍停在 2021-08"
+ },
+ "download_state": {
+  "last_write": "2026-10-07 06:37",
+  "hours_since_write": 8.2,
+  "tdx_process_running": false,
+  "verdict": "下载已停止，通达信未在运行"
+ },
+ "note": "首根>=2021 含自然新股；扣除 17.8% 自然新股后，约 21.8% 为未回溯老股"
+}
