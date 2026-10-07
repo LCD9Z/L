@@ -80,6 +80,7 @@ C20 分散（top_n=20） + V1 尾部剔除（剔除当日 ret20 最高 20%）
 | AOCI 代码认知索引 | `AOCI_INTEGRATION.md`（2026-10-04 引入，**已校验未启用**，只索引 `tdx_native/`） |
 | 外部项目借鉴 | `EXTERNAL_REVIEW_2026_10_06.md`（V3 独立验证了因子方向）、`GITHUB_ASHARE_QUANT_SURVEY.md`（Sequoia-X）、`docs/external/`（归档源码） |
 | 20 年历史数据可行性 | `LONG_HISTORY_FEASIBILITY_2026_10_06.md`（**结论：20 年数据不解决本项目问题**，1 亿门槛早年剔 97%） |
+| 跨年代方向验证登记 | `CROSS_DECADE_PREREG.md`（2026-10-07，**待执行**。三层门槛口径 P1/P2/P3，含「极端行情检验暂不可行」的论证） |
 | 推荐系统怎么用 | `DAILY_OPERATION.md`（运维手册）、`tdx_native/README.md` |
 | 候选过滤器调研结论 | `CANDIDATE_FILTERS_VERDICT.md` |
 | Sequoia-X 等外部项目借鉴 | `GITHUB_ASHARE_QUANT_SURVEY.md` |
