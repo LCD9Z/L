@@ -83,9 +83,30 @@
 | `reports/decay_h5/h10/h20/h40.json` | `D:/tdx_dataset_v3` | 09-26 | 同上 |
 | `reports/contrarian_ab_with_p.json` | —（无 `args.dataset`） | 09-23 22:24 | 数据源亦待确认 |
 
-**副本侧实测统计**：`reports/*.json` 共 48 份，**无一份含 `benchmark` 字段**（0/48）；
-可辨基准的仅 **4 份**（文件名含 `ew`：`ew_benchmark_v3` / `v3_rolling_eval_ew` / `v3_rolling_eval_ew_full` / `v2_rolling_eval_ew`）。
-→ 与主干 `reports/EVIDENCE_INDEX.md:177`「修复前 42 份 JSON 仅 3 份可辨基准」**同构，且副本更差**。
+**副本侧实测统计**（`reports/*.json`，排除 `.partial`，共 **46** 份）：
+
+| 项 | 份数 | 说明 |
+|---|---|---|
+| 含 `benchmark` 字段 | **4** | 见 §2.4 |
+| 含 `benchmark` 字段且**值为空串** | **1** | `five_factor_ab_v2.json` → `args.benchmark = ""`，**直接印证隐式兜底根因** |
+| 字段名含 `ew` 可辨为等权口径 | 4 | `ew_benchmark_v3` / `v3_rolling_eval_ew` / `v3_rolling_eval_ew_full` / `v2_rolling_eval_ew` |
+| **基准完全不可辨** | **38** | 只能靠数据源 + 默认值**推断**，不能确认 |
+
+→ 与主干 `reports/EVIDENCE_INDEX.md:177`「修复前 42 份 JSON 仅 3 份可辨基准」**同构**。
+
+### 2.4 含 `benchmark` 字段的 4 份产物（逐一列明）
+
+| 产物 | 字段位置 | 值 | 判定 |
+|---|---|---|---|
+| `reports/five_factor_ab_v2.json` | `args.benchmark` | **`""`（空串）** | ⚠️ **根因直证**：空串 → 脚本兜底到 `benchmark.csv`（沪深300）。数据源 v2 |
+| `reports/v3_alpha_gap_probe.json` | `benchmark.windows[]` | 含 **`ew_pct` 与 `hs300_pct` 双基准**（2024-01-02~2026-09-10） | ✅ **唯一双基准产物**；数据源 v3 |
+| `reports/v3_alpha_gap_probe_coverage.json` | `benchmark.windows[]` | 同上（双基准） | ✅ 同上 |
+| `reports/contrarian_ab_with_p.json` | `results.<窗口>.benchmark` | `{days, total_return_pct, annualized_pct}` | ⚠️ 有基准收益对象，**但未标明是哪个基准**；`args.dataset` 亦缺失 |
+
+> **两点由此确认**：
+> ① **副本同样存在「`--benchmark` 空串 → 隐式兜底」**（`five_factor_ab_v2.json` 直证），
+>    与主干 §〇 0.1 的根因警句**完全对应** → P005 §3.3 的根因治疗对副本同样适用。
+> ② **副本已具备双基准对照能力**（`v3_alpha_gap_probe*`），并非只能单基准。
 
 ---
 
