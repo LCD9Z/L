@@ -1,0 +1,121 @@
+{
+ "windows": {
+  "W1": {
+   "corr": {
+    "ret20|vol20": 0.1229,
+    "ret20|amihud20": -0.0999,
+    "ret20|loga20": 0.1688,
+    "ret20|maxret20": 0.3609,
+    "vol20|amihud20": 0.0283,
+    "vol20|loga20": 0.2353,
+    "vol20|maxret20": 0.7609,
+    "amihud20|loga20": -0.9207,
+    "amihud20|maxret20": -0.0435,
+    "loga20|maxret20": 0.2403
+   },
+   "cross_sections": 241
+  },
+  "W2": {
+   "corr": {
+    "ret20|vol20": 0.1684,
+    "ret20|amihud20": -0.023,
+    "ret20|loga20": 0.0958,
+    "ret20|maxret20": 0.3978,
+    "vol20|amihud20": -0.0243,
+    "vol20|loga20": 0.2755,
+    "vol20|maxret20": 0.7651,
+    "amihud20|loga20": -0.933,
+    "amihud20|maxret20": -0.0624,
+    "loga20|maxret20": 0.2533
+   },
+   "cross_sections": 244
+  },
+  "W3": {
+   "corr": {
+    "ret20|vol20": 0.2292,
+    "ret20|amihud20": 0.0005,
+    "ret20|loga20": 0.1212,
+    "ret20|maxret20": 0.4456,
+    "vol20|amihud20": 0.0505,
+    "vol20|loga20": 0.3378,
+    "vol20|maxret20": 0.8091,
+    "amihud20|loga20": -0.854,
+    "amihud20|maxret20": 0.0025,
+    "loga20|maxret20": 0.311
+   },
+   "cross_sections": 243
+  },
+  "W4": {
+   "corr": {
+    "ret20|vol20": 0.1875,
+    "ret20|amihud20": -0.0474,
+    "ret20|loga20": 0.1272,
+    "ret20|maxret20": 0.4035,
+    "vol20|amihud20": -0.1458,
+    "vol20|loga20": 0.4787,
+    "vol20|maxret20": 0.8509,
+    "amihud20|loga20": -0.8998,
+    "amihud20|maxret20": -0.1424,
+    "loga20|maxret20": 0.4179
+   },
+   "cross_sections": 243
+  },
+  "W5": {
+   "corr": {
+    "ret20|vol20": 0.2003,
+    "ret20|amihud20": -0.0105,
+    "ret20|loga20": 0.1076,
+    "ret20|maxret20": 0.3813,
+    "vol20|amihud20": -0.0054,
+    "vol20|loga20": 0.371,
+    "vol20|maxret20": 0.8759,
+    "amihud20|loga20": -0.894,
+    "amihud20|maxret20": -0.0193,
+    "loga20|maxret20": 0.3329
+   },
+   "cross_sections": 182
+  },
+  "R": {
+   "corr": {
+    "ret20|vol20": 0.2048,
+    "ret20|amihud20": -0.0093,
+    "ret20|loga20": 0.1042,
+    "ret20|maxret20": 0.389,
+    "vol20|amihud20": -0.0493,
+    "vol20|loga20": 0.3997,
+    "vol20|maxret20": 0.8742,
+    "amihud20|loga20": -0.9003,
+    "amihud20|maxret20": -0.0519,
+    "loga20|maxret20": 0.352
+   },
+   "cross_sections": 251
+  }
+ },
+ "pairs": [
+  "ret20|vol20",
+  "ret20|amihud20",
+  "ret20|loga20",
+  "ret20|maxret20",
+  "vol20|amihud20",
+  "vol20|loga20",
+  "vol20|maxret20",
+  "amihud20|loga20",
+  "amihud20|maxret20",
+  "loga20|maxret20"
+ ],
+ "method": "逐调仓日横截面 Spearman，再取平均（非 pooled）",
+ "max_stocks": 2000,
+ "bad_files_n": 0,
+ "avg_corr_pairs": {
+  "ret20|vol20": 0.1855,
+  "ret20|amihud20": -0.0316,
+  "ret20|loga20": 0.1208,
+  "ret20|maxret20": 0.3963,
+  "vol20|amihud20": -0.0243,
+  "vol20|loga20": 0.3497,
+  "vol20|maxret20": 0.8227,
+  "amihud20|loga20": -0.9003,
+  "amihud20|maxret20": -0.0528,
+  "loga20|maxret20": 0.3179
+ }
+}
