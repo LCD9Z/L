@@ -1,0 +1,40 @@
+{
+  "n_rows": 12925,
+  "n_stocks": 5930,
+  "n_industry_codes": 553,
+  "n_l1_codes": 38,
+  "effective_date_min": "1990-01-01",
+  "effective_date_max": "2026-09-24",
+  "local_total": 5667,
+  "local_covered": 5667,
+  "local_coverage_pct": 100.0,
+  "local_not_in_src_sample": [],
+  "src_not_in_local": 263,
+  "pit_probe": {
+    "2010-01-04": {
+      "assigned": 1796,
+      "not_yet_assigned": 4134,
+      "assigned_pct": 30.29
+    },
+    "2015-01-05": {
+      "assigned": 2680,
+      "not_yet_assigned": 3250,
+      "assigned_pct": 45.19
+    },
+    "2020-01-02": {
+      "assigned": 3888,
+      "not_yet_assigned": 2042,
+      "assigned_pct": 65.56
+    },
+    "2024-01-02": {
+      "assigned": 5590,
+      "not_yet_assigned": 340,
+      "assigned_pct": 94.27
+    },
+    "2026-09-01": {
+      "assigned": 5914,
+      "not_yet_assigned": 16,
+      "assigned_pct": 99.73
+    }
+  }
+}

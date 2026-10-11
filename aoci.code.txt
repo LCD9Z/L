@@ -1,1 +1,37 @@
 #AOCI-CODE-VOLUME: 1
+
+===C:/Users/T430/Desktop/1.0 - 副本/===
+.env.example[FC7T]: F:环境变量样例，声明飞书通知凭据、Ark LLM 端点、数据源限流与运行时状态目录的变量名与默认值 | R:code:.gitignore,code:.github/workflows/ci.yml,code:credential_scan.py | A:- | S:本文件必须保持空值占位；填入真实值会被 credential_scan.py 判为明文凭据并使 CI 失败。真实值只写被 .gitignore 排除的 .env
+.gitattributes[FG7T]: F:声明全仓文本文件统一 LF 行尾，并对 png/jpg/gif/zip/db/pyc 等二进制类型关闭行尾转换 | R:code:.gitignore,code:tests/test_module_splits.py | A:- | S:本机 core.autocrlf=true；删掉本文件会让 Windows 克隆产出 CRLF，test_line_endings_are_lf 立即失败且 git diff 整文件飘红 —— 行尾是本项目已被咬三次的坑
+.gitignore[FG7T]: F:声明敏感凭据、运行时状态外移、数据库与缓存、运行产物、虚拟环境与编辑器文件的排除规则 | R:code:.env.example,code:tests/test_evidence_index.py,code:run_ci.py,code:credential_scan.py | A:- | S:reports/ 只跟踪证据 JSON（!reports/*.json），日志与 *.partial 仍忽略；改这条白名单会让报告数字与证据脱钩，test_evidence_index.py 有守卫
+AB_STUDIES_EVIDENCE.md[SG7T]: F:归档 H-C1 与 A/B 三阶段的 4 份原始 JSON，说明它们是什么、为何必须保留、以及复算时的口径注意事项 | R:code:CALIBRATION_DISCREPANCY_REPORT.md,code:AUDIT_REPORT.md | A:- | S:两组年化口径不可比：tdx_ab_* 几何年化，survivorship_rerun/* 算术年化。stage2 的 verdict 文案未随滑点模型同步，属脚本缺陷的历史证据，不可据其判读
+ADJUSTED_FACTOR_REPORT.md[SA6S]: F:复权价 vs 原始价的因子对比报告，结论为预测未获支持 —— 复权修正了收益水平但几乎不改变横截面因子排序 | R:code:CALIBRATION_DISCREPANCY_REPORT.md,code:STEP1_3_EXECUTION_REPORT.md | A:- | S:未复权价含除权跳空会污染动量因子，但实测显示排序不变，故此前「基线买在负 IC 因子尾部」的判断不因复权而改变
+AGENTS.md[FG7S]: F:仓库根 Agent 契约文件，aoci 区块声明 AOCI 认知层的接入方式、五个最小 MCP 入口与收尾维护原则 | R:code:aoci.txt,code:aoci.meta.txt,code:aoci.code.txt,code:AOCI_INTEGRATION_REPORT.md | A:- | S:本文件由 aoci init 写入，内容在 aoci:begin 与 aoci:end 注释之间；手工改动该区块会在下次 init 时被覆盖。区块内明示不重复完整手册，专项流程一律以 Guide 与工具说明为准
+ALPHA_CAPABILITY_GAP_ANALYSIS.md[SA7M]: F:Alpha 能力缺口分析：论证项目问题不是「验证不严」而是「没有可验证的好想法 + 没有足够宽的数据」 | R:code:STEP1_3_EXECUTION_REPORT.md,code:ALPHA_HYPOTHESIS_BACKLOG.md,code:HANDOVER.md | A:- | S:本文件写于副本工作区，其结论只适用于副本；对主开发目录 1.0 的改动需单独确认。所有结论均标注「已测量事实」与「判断/推断」的区别
+ALPHA_HYPOTHESIS_BACKLOG.md[SA6S]: F:新 Alpha 假设候选池，按尚未使用的数据维度组织候选条目 | R:code:ALPHA_HYPOTHESIS_PREREG.md,code:ALPHA_HYPOTHESIS_PREREG_HD1.md,code:ALPHA_HYPOTHESIS_PREREG_HD2.md,code:ALPHA_HYPOTHESIS_PREREG_HD3.md,code:ALPHA_HYPOTHESIS_PREREG_HD4.md | A:- | S:本文件只是候选，不代表已登记更不代表已成立；任何一条开跑前必须先写成事前登记并固定口径，跑完不得改（项目原则 5）
+ALPHA_HYPOTHESIS_PREREG.md[SA7T]: F:H-C1 复合反转假设的事前登记：固定假设、方向、方法与判定标准，检验脚本为 run_contrarian_study.py | R:code:scripts/run_contrarian_study.py,code:scripts/run_contrarian_portfolio.py,code:AB_STUDIES_EVIDENCE.md | A:- | S:登记的核心目的是防止「先看到结果再倒推假设」的事后合理化；本项目明令禁止参数网格搜索与事后调阈值
+ALPHA_HYPOTHESIS_PREREG_HD1.md[SA6S]: F:H-D1 披露时点偏离的事前登记：用巨潮 first_scheduled 与实际披露日之差构造因子 | R:code:scripts/run_disclosure_factor_study.py,code:ALPHA_HYPOTHESIS_BACKLOG.md,code:HANDOVER.md | A:- | S:经济逻辑来自 Skinner 自愿披露理论 —— 管理层对好消息倾向提前披露；该方向须在登记时固定，不得据结果调整
+ALPHA_HYPOTHESIS_PREREG_HD2.md[SA6S]: F:H-D2 披露预约变更次数的事前登记：用巨潮定期报告披露时间表的变更次数构造因子 | R:code:scripts/run_disclosure_factor_study.py,code:ALPHA_HYPOTHESIS_BACKLOG.md,code:HANDOVER.md | A:- | S:本假设引入此前从未使用的数据维度（披露时间表三字段），故不构成在既有价量/财务因子上的调参
+ALPHA_HYPOTHESIS_PREREG_HD3.md[SA6S]: F:H-D3 ST 困境反转的事前登记：用 v3 新增的逐日 is_st 状态构造信号 | R:code:scripts/run_st_reversal_study.py,code:ALPHA_HYPOTHESIS_BACKLOG.md,code:HANDOVER.md | A:- | S:经济逻辑是 ST 面临结构性强制卖出压力（公募保险不得持有、指数剔除、两融排除）；is_st 由官方深交所数据加涨跌幅推断，创业板 ST 口径须按 PIT 修正
+ALPHA_HYPOTHESIS_PREREG_HD4.md[SA6S]: F:H-D4 涨跌停结构的事前登记：用 v3 逐日 limit_ratio 构造信号 | R:code:scripts/run_limit_structure_study.py,code:ALPHA_HYPOTHESIS_BACKLOG.md,code:HANDOVER.md | A:- | S:limit_ratio 此前只用于成交约束（涨跌停不可买），从未作为信号；已按 PIT 修正创业板 2020-08-24 前为 10%、ST 为 5%
+AOCI_INTEGRATION_REPORT.md[SG6S]: F:AOCI 接入执行报告：记录 SHA256 校验、init+scan 落盘清单、三个既有守卫的实测结论与 MCP 注册 | R:code:AOCI_INVESTIGATION.md,code:AGENTS.md,code:.gitignore | A:- | S:调研阶段预判的 3 个守卫冲突（CRLF 行尾、布局文档、凭据扫描）实测全部未发生 —— gen_layout_doc.py 只扫 *.py，AOCI 产物全是 .md/.txt/.json，故布局文档天然不受影响
+AOCI_INVESTIGATION.md[SG6S]: F:AOCI 引入可行性调研：GitHub 检索结果、许可证条款边界、本环境下载实测与冲突点清单 | R:code:AOCI_INTEGRATION_REPORT.md | A:- | S:许可证是 FSL-1.1-MIT 而非开源：内部使用明确允许，对外提供相同或实质相似功能的商业产品被禁止；发布满两周年后自动转 MIT
+ASTOCK_DATA_ASSESSMENT.md[SA6S]: F:a-stock-data 仓库的数据可用性评估：区分「代码可引用」与「数据不可引用」，给出三项最有价值能力与接入建议 | R:code:PIT_SNAPSHOT_DESIGN.md,code:scripts/run_astock_reconciliation.py | A:- | S:仓库里没有数据，只有取数工具 —— 「引用数据」严格说不成立，能引用的是取数能力。数据来自 34 个第三方源抓取，各源站条款各自适用，Apache-2.0 不覆盖数据
+AUDIT_REPORT.md[SQ6L]: F:1.0 项目多角度专业审计报告：对 4.3 全量源码的架构、工程治理与运维审计，综合评分 7.2/10 | R:code:HANDOVER.md,code:PROJECT_HEALTH_AUDIT.md,code:run_ci.py | A:- | S:本报告记录的是修复前状态，正文标注「P0 全部 + P1 全部 + P2 部分 已合入 1.0」；引用其缺陷清单前须先核对当前代码是否已修
+BENCHMARK_ALIGNMENT.md[SA8S]: F:副本内基准对照表：登记每个产物/报告所用的数据源、基准指数、代次（旧代沪深300 / 新代等权全A）与是否含退市股 | R:code:STEP1_3_EXECUTION_REPORT.md,code:EVIDENCE_INDEX.md,code:AB_STUDIES_EVIDENCE.md | A:- | S:本表的用途是防止跨口径混比 —— 引用任一超额数字前必须先在此查它属哪一代基准；STEP1_3_EXECUTION_REPORT 禁止跨口径比较
+BRANCH_MERGE_REPORT.md[SG6S]: F:桌面 1.0 与工作副本两条演进线的单向合并报告：记录合并范围、冲突处置与交叉验证结论 | R:code:.workbuddy/memory/2026-09-30.md,code:HANDOVER.md | A:- | S:两个目录是同一起点的两个独立 git 仓库，在提交 ef0f5a9 处分叉；合并是单向的（1.0 到工作副本），反向改动需单独确认
+
+===C:/Users/T430/Desktop/1.0/.github/workflows/===
+ci.yml[OQ8T]: F:GitHub Actions CI：py3.10-3.13 矩阵依次跑语法检查、ruff、mypy、py3.10 兼容守卫、pytest+cov，另设独立凭据扫描作业 | R:code:run_ci.py,code:mypy.ini,code:credential_scan.py,code:tests/test_run_ci.py,code:tests/test_python_compat.py,code:requirements-dev.txt | A:test,security-scan | S:本文件与 run_ci.py 是同一套步骤的两处实现，由 test_run_ci.py 守护一致性 —— 改一处必须同步另一处，否则本地绿而远端红。作业级 env 设 FETCH_RATE_PER_SEC=0 关闭限流，使测试不依赖网络与真实凭据
+
+===C:/Users/T430/Desktop/1.0/.workbuddy/memory/===
+2026-09-19.md[SG5S]: F:2026-09-19 工作日志：GitHub 参考项目（KHunter、finance-quant-skills）对比与交易规则权威核实 | R:code:.workbuddy/memory/2026-09-20.md | A:- | S:记录印花税 2023-08-28 起卖出单边 0.5‰、过户费 2022-04-29 起沪深统一 0.01‰ 双向。跨 2023-08-28 的回测窗口必须分段计费，否则成本口径错误
+2026-09-20.md[SG4S]: F:2026-09-20 工作日志：为基本面因子研究补多重检验校正，控制组单独成族 m=7 与原始+控制合并族 m=14 | R:code:.workbuddy/memory/2026-09-19.md,code:.workbuddy/memory/2026-09-22.md | A:- | S:-
+2026-09-22.md[SG4M]: F:2026-09-22 工作日志：补记策略层面 p 值与族视图，消除只有 IC 层有显著性的缺口 | R:code:.workbuddy/memory/2026-09-20.md,code:.workbuddy/memory/2026-09-23.md | A:- | S:-
+2026-09-23.md[SG4T]: F:2026-09-23 工作日志：H-C1 复合反转 A/B 重跑与集中度研究重跑 | R:code:.workbuddy/memory/2026-09-22.md,code:.workbuddy/memory/2026-09-24.md | A:- | S:-
+2026-09-24.md[SG4T]: F:2026-09-24 工作日志：任务清单状态对齐与验收确认，修正过期的 P0/P1 条目状态 | R:code:.workbuddy/memory/2026-09-23.md,code:.workbuddy/memory/2026-09-25.md | A:- | S:-
+2026-09-25.md[SG4M]: F:2026-09-25 工作日志：提交积压的 69 个文件改动 | R:code:.workbuddy/memory/2026-09-24.md,code:.workbuddy/memory/2026-09-26.md | A:- | S:-
+2026-09-26.md[SG5M]: F:2026-09-26 工作日志：战略转向记录 —— H-D1~H-D4 四条新假设全部失败后，从「找新因子」转向「成本结构」 | R:code:.workbuddy/memory/2026-09-25.md,code:.workbuddy/memory/2026-09-30.md,code:ALPHA_HYPOTHESIS_BACKLOG.md | A:- | S:记录了转向的判据不是凭直觉列新选项，而是回到已测数据里找被忽视的量级
+2026-09-30.md[SG6L]: F:2026-09-30 工作日志：桌面 1.0 到本副本的单向合并、六人专家圆桌审查与市场级风险门落地 | R:code:.workbuddy/memory/2026-09-26.md,code:.workbuddy/memory/2026-10-07.md,code:BRANCH_MERGE_REPORT.md | A:- | S:-
+2026-10-07.md[SG5S]: F:2026-10-07 工作日志：AOCI 接入执行 —— SHA256 校验、init+scan、3 个守卫实测、注册 MCP server | R:code:.workbuddy/memory/2026-09-30.md,code:.workbuddy/memory/2026-10-11.md,code:AOCI_INTEGRATION_REPORT.md | A:- | S:记录了调研阶段预判的 3 个守卫冲突全部被实测否证 —— 预判必须实测，不可当结论使用
+2026-10-11.md[SG6L]: F:2026-10-11 工作日志：AOCI 回执读取、H-ICX/H-IMPACT/H-TC 执行、外部审阅采纳、PIT 快照 P0/P1 落地与 reports 证据入库 | R:code:.workbuddy/memory/2026-10-07.md,code:PIT_SNAPSHOT_P0_REPORT.md,code:EVIDENCE_INDEX.md | A:- | S:-

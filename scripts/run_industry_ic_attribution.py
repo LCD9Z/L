@@ -26,9 +26,15 @@ r"""行业分层 IC 归因：直接检验「IC 强显著但组合不赚钱」的
 
 ## ⚠️ 口径声明
 
-- 行业标签是 `pit.statistical_industry` 的**统计行业**（收益相关性聚类），
-  **不是官方行业** —— 结论必须带此限制
-- 聚类用**剔除市场因子后的残差收益**（否则会链式坍缩成 1~2 个巨簇）
+**行业标签有两种来源**（``--industry-source``）：
+
+- ``statistical``（旧口径）：`pit.statistical_industry` 的**统计行业**（收益相关性聚类），
+  **不是官方行业** —— 结论必须带此限制；聚类用**剔除市场因子后的残差收益**
+  （否则会链式坍缩成 1~2 个巨簇）
+- ``sw``（新口径，2026-10-11 加）：**申万真行业**（来自 PIT 快照库 `l2_sw_industry`），
+  用于**直接检验旧口径的结论是否只是聚类假象**。
+  ⚠️ 申万仅发布**行业代码**，无中文名。
+
 - 全部只用 `T` 及之前的数据（PIT）
 
 ## 用法
@@ -37,6 +43,9 @@ r"""行业分层 IC 归因：直接检验「IC 强显著但组合不赚钱」的
 
     python scripts/run_industry_ic_attribution.py --dataset D:/tdx_dataset_v3 \
         --max-stocks 300 --out reports/industry_ic_attribution.json
+    python scripts/run_industry_ic_attribution.py --dataset D:/tdx_dataset_v3 \
+        --max-stocks 300 --industry-source sw --sw-level l1 \
+        --out reports/industry_ic_attribution_sw.json
 """
 from __future__ import annotations
 
@@ -45,7 +54,7 @@ import os
 import statistics
 import sys
 import time
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -56,12 +65,59 @@ from pit.statistical_industry import (  # noqa: E402
     DEFAULT_LOOKBACK, DEFAULT_N_CLUSTERS, DEFAULT_RECLUSTER_EVERY,
     build_statistical_industry,
 )
+from pit.pit_snapshot_store import PitSnapshotStore  # noqa: E402
 
 FACTORS = ("ret_20", "vol_20", "max_ret_20", "log_amount_20", "amihud_20")
 HORIZON = 20
 STEP = 20                       # 不重叠
 MIN_CLUSTER_SIZE = 5            # 簇内少于该数不算行业内 IC
 MIN_IMPROVEMENT_PCT = 10.0      # 判据：提升 ≥ 10%
+
+
+def _build_sw_labels(
+    pit_root: str, codes: Sequence[str], days: Sequence[str], level: str
+) -> Dict[str, Dict[str, int]]:
+    """从 PIT 快照库取**申万真行业**标签，形状与统计聚类一致（``{day: {code: int}}``）。
+
+    PIT 语义：``day`` 当日的行业 = **生效日 ≤ day 的最新一条**记录。
+    用二分查找按股取（12925 行 × 每日每股线性扫会太慢）。
+
+    ⚠️ 与统计聚类的**本质差别**：申万是**官方分类体系**（自上而下定义），
+    统计聚类是**收益共动性**（自下而上涌现）。二者若一致，说明聚类是行业的合理代理；
+    若不一致，说明**聚类测的是另一件事**，不能用它替代行业，也不能用它否定行业结论。
+    """
+    store = PitSnapshotStore(pit_root)
+    rows = store.records_as_of("l2_sw_industry", max(days) if days else "9999-12-31")
+    col = f"industry_{level}"
+    hist: Dict[str, List[Tuple[str, str]]] = {}
+    for r in rows:
+        hist.setdefault(r["code"], []).append((r["effective_date"], r.get(col, "")))
+    for v in hist.values():
+        v.sort()
+    # 标签字符串 → 连续整数 id（下游按 int 分组）
+    label_ids: Dict[str, int] = {}
+    out: Dict[str, Dict[str, int]] = {}
+    for d in days:
+        m: Dict[str, int] = {}
+        for c in codes:
+            h = hist.get(c)
+            if not h:
+                continue
+            lo, hi = 0, len(h)
+            while lo < hi:                     # 右界：最后一个 effective_date <= d
+                mid = (lo + hi) // 2
+                if h[mid][0] <= d:
+                    lo = mid + 1
+                else:
+                    hi = mid
+            if lo == 0:
+                continue                        # 该日尚无归属 → 不给标签（不猜）
+            lab = h[lo - 1][1]
+            if not lab:
+                continue
+            m[c] = label_ids.setdefault(lab, len(label_ids))
+        out[d] = m
+    return out
 
 
 def _load(dataset: str, max_stocks: int) -> Dict[str, List[Dict[str, Any]]]:
@@ -92,6 +148,10 @@ def main() -> int:
     ap.add_argument("--lookback", type=int, default=DEFAULT_LOOKBACK)
     ap.add_argument("--recluster-every", type=int, default=DEFAULT_RECLUSTER_EVERY)
     ap.add_argument("--out", default="")
+    ap.add_argument("--industry-source", choices=("statistical", "sw"), default="statistical",
+                    help="行业标签来源：statistical=收益相关性聚类（旧口径）· sw=申万真行业（PIT 快照库）")
+    ap.add_argument("--sw-level", choices=("l1", "l2"), default="l1", help="申万层级（一级/二级）")
+    ap.add_argument("--pit-root", default="D:/pit_snapshots", help="PIT 快照库根目录")
     args = ap.parse_args()
 
     print("=" * 100)
@@ -101,17 +161,24 @@ def main() -> int:
     data = _load(args.dataset, args.max_stocks)
     print(f"股票 {len(data):,} 只（{time.time() - t0:.0f}s）", flush=True)
 
-    print("\n[1/3] 统计行业聚类（PIT，剔除市场因子）...", flush=True)
-    labels = build_statistical_industry(
-        data, lookback=args.lookback, recluster_every=args.recluster_every,
-        n_clusters=args.n_clusters)
-    days_lab = sorted(labels)
-    print(f"      覆盖 {len(days_lab):,} 个交易日（{time.time() - t0:.0f}s）", flush=True)
+    all_days = sorted({str(b["date"]) for bars in data.values() for b in bars})
+
+    if args.industry_source == "sw":
+        print(f"\n[1/3] 申万真行业标签（PIT 快照库 · {args.sw_level.upper()}）...", flush=True)
+        labels = _build_sw_labels(args.pit_root, list(data), all_days[::STEP], args.sw_level)
+        n_lab = len({v for m in labels.values() for v in m.values()})
+        print(f"      覆盖 {len(labels):,} 个调仓日 · {n_lab} 个行业（{time.time() - t0:.0f}s）", flush=True)
+    else:
+        print("\n[1/3] 统计行业聚类（PIT，剔除市场因子）...", flush=True)
+        labels = build_statistical_industry(
+            data, lookback=args.lookback, recluster_every=args.recluster_every,
+            n_clusters=args.n_clusters)
+        days_lab = sorted(labels)
+        print(f"      覆盖 {len(days_lab):,} 个交易日（{time.time() - t0:.0f}s）", flush=True)
 
     print("\n[2/3] 逐调仓日计算两口径 IC ...", flush=True)
     idx_map = {c: {str(b["date"]): k for k, b in enumerate(bars)}
                for c, bars in data.items()}
-    all_days = sorted({str(b["date"]) for bars in data.values() for b in bars})
     rebal = all_days[::STEP]
     rows: List[Dict[str, Any]] = []
     for day in rebal:
@@ -191,8 +258,13 @@ def main() -> int:
     print("\n" + "=" * 100)
     print("声明")
     print("=" * 100)
-    print("  · 行业标签是**统计行业**（收益相关性聚类），**不是官方行业** —— 结论须带此限制")
-    print("  · 聚类用**剔除市场因子后的残差收益**（否则链式坍缩成 1~2 个巨簇）")
+    if args.industry_source == "sw":
+        print(f"  · 行业标签是**申万真行业**（{args.sw_level.upper()}，来自 PIT 快照库）")
+        print("    —— 本口径**直接检验**旧口径（统计聚类）的结论是否只是聚类假象")
+        print("    ⚠️ 申万仅发布**行业代码**，无中文名；代码→名称需另找名称表")
+    else:
+        print("  · 行业标签是**统计行业**（收益相关性聚类），**不是官方行业** —— 结论须带此限制")
+        print("  · 聚类用**剔除市场因子后的残差收益**（否则链式坍缩成 1~2 个巨簇）")
     print("  · 判据事前固定：行业内 IC 提升 ≥ 10% 才支持「抵消」解释")
     print("  · 全部只用 T 及之前数据（PIT）；调仓日不重叠（step=horizon）")
     print("  · 结论不构成投资建议")

@@ -20,7 +20,7 @@
    文件名不出现在代码里。此时以**引用它的报告**中的命令行为准。
 3. **同一份证据可能被多份报告引用** —— 这属正常（如 `five_factor_ab_v2.json` 被 4 份引用）。
 
-**当前跟踪 51 份证据。**
+**当前跟踪 54 份证据。**
 
 ---
 
@@ -57,8 +57,11 @@
 | `ic_diagnosis.json` | 3,164 | `0406cd83909d` | IC_DIAGNOSIS_PREREG.md<br>IC_DIAGNOSIS_REPORT.md | — |
 | `impact_cost.json` | 6,444 | `bb88751fe5da` | IMPACT_AND_CAPACITY_REPORT.md<br>IMPACT_COST_PREREG.md | — |
 | `industry_ic_attribution.json` | 58,556 | `318ab564785f` | BENCHMARK_ALIGNMENT.md | `run_industry_ic_attribution.py` |
+| `industry_ic_attribution_sw.json` | 69,367 | `9b6fec09ca0b` | （暂无报告直接引用） | `run_industry_ic_attribution.py` |
 | `multiple_testing_audit.json` | 9,523 | `7b1c929483c4` | P0_P1_EXECUTION_REPORT.md | `run_multiple_testing_audit.py` |
+| `pit_gaps.json` | 1,620 | `051603363874` | （暂无报告直接引用） | — |
 | `pit_l1_reconciliation.json` | 841 | `b674dabad7fe` | PIT_SNAPSHOT_P0_REPORT.md | — |
+| `pit_l2_reconciliation.json` | 876 | `4129192e022a` | （暂无报告直接引用） | — |
 | `regime_overlay_const05_pilot.json` | 1,038 | `784bcbaee4d1` | STEP1_3_EXECUTION_REPORT.md | — |
 | `regime_overlay_study_w5.json` | 820 | `aa6b5726baa7` | （暂无报告直接引用） | — |
 | `silent_scan.json` | 34,601 | `cb09c2c8c796` | PROJECT_HEALTH_AUDIT.md | — |
@@ -95,6 +98,9 @@
 - `decay_h5.json`
 - `fixedpool_v2.json`
 - `fixedpool_v3.json`
+- `industry_ic_attribution_sw.json`
+- `pit_gaps.json`
+- `pit_l2_reconciliation.json`
 - `regime_overlay_study_w5.json`
 - `v3_fundamental_factor_study.json`
 

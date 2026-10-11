@@ -68,6 +68,7 @@ DATASET_REGISTRY: Dict[str, Dict[str, Any]] = {
     "l1_stock_basic": {
         "pit_mode": MODE_IMMUTABLE_FACT,
         "primary_key": "code",
+        "unique_key": ("code",),
         "justification": (
             "上市日/退市日是**历史结局事实**，其保守用法 "
             "(valid_from <= D < valid_to) 永远不会把「尚未发生的事」提前纳入。"
@@ -75,13 +76,24 @@ DATASET_REGISTRY: Dict[str, Dict[str, Any]] = {
             "则 2026-10-11 之前的历史将完全不可查询，数据失去意义。"
         ),
     },
+    "l2_sw_industry": {
+        "pit_mode": MODE_IMMUTABLE_FACT,
+        "primary_key": "code",
+        "unique_key": ("code", "effective_date"),
+        "justification": (
+            "行业归属变迁史以「计入日期」为生效日；申万分类体系的历次修订"
+            "（2014 / 2021）**本身也有生效日**（体现为同一股票的多行记录），"
+            "故「某日该股属哪个行业」是**已发生事实**，不是可随意改写的估计值。"
+            "⚠️ 残留风险：若申万**事后回溯修改**历史「计入日期」，我们无法察觉 —— "
+            "`as_of` 轴记录采集时刻供溯源，但不用于筛选。"
+        ),
+    },
 }
 
-# 规范化表的固定元列（业务列追加在其后）。
-# ⚠️ `effective_date` 是**保留列名**：所有数据集统一用它，不再引入 `effective_field`
+# 规范化表的**保留列名**。
+# ⚠️ `effective_date` 是所有数据集统一的生效日列，不再引入 `effective_field`
 # 间接层 —— 首版曾让 `l1_stock_basic` 指到 `ipo_date`，导致同名的 `effective_date`
 # 列被静默绕过（测试当场抓到）。**少一层间接 = 少一处静默失效。**
-_META_COLUMNS = ("code", "effective_date", "as_of", "ingest_run_id")
 _EFFECTIVE_COL = "effective_date"
 
 
@@ -160,8 +172,9 @@ class PitSnapshotStore:
     # ------------------------------------------------------------------
     # 路径
     # ------------------------------------------------------------------
-    def raw_path(self, source: str, endpoint: str, ingest_date: str) -> Path:
-        return self.raw_dir / source / endpoint / f"{ingest_date}.jsonl"
+    def raw_path(self, source: str, endpoint: str, ingest_date: str,
+                 suffix: str = ".jsonl") -> Path:
+        return self.raw_dir / source / endpoint / f"{ingest_date}{suffix}"
 
     def norm_path(self, dataset: str, ingest_date: str) -> Path:
         return self.norm_dir / dataset / f"{ingest_date}.csv"
@@ -186,6 +199,28 @@ class PitSnapshotStore:
         with path.open("w", encoding="utf-8", newline="\n") as fh:
             for rec in records:
                 fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        return path
+
+    def append_raw_bytes(
+        self,
+        source: str,
+        endpoint: str,
+        ingest_date: str,
+        data: bytes,
+        *,
+        suffix: str = ".bin",
+        force: bool = False,
+    ) -> Path:
+        """写**二进制**原始响应（如 xls）。同样只追加。
+
+        二进制源（申万 xls 等）**不能**转成 JSONL —— 那样会丢掉原始字节，
+        日后无法用官方文件复核。故原样落盘。
+        """
+        path = self.raw_path(source, endpoint, ingest_date, suffix)
+        if path.exists() and not force:
+            raise OverwriteRefusedError(f"原始层已存在（拒绝覆盖）: {path}")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
         return path
 
     def write_normalized(
@@ -332,6 +367,22 @@ class PitSnapshotStore:
             k = str(r.get(key) or "")
             seen[k] = seen.get(k, 0) + 1
         return sorted(k for k, n in seen.items() if n > 1)
+
+    @staticmethod
+    def check_unique_key(
+        rows: Sequence[Dict[str, Any]], keys: Sequence[str]
+    ) -> List[str]:
+        """**复合**唯一性检查（如 L2 的 ``(code, effective_date)``）。
+
+        返回重复组合的**可读串**列表（空 = 通过）。
+        ⚠️ 不能对 L2 用单列 ``code`` —— 一股多行（历次行业调整）是**正常结构**，
+        单列检查会把正确数据判为错误。
+        """
+        seen: Dict[tuple, int] = {}
+        for r in rows:
+            k = tuple(str(r.get(c) or "") for c in keys)
+            seen[k] = seen.get(k, 0) + 1
+        return sorted("|".join(k) for k, n in seen.items() if n > 1)
 
     @staticmethod
     def check_missing_rate(rows: Sequence[Dict[str, Any]], field: str) -> float:
