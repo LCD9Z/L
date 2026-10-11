@@ -81,6 +81,7 @@ C20 分散（top_n=20） + V1 尾部剔除（剔除当日 ret20 最高 20%）
 | 外部项目借鉴 | `EXTERNAL_REVIEW_2026_10_06.md`（V3 独立验证了因子方向）、`GITHUB_ASHARE_QUANT_SURVEY.md`（Sequoia-X）、`docs/external/`（归档源码） |
 | 20 年历史数据可行性 | `LONG_HISTORY_FEASIBILITY_2026_10_06.md`（**结论：20 年数据不解决本项目问题**，1 亿门槛早年剔 97%） |
 | 跨年代方向验证 | **判定见 [`CROSS_DECADE_VERDICT.md`](CROSS_DECADE_VERDICT.md)**（2026-10-11，**3 个独立信号方向稳健**）。登记 `CROSS_DECADE_PREREG.md`；审阅包 `CROSS_DECADE_REVIEW_PACKAGE.md`；**审阅回执** `CROSS_DECADE_REVIEW_RESPONSE.md`（海外版独立审阅，推翻 amihud 原结论） |
+| W1 股改同质性 | **判定见 [`W1_SPLIT_VERDICT.md`](W1_SPLIT_VERDICT.md)**（2026-10-11，**同质**，H-CD 的 W1 结论有效）。登记 `W1_SPLIT_PREREG.md` |
 | 因子正交化 | **判定见 [`FACTOR_ORTHOGONALITY_VERDICT.md`](FACTOR_ORTHOGONALITY_VERDICT.md)**（2026-10-11，**只有 2 个因子独立稳健**：ret20 / maxret20；amihud 是 loga20 的代理）。登记 `FACTOR_ORTHOGONALITY_PREREG.md` |
 | 推荐系统怎么用 | `DAILY_OPERATION.md`（运维手册）、`tdx_native/README.md` |
 | 候选过滤器调研结论 | `CANDIDATE_FILTERS_VERDICT.md` |
