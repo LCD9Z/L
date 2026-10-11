@@ -80,7 +80,8 @@ C20 分散（top_n=20） + V1 尾部剔除（剔除当日 ret20 最高 20%）
 | AOCI 代码认知索引 | `AOCI_INTEGRATION.md`（2026-10-04 引入，**已校验未启用**，只索引 `tdx_native/`） |
 | 外部项目借鉴 | `EXTERNAL_REVIEW_2026_10_06.md`（V3 独立验证了因子方向）、`GITHUB_ASHARE_QUANT_SURVEY.md`（Sequoia-X）、`docs/external/`（归档源码） |
 | 20 年历史数据可行性 | `LONG_HISTORY_FEASIBILITY_2026_10_06.md`（**结论：20 年数据不解决本项目问题**，1 亿门槛早年剔 97%） |
-| 跨年代方向验证 | **判定见 [`CROSS_DECADE_VERDICT.md`](CROSS_DECADE_VERDICT.md)**（2026-10-11，**方向稳健**：4 因子 6/6 窗口一致，amihud 0/6）。登记 `CROSS_DECADE_PREREG.md`；审阅包 `CROSS_DECADE_REVIEW_PACKAGE.md` |
+| 跨年代方向验证 | **判定见 [`CROSS_DECADE_VERDICT.md`](CROSS_DECADE_VERDICT.md)**（2026-10-11，**3 个独立信号方向稳健**）。登记 `CROSS_DECADE_PREREG.md`；审阅包 `CROSS_DECADE_REVIEW_PACKAGE.md`；**审阅回执** `CROSS_DECADE_REVIEW_RESPONSE.md`（海外版独立审阅，推翻 amihud 原结论） |
+| 因子正交化登记 | `FACTOR_ORTHOGONALITY_PREREG.md`（2026-10-11，**待执行**。检验"多因子"是否为同一共同因子的投影） |
 | 推荐系统怎么用 | `DAILY_OPERATION.md`（运维手册）、`tdx_native/README.md` |
 | 候选过滤器调研结论 | `CANDIDATE_FILTERS_VERDICT.md` |
 | Sequoia-X 等外部项目借鉴 | `GITHUB_ASHARE_QUANT_SURVEY.md` |
@@ -163,6 +164,39 @@ python -m tdx_native.fetch_names --out data/names.csv
 这意味着它**隐含地把研究限定在 2010 年后**，而这件事从未被写下来。
 → 加任何过滤器，都要问：「它在研究区间的**最早年份**还剩多少作用对象？」
 → 详见 [`LONG_HISTORY_FEASIBILITY_2026_10_06.md`](LONG_HISTORY_FEASIBILITY_2026_10_06.md)
+
+**⚠️ 门槛会「干预」因子——不只是缩小样本（2026-10-11 新增，重要）**
+
+若某个门槛的**筛选变量与因子共享同一个量**，该门槛对该因子就不是中性检验，
+而是**构造性干预**。
+
+实例（H-CD 跨年代验证的教训）：
+
+- `P2 = 按 20日均成交额取截面前 50%`
+- 而 `amihud = |ret| / amount`、`loga20 = log(amount)`
+- ⇒ **筛选变量就是这两个因子的定义变量**
+
+后果：用 P2 筛样本后，amihud 符号**六个窗口全部为负**（0/6）；
+不过滤时**六个窗口全部为正**（6/6）。这不是"因子不稳定"，
+而是**口径造成的**——用 X 的分母筛样本、再判断 X 的方向 = **循环论证**。
+
+→ **加任何门槛前，先问：这个筛选变量，和被检验的因子共享什么量？**
+→ 详见 [`CROSS_DECADE_VERDICT.md`](CROSS_DECADE_VERDICT.md) §五
+
+**因子间高相关会让「多因子」名不副实**
+
+实测（`reports/cross_decade/CORR.json`，逐调仓日横截面，跨窗口平均）：
+
+| | ret20 | vol20 | loga20 | maxret20 |
+|---|---|---|---|---|
+| ret20 | 1.00 | 0.19 | 0.12 | 0.40 |
+| vol20 | 0.19 | 1.00 | 0.35 | **0.82** |
+| loga20 | 0.12 | 0.35 | 1.00 | 0.32 |
+| maxret20 | 0.40 | **0.82** | 0.32 | 1.00 |
+
+`vol20 ↔ maxret20 = 0.82`（同一因子两说）；`amihud ↔ loga20 = −0.90`
+（同一变量两说）。**报「N 个因子一致」时必须同时报相关矩阵**，
+否则会高估独立性。
 
 **⚠️ 通达信下载/更新期间禁止跑回测**
 

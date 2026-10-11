@@ -6,6 +6,31 @@
 > ② 剔除"窗口内含超涨跌停跳空"的样本后，各因子 IC 下降 **18%~28%**。
 > **实现**：`scripts/run_tdx_universe_ic.py`（IC 层）、`scripts/run_five_factor_ab.py`（组合层）
 > **回退点**：git commit `c14d8c9`
+>
+> ---
+> ### ⚠️ 登记修订（2026-10-11，H-CD 独立审阅后）
+>
+> **原文把「① amihud 符号翻转」列为 \(S4\_no\_amihud\) 的动机——该动机已失效。**
+>
+> H-CD 跨年代验证查明：amihud 的符号**不是随机不稳定，而是流动性门槛的确定性函数**
+> （`P2 = 按成交额取前 50%`，**筛选变量就是 `amihud = |ret|/amount` 的分母**）。
+> 也就是说，「翻转」是**口径造成的**，不是 amihud 本身的问题。
+> 详见 [`CROSS_DECADE_VERDICT.md`](CROSS_DECADE_VERDICT.md) §五。
+>
+> **但不撤销本实验** —— `S4_no_amihud` 仍有独立理由：
+>
+> | 新理由 | 证据 |
+> |---|---|
+> | **与 loga20 高度冗余** | 实测相关 **−0.90**（六窗口稳定 −0.900 ~ −0.921，`reports/cross_decade/CORR.json`），与原文写的 −0.89 一致 |
+> | **跨年代方向无法判定** | H-CD §五：`P2` 被构造性干预、`P3` 被涨跌停污染 → 标 `INCONCLUSIVE` |
+>
+> **因此本实验的判定标准不变，但结论的表述必须改**：
+> 不得再写「amihud 复现失败」作为剔除理由，应写「**amihud 与 loga20 冗余
+> （相关 −0.90），且其独立方向不可判定**」。
+>
+> ⚠️ **同时新增限制**：`S4_no_amihud` 与 `S4_no_loga` 是**同一冗余关系的两侧**，
+> 二者不宜作为"两个独立候选"并列比较——它们检验的是同一件事。
+> 判定时须说明这一点。
 
 ---
 
@@ -16,10 +41,10 @@
 | 代号 | 组成 | 动机 |
 |------|------|------|
 | **S5_all** | ret20, vol20, amihud20, loga20, maxret20 | 现基线 |
-| **S4_no_amihud** | ret20, vol20, loga20, maxret20 | amihud 复现失败（符号翻转） |
-| S4_no_loga | ret20, vol20, amihud20, maxret20 | 流动性族另一半（与 amihud 相关 -0.89） |
+| **S4_no_amihud** | ret20, vol20, loga20, maxret20 | ⚠️ 动机已修订：**与 loga20 冗余（相关 −0.90）+ 独立方向不可判定**（原写「符号翻转」，该理由已失效，见上） |
+| S4_no_loga | ret20, vol20, amihud20, maxret20 | 流动性族另一半（与 amihud 相关 −0.90）——⚠️ 与 S4_no_amihud 是同一冗余的两侧 |
 | S3_core | ret20, vol20, maxret20 | 三个最强且稳健的反转/低波/MAX 因子 |
-| S2_vol_max | vol20, maxret20 | 最强两者（但彼此相关 +0.85） |
+| S2_vol_max | vol20, maxret20 | 最强两者（但彼此相关 **+0.82**，实测见 `CORR.json`） |
 
 ### 两层检验
 
