@@ -1,0 +1,54 @@
+{
+ "benchmark": {
+  "windows": [
+   {
+    "start": "2024-01-02",
+    "end": "2026-09-10",
+    "ew_pct": 34.757784159037875,
+    "hs300_pct": 34.3154133506578,
+    "diff_pp": 0.44237080838007703
+   },
+   {
+    "start": "2023-07-03",
+    "end": "2026-09-10",
+    "ew_pct": 32.16996531191927,
+    "hs300_pct": 16.838690121452494,
+    "diff_pp": 15.331275190466776
+   },
+   {
+    "start": "2025-01-02",
+    "end": "2026-09-10",
+    "ew_pct": 32.39782979556593,
+    "hs300_pct": 19.055334519945568,
+    "diff_pp": 13.342495275620369
+   },
+   {
+    "start": "2021-08-02",
+    "end": "2026-09-10",
+    "ew_pct": 51.92270958833034,
+    "hs300_pct": -7.810504809738649,
+    "diff_pp": 59.73321439806899
+   }
+  ],
+  "diagnostics": {
+   "dates": 1240,
+   "members_min": 1866,
+   "members_max": 1921,
+   "members_mean": 1889.79,
+   "universe_coverage": 0.3656
+  },
+  "stocks_2024_2026": {
+   "n": 1903,
+   "median_pct": 4.98670212765957,
+   "mean_pct": 25.911984547236962,
+   "positive_share": 0.5449290593799264
+  }
+ },
+ "factor_redundancy": {},
+ "args": {
+  "dataset": "D:/tdx_dataset_v3",
+  "n_stocks": 2000,
+  "out": "reports/v3_alpha_gap_probe_coverage.json",
+  "skip_factors": true
+ }
+}

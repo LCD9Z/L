@@ -1,0 +1,339 @@
+{
+ "alpha": 0.05,
+ "families": {
+  "v1 全样本 IC（10 因子）": {
+   "m": 10,
+   "rejected_uncorrected": 8,
+   "rejected_bh": 8,
+   "rejected_bonferroni": 8,
+   "bh_threshold": 0.04000000000000001,
+   "results": [
+    {
+     "name": "max_ret_20",
+     "t": -7.641655371483151,
+     "p": 2.1444654006309167e-14,
+     "p_adjusted_bh": 2.1444654006309166e-13,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 2.1444654006309166e-13,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "log_amount_20",
+     "t": -7.067803502922559,
+     "p": 1.5740521493098854e-12,
+     "p_adjusted_bh": 7.870260746549427e-12,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 1.5740521493098854e-11,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "vol_20",
+     "t": -6.0343039934382565,
+     "p": 1.5964927723368484e-09,
+     "p_adjusted_bh": 5.321642574456161e-09,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 1.5964927723368484e-08,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "ret_20",
+     "t": -5.585710559354166,
+     "p": 2.3274659858833812e-08,
+     "p_adjusted_bh": 5.8186649647084534e-08,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 2.3274659858833814e-07,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "vol_ratio",
+     "t": -5.45886255043424,
+     "p": 4.791945359585428e-08,
+     "p_adjusted_bh": 9.583890719170857e-08,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 4.791945359585428e-07,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "amihud_20",
+     "t": 3.77870725734701,
+     "p": 0.00015764461576527712,
+     "p_adjusted_bh": 0.0002627410262754618,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 0.001576446157652771,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "price",
+     "t": -3.732503492716097,
+     "p": 0.00018958606720573045,
+     "p_adjusted_bh": 0.0002708372388653292,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 0.0018958606720573044,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "ret_5",
+     "t": -3.3568907445121554,
+     "p": 0.0007882425366839504,
+     "p_adjusted_bh": 0.000985303170854938,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 0.007882425366839503,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "dist_high_20",
+     "t": 1.2629047249837202,
+     "p": 0.20662342168090325,
+     "p_adjusted_bh": 0.22958157964544806,
+     "rejected_bh": false,
+     "p_adjusted_bonferroni": 1.0,
+     "rejected_bonferroni": false
+    },
+    {
+     "name": "ret_1",
+     "t": 0.5331237961566939,
+     "p": 0.5939478876217766,
+     "p_adjusted_bh": 0.5939478876217766,
+     "rejected_bh": false,
+     "p_adjusted_bonferroni": 1.0,
+     "rejected_bonferroni": false
+    }
+   ]
+  },
+  "v2 全样本 IC（10 因子）": {
+   "m": 10,
+   "rejected_uncorrected": 9,
+   "rejected_bh": 9,
+   "rejected_bonferroni": 8,
+   "bh_threshold": 0.045000000000000005,
+   "results": [
+    {
+     "name": "max_ret_20",
+     "t": -12.188895235493387,
+     "p": 3.562176616729831e-34,
+     "p_adjusted_bh": 3.562176616729831e-33,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 3.562176616729831e-33,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "log_amount_20",
+     "t": -10.27902716760004,
+     "p": 8.760739044816123e-25,
+     "p_adjusted_bh": 4.3803695224080616e-24,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 8.760739044816123e-24,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "vol_20",
+     "t": -9.913218863119594,
+     "p": 3.6470311731106704e-23,
+     "p_adjusted_bh": 1.2156770577035567e-22,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 3.6470311731106703e-22,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "ret_20",
+     "t": -7.477257997832624,
+     "p": 7.588933947676555e-14,
+     "p_adjusted_bh": 1.8972334869191386e-13,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 7.588933947676555e-13,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "vol_ratio",
+     "t": -7.432339701631027,
+     "p": 1.0669336336467283e-13,
+     "p_adjusted_bh": 2.133867267293457e-13,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 1.0669336336467284e-12,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "ret_5",
+     "t": -5.238497466178582,
+     "p": 1.6188919860025647e-07,
+     "p_adjusted_bh": 2.434342646519832e-07,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 1.6188919860025646e-06,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "amihud_20",
+     "t": 5.229027537276836,
+     "p": 1.7040398525638824e-07,
+     "p_adjusted_bh": 2.434342646519832e-07,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 1.7040398525638824e-06,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "price",
+     "t": -3.599541475114357,
+     "p": 0.000318778788213091,
+     "p_adjusted_bh": 0.00039847348526636376,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 0.00318778788213091,
+     "rejected_bonferroni": true
+    },
+    {
+     "name": "dist_high_20",
+     "t": 2.300555850283096,
+     "p": 0.021416748982541114,
+     "p_adjusted_bh": 0.023796387758379015,
+     "rejected_bh": true,
+     "p_adjusted_bonferroni": 0.21416748982541114,
+     "rejected_bonferroni": false
+    },
+    {
+     "name": "ret_1",
+     "t": -1.4508027506517522,
+     "p": 0.1468347935194804,
+     "p_adjusted_bh": 0.1468347935194804,
+     "rejected_bh": false,
+     "p_adjusted_bonferroni": 1.0,
+     "rejected_bonferroni": false
+    }
+   ]
+  }
+ },
+ "notes": [
+  "检验之间不独立（同数据、相关因子、重叠窗口）→ BH 结果是参考下界，非严格 FDR 保证",
+  "v1 与 v2 是同一批因子的复检，不是两次独立假设；故按族分别校正并另报合并口径",
+  "策略层面实验无 p 值归档，无法逐项校正 —— 这是研究记录的结构性缺口，后续实验应在落盘时一并记录 p 值/置信区间"
+ ],
+ "combined": {
+  "m": 20,
+  "rejected_bh": 17
+ },
+ "strategy_family": {
+  "基线 V0 · v2 抽样池 · 对沪深300": {
+   "n_windows": 6,
+   "median_p": 0.17986845704199672,
+   "min_p": 0.024057024541844108,
+   "max_p": 0.34879081204737705,
+   "any_window_significant": true,
+   "windows": [
+    "2023-01-03",
+    "2023-07-03",
+    "2024-01-02",
+    "2024-07-01",
+    "2025-01-02",
+    "2025-07-01"
+   ]
+  },
+  "基线 V0 · v2 抽样池 · 对等权全市场": {
+   "n_windows": 6,
+   "median_p": 0.09400819464217391,
+   "min_p": 0.010497493949419123,
+   "max_p": 0.2776048217246325,
+   "any_window_significant": true,
+   "windows": [
+    "2023-01-03",
+    "2023-07-03",
+    "2024-01-02",
+    "2024-07-01",
+    "2025-01-02",
+    "2025-07-01"
+   ]
+  },
+  "基线 V0 · v3 全池 · 对沪深300": {
+   "n_windows": 6,
+   "median_p": 0.4140717766105424,
+   "min_p": 0.09582034909810644,
+   "max_p": 0.591038506638675,
+   "any_window_significant": false,
+   "windows": [
+    "2023-01-03",
+    "2023-07-03",
+    "2024-01-02",
+    "2024-07-01",
+    "2025-01-02",
+    "2025-07-01"
+   ]
+  },
+  "基线 V0 · v3 全池 · 对等权全市场": {
+   "n_windows": 6,
+   "median_p": 0.15700985200109652,
+   "min_p": 0.07041037097068914,
+   "max_p": 0.33086414030025146,
+   "any_window_significant": false,
+   "windows": [
+    "2023-01-03",
+    "2023-07-03",
+    "2024-01-02",
+    "2024-07-01",
+    "2025-01-02",
+    "2025-07-01"
+   ]
+  },
+  "基线 V0 · 固定池 600（v2 数据）": {
+   "n_windows": 2,
+   "median_p": 0.5208594010174437,
+   "min_p": 0.4113792309288211,
+   "max_p": 0.6303395711060662,
+   "any_window_significant": false,
+   "windows": [
+    "2024-01-02",
+    "2025-01-02"
+   ]
+  },
+  "基线 V0 · 固定池 600（v3 数据）": {
+   "n_windows": 2,
+   "median_p": 0.5208594010174437,
+   "min_p": 0.4113792309288211,
+   "max_p": 0.6303395711060662,
+   "any_window_significant": false,
+   "windows": [
+    "2024-01-02",
+    "2025-01-02"
+   ]
+  },
+  "_bh_on_median_p": {
+   "m": 6,
+   "rejected": 0
+  }
+ },
+ "family_wise": {
+  "n_ic_hypotheses": 10,
+  "n_strategy_configs": 13,
+  "n_hypotheses": 23,
+  "fwer_by_hypotheses": 0.6926431322749764,
+  "tests_with_p": 20,
+  "tests_without_p": 12,
+  "n_executions": 32,
+  "fwer_by_executions": 0.8062885155414992,
+  "strategy_configs": [
+   "基线 V0（内置动量追高）",
+   "H-C1 复合反转 · A/B 三阶段",
+   "尾部剔除 V1",
+   "尾部剔除 V2",
+   "集中度 C10",
+   "集中度 C20",
+   "集中度 C30",
+   "ADX 状态叠加",
+   "ADX 常数敞口对照",
+   "成本模型 legacy",
+   "成本模型 new",
+   "采样敏感性 4 组抽样",
+   "多股票池重复验证 6 组"
+  ],
+  "without_p_values": [
+   "H-C1 复合反转 · IC 层面（ALPHA_HYPOTHESIS_PREREG.md）",
+   "H-C1 复合反转 · 组合层面 A/B 一阶段（PORTFOLIO_AB_REPORT.md）",
+   "H-C1 复合反转 · 组合层面 A/B 二阶段（PORTFOLIO_AB_REPORT_2.md）",
+   "H-C1 复合反转 · 组合层面 A/B 三阶段（PORTFOLIO_AB_REPORT_3.md）",
+   "尾部剔除 V1（TAIL_EXCLUSION_REPORT.md）",
+   "尾部剔除 V2（TAIL_EXCLUSION_REPORT.md）",
+   "集中度 C10 / C20 / C30（CONCENTRATION_REPORT.md）",
+   "采样敏感性 4 组独立抽样（SAMPLING_SENSITIVITY_REPORT.md）",
+   "多股票池重复验证 6 组（UNIVERSE_REPLICATION_REPORT.md）",
+   "多窗口滚动检验 6 窗口（STEP1_3_EXECUTION_REPORT.md §5.2）",
+   "ADX 叠加 5 窗口 + 常数敞口对照 5 窗口（STEP1_3_EXECUTION_REPORT.md §6.4）",
+   "成本模型 legacy/new 对照 2 窗口（reports/cost_model_check.json）"
+  ]
+ }
+}

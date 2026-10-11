@@ -1,0 +1,215 @@
+{
+ "rows": [
+  {
+   "variant": "base_无过滤",
+   "window": "2024-01-02",
+   "annualized_excess_pct": 3.92,
+   "trades": 165,
+   "max_drawdown_pct": 30.243,
+   "filter_stats": {
+    "market_blocked_days": 0,
+    "turnover_excl_days": 0,
+    "turnover_excl_pairs": 0,
+    "streak_excl_days": 0,
+    "streak_excl_pairs": 0,
+    "tail_excl_days": 0,
+    "tail_excl_pairs": 0,
+    "enabled": {
+     "market": false,
+     "turnover": false,
+     "streak": false,
+     "tail": false
+    }
+   }
+  },
+  {
+   "variant": "tail_仅尾部剔除",
+   "window": "2024-01-02",
+   "annualized_excess_pct": 10.8,
+   "trades": 160,
+   "max_drawdown_pct": 30.7,
+   "filter_stats": {
+    "market_blocked_days": 0,
+    "turnover_excl_days": 0,
+    "turnover_excl_pairs": 0,
+    "streak_excl_days": 0,
+    "streak_excl_pairs": 0,
+    "tail_excl_days": 2574,
+    "tail_excl_pairs": 184091,
+    "enabled": {
+     "market": false,
+     "turnover": false,
+     "streak": false,
+     "tail": true
+    }
+   }
+  },
+  {
+   "variant": "tail+market_加信号派",
+   "window": "2024-01-02",
+   "annualized_excess_pct": 10.8,
+   "trades": 160,
+   "max_drawdown_pct": 30.7,
+   "filter_stats": {
+    "market_blocked_days": 10,
+    "turnover_excl_days": 0,
+    "turnover_excl_pairs": 0,
+    "streak_excl_days": 0,
+    "streak_excl_pairs": 0,
+    "tail_excl_days": 2574,
+    "tail_excl_pairs": 184091,
+    "enabled": {
+     "market": true,
+     "turnover": false,
+     "streak": false,
+     "tail": true
+    }
+   }
+  },
+  {
+   "variant": "tail+turnover_加逆向",
+   "window": "2024-01-02",
+   "annualized_excess_pct": 2.94,
+   "trades": 158,
+   "max_drawdown_pct": 34.631,
+   "filter_stats": {
+    "market_blocked_days": 0,
+    "turnover_excl_days": 2349,
+    "turnover_excl_pairs": 106516,
+    "streak_excl_days": 0,
+    "streak_excl_pairs": 0,
+    "tail_excl_days": 2574,
+    "tail_excl_pairs": 184091,
+    "enabled": {
+     "market": false,
+     "turnover": true,
+     "streak": false,
+     "tail": true
+    }
+   }
+  },
+  {
+   "variant": "tail+streak_加短线",
+   "window": "2024-01-02",
+   "annualized_excess_pct": 10.8,
+   "trades": 160,
+   "max_drawdown_pct": 30.7,
+   "filter_stats": {
+    "market_blocked_days": 0,
+    "turnover_excl_days": 0,
+    "turnover_excl_pairs": 0,
+    "streak_excl_days": 1334,
+    "streak_excl_pairs": 2060,
+    "tail_excl_days": 2574,
+    "tail_excl_pairs": 184091,
+    "enabled": {
+     "market": false,
+     "turnover": false,
+     "streak": true,
+     "tail": true
+    }
+   }
+  },
+  {
+   "variant": "combo_四专家组合",
+   "window": "2024-01-02",
+   "annualized_excess_pct": 4.02,
+   "trades": 158,
+   "max_drawdown_pct": 34.631,
+   "filter_stats": {
+    "market_blocked_days": 10,
+    "turnover_excl_days": 2349,
+    "turnover_excl_pairs": 106516,
+    "streak_excl_days": 1334,
+    "streak_excl_pairs": 2060,
+    "tail_excl_days": 2574,
+    "tail_excl_pairs": 184091,
+    "enabled": {
+     "market": true,
+     "turnover": true,
+     "streak": true,
+     "tail": true
+    }
+   }
+  }
+ ],
+ "summary": {
+  "base_无过滤": {
+   "mean": 3.92,
+   "vs_base": 0.0,
+   "n": 1,
+   "trades_mean": 165,
+   "dd_mean": 30.243,
+   "values": [
+    3.92
+   ]
+  },
+  "tail_仅尾部剔除": {
+   "mean": 10.8,
+   "vs_base": 6.880000000000001,
+   "n": 1,
+   "trades_mean": 160,
+   "dd_mean": 30.7,
+   "values": [
+    10.8
+   ]
+  },
+  "tail+market_加信号派": {
+   "mean": 10.8,
+   "vs_base": 6.880000000000001,
+   "n": 1,
+   "trades_mean": 160,
+   "dd_mean": 30.7,
+   "values": [
+    10.8
+   ]
+  },
+  "tail+turnover_加逆向": {
+   "mean": 2.94,
+   "vs_base": -0.98,
+   "n": 1,
+   "trades_mean": 158,
+   "dd_mean": 34.631,
+   "values": [
+    2.94
+   ]
+  },
+  "tail+streak_加短线": {
+   "mean": 10.8,
+   "vs_base": 6.880000000000001,
+   "n": 1,
+   "trades_mean": 160,
+   "dd_mean": 30.7,
+   "values": [
+    10.8
+   ]
+  },
+  "combo_四专家组合": {
+   "mean": 4.02,
+   "vs_base": 0.09999999999999964,
+   "n": 1,
+   "trades_mean": 158,
+   "dd_mean": 34.631,
+   "values": [
+    4.02
+   ]
+  }
+ },
+ "args": {
+  "dataset": "D:/tdx_dataset_v3",
+  "windows": "2024-01-02",
+  "max_stocks": 300,
+  "horizon": 20,
+  "top_n": 5,
+  "out": "reports/expert_filter_study.json"
+ },
+ "variants": [
+  "base_无过滤",
+  "tail_仅尾部剔除",
+  "tail+market_加信号派",
+  "tail+turnover_加逆向",
+  "tail+streak_加短线",
+  "combo_四专家组合"
+ ],
+ "complete": true
+}

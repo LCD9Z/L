@@ -1,0 +1,31 @@
+{
+ "windows": [
+  {
+   "oos_start": "2023-07-03",
+   "assets": 384,
+   "const05": {
+    "total_return_pct": -55.957,
+    "max_drawdown_pct": 58.93,
+    "trades": 735,
+    "win_rate_pct": 41.22,
+    "annualized_excess": -0.3150506448811604,
+    "verdict": "INCONCLUSIVE"
+   },
+   "regime_day_counts": {
+    "萌芽": 161,
+    "震荡": 305,
+    "明确": 311
+   }
+  }
+ ],
+ "args": {
+  "dataset": "D:/tdx_dataset",
+  "max_stocks": 400,
+  "min_periods": 252,
+  "windows": "2023-07-03",
+  "variants": "const05",
+  "config": "",
+  "out": "reports/adx_attr_w1.json",
+  "survivorship_evidence": ""
+ }
+}

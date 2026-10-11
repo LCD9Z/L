@@ -1,0 +1,54 @@
+{
+ "hypothesis": "H-D2",
+ "factor": "has_revision (预约披露变更次数 >= 1)",
+ "direction": "negative",
+ "ic_mean": 0.0019685215145028166,
+ "ic_std": 0.03994057648384131,
+ "t": 1.0028269743908984,
+ "p": 0.3159443515550291,
+ "n_periods": 414,
+ "subwindows": [
+  {
+   "start": "2016-08-01",
+   "end": "2021-06-30",
+   "n": 196,
+   "ic_mean": 0.00352647721404665,
+   "t": 1.2145944740407635,
+   "p": 0.22452079751102638
+  },
+  {
+   "start": "2021-07-01",
+   "end": "2026-09-30",
+   "n": 204,
+   "ic_mean": -0.0002682291133786781,
+   "t": -0.09717724705041049,
+   "p": 0.9225856367367111
+  }
+ ],
+ "group_diff_mean": -0.00044721237232443794,
+ "group_diff_t": -0.33098257404715703,
+ "group_diff_p": 0.7406576483125522,
+ "verdict": "不成立",
+ "factor_used": "advance",
+ "expected_direction": "positive",
+ "nonzero_frac_median": 0.10095022587336334,
+ "degenerate": false,
+ "cross_section_median": 921.0,
+ "cross_section_min": 100,
+ "with_revision_ratio": 0.09003161364094975,
+ "args": {
+  "dataset": "D:/tdx_dataset_v3",
+  "disclosures": "D:/tdx_dataset_v3/disclosure_dates.jsonl",
+  "pool": "",
+  "max_stocks": 1500,
+  "min_rows": 200,
+  "horizon": 5,
+  "step": 5,
+  "valid_days": 90,
+  "min_cross_section": 100,
+  "out": "reports/hd1_disclosure_advance.json",
+  "factor": "advance"
+ },
+ "elapsed_sec": 185.6,
+ "complete": true
+}

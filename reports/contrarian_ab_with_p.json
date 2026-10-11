@@ -1,0 +1,87 @@
+{
+ "results": {
+  "2024-01-02~2026-09-30": {
+   "A_baseline": {
+    "periods": 120,
+    "cohort_t_stat": -1.1601763416577997,
+    "cohort_p_value": 0.24597701721356113,
+    "cohort_mean_pct": -0.616,
+    "cohort_sd_pct": 5.812,
+    "trades": 1109,
+    "final_equity": 393216.9,
+    "total_return_pct": -60.68,
+    "annualized_pct": -32.43,
+    "max_drawdown_pct": 64.3,
+    "win_rate_pct": 45.54
+   },
+   "B_contrarian": {
+    "periods": 124,
+    "cohort_t_stat": 0.8938167659877758,
+    "cohort_p_value": 0.37141993714624366,
+    "cohort_mean_pct": 0.352,
+    "cohort_sd_pct": 4.382,
+    "trades": 2480,
+    "final_equity": 1383933.24,
+    "total_return_pct": 38.39,
+    "annualized_pct": 14.12,
+    "max_drawdown_pct": 32.79,
+    "win_rate_pct": 49.6
+   },
+   "benchmark": {
+    "days": 653,
+    "total_return_pct": 34.32,
+    "annualized_pct": 12.06
+   }
+  },
+  "2025-01-02~2026-09-30": {
+   "A_baseline": {
+    "periods": 75,
+    "cohort_t_stat": -0.10113539906532512,
+    "cohort_p_value": 0.9194429777072763,
+    "cohort_mean_pct": -0.059,
+    "cohort_sd_pct": 5.038,
+    "trades": 748,
+    "final_equity": 868920.71,
+    "total_return_pct": -13.11,
+    "annualized_pct": -9.01,
+    "max_drawdown_pct": 47.26,
+    "win_rate_pct": 43.58
+   },
+   "B_contrarian": {
+    "periods": 76,
+    "cohort_t_stat": 0.7156469278061761,
+    "cohort_p_value": 0.474209389142648,
+    "cohort_mean_pct": 0.33,
+    "cohort_sd_pct": 4.019,
+    "trades": 1520,
+    "final_equity": 1208861.92,
+    "total_return_pct": 20.89,
+    "annualized_pct": 13.4,
+    "max_drawdown_pct": 36.63,
+    "win_rate_pct": 48.42
+   },
+   "benchmark": {
+    "days": 411,
+    "total_return_pct": 19.06,
+    "annualized_pct": 11.29
+   }
+  }
+ },
+ "verdict": "[滑点=flat] B 年化超额两窗口均 > 2pp → 存在可实现 Alpha（样本内限定仍在）｜⚠️ 统计口径：B 自身收益 t = +0.89/+0.72（p = 0.37/0.47），与 0 无法区分；年化超额的 95% CI 宽约 ±31pp；±37pp。「超额 > 2pp」是点估计阈值规则、**非显著性检验** —— 本判定应视为 **INCONCLUSIVE（未达统计显著）**，不得作为「已证实存在 Alpha」引用。",
+ "params": {
+  "top_n": 20,
+  "horizon": 5,
+  "step": 5,
+  "threshold": 70,
+  "signs": {
+   "ret_20": -1,
+   "ret_5": -1,
+   "vol_20": -1,
+   "log_amount_20": -1,
+   "max_ret_20": -1,
+   "vol_ratio": -1,
+   "amihud_20": 1
+  },
+  "slip_mode": "flat"
+ }
+}

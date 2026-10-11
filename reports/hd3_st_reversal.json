@@ -1,0 +1,71 @@
+{
+ "hypothesis": "H-D3",
+ "delta_mean": -0.0021920581255806615,
+ "delta_std": 0.029954650579410005,
+ "t": -1.6477517731545817,
+ "p": 0.0994036191177814,
+ "n_periods": 507,
+ "subwindows": [
+  {
+   "start": "2016-08-01",
+   "end": "2021-06-30",
+   "n": 239,
+   "delta": -0.0022302868055199153,
+   "t": -1.1979725452608605,
+   "p": 0.23092770541424293
+  },
+  {
+   "start": "2021-07-01",
+   "end": "2026-09-30",
+   "n": 251,
+   "delta": -0.0018940388351524403,
+   "t": -0.9610379929519614,
+   "p": 0.3365330651199035
+  }
+ ],
+ "realizability": {
+  "liquidity_ratio": 0.35899285793224955,
+  "liquidity_pass": true,
+  "delta_after_excluding_unbuyable": -0.0035840470671365207,
+  "t_after_excluding": -2.8328660320257972,
+  "excluded_unbuyable": 2201,
+  "limit_ratio_obs": 575722,
+  "all_pass": false
+ },
+ "hd3b_ic_mean": 0.03131263079827771,
+ "hd3b_t": 2.742355932713922,
+ "hd3b_subwindows": [
+  {
+   "start": "2016-08-01",
+   "end": "2021-06-30",
+   "n": 183,
+   "ic": 0.0390563906555902,
+   "t": 2.042170560827871
+  },
+  {
+   "start": "2021-07-01",
+   "end": "2026-09-30",
+   "n": 251,
+   "ic": 0.025666781978006058,
+   "t": 1.8333355155888396
+  }
+ ],
+ "hd3b_verdict": "强支持",
+ "st_median_cross_section": 34,
+ "cyb_share_of_st": 0.16537800687285223,
+ "verdict": "不成立",
+ "args": {
+  "dataset": "D:/tdx_dataset_v3",
+  "pool": "",
+  "fundamentals": "D:/tdx_dataset_v3/fundamentals.jsonl",
+  "disclosures": "D:/tdx_dataset_v3/disclosure_dates.jsonl",
+  "max_stocks": 1500,
+  "min_rows": 200,
+  "horizon": 5,
+  "step": 5,
+  "min_cross_section": 100,
+  "out": "reports/hd3_st_reversal.json"
+ },
+ "elapsed_sec": 118.2,
+ "complete": true
+}

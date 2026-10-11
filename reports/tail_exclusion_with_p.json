@@ -1,0 +1,181 @@
+{
+ "rows": [
+  {
+   "variant": "V0_baseline",
+   "window": "2023-07-03",
+   "aligned": 776,
+   "trades": 747,
+   "win_rate_pct": 41.1,
+   "total_return_pct": -49.871,
+   "max_drawdown_pct": 50.114,
+   "benchmark_return_pct": 16.84,
+   "annualized_excess_pct": -23.59,
+   "t_stat": -1.4737460934785755,
+   "p_value": 0.1405499673070818
+  },
+  {
+   "variant": "V0_baseline",
+   "window": "2024-01-02",
+   "aligned": 652,
+   "trades": 628,
+   "win_rate_pct": 41.88,
+   "total_return_pct": -38.027,
+   "max_drawdown_pct": 41.501,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -26.58,
+   "t_stat": -1.542612967416231,
+   "p_value": 0.12292470984460069
+  },
+  {
+   "variant": "V0_baseline",
+   "window": "2025-01-02",
+   "aligned": 410,
+   "trades": 406,
+   "win_rate_pct": 43.35,
+   "total_return_pct": -33.092,
+   "max_drawdown_pct": 37.61,
+   "benchmark_return_pct": 19.06,
+   "annualized_excess_pct": -30.51,
+   "t_stat": -1.3345425053920612,
+   "p_value": 0.18202612630875015
+  },
+  {
+   "variant": "V1_excl_ret20_top20",
+   "window": "2023-07-03",
+   "aligned": 776,
+   "trades": 589,
+   "win_rate_pct": 41.43,
+   "total_return_pct": -39.835,
+   "max_drawdown_pct": 48.465,
+   "benchmark_return_pct": 16.84,
+   "annualized_excess_pct": -19.74,
+   "t_stat": -1.4479810140857423,
+   "p_value": 0.14762236046411603
+  },
+  {
+   "variant": "V1_excl_ret20_top20",
+   "window": "2024-01-02",
+   "aligned": 652,
+   "trades": 503,
+   "win_rate_pct": 42.94,
+   "total_return_pct": -19.461,
+   "max_drawdown_pct": 33.385,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -18.52,
+   "t_stat": -1.2824460194357727,
+   "p_value": 0.19968622958018178
+  },
+  {
+   "variant": "V1_excl_ret20_top20",
+   "window": "2025-01-02",
+   "aligned": 410,
+   "trades": 350,
+   "win_rate_pct": 42.29,
+   "total_return_pct": -17.469,
+   "max_drawdown_pct": 38.0,
+   "benchmark_return_pct": 19.06,
+   "annualized_excess_pct": -20.91,
+   "t_stat": -1.14159733448005,
+   "p_value": 0.25362143251117786
+  },
+  {
+   "variant": "V2_excl_ret20_volratio_top20",
+   "window": "2023-07-03",
+   "aligned": 776,
+   "trades": 549,
+   "win_rate_pct": 45.72,
+   "total_return_pct": 6.21,
+   "max_drawdown_pct": 32.688,
+   "benchmark_return_pct": 16.84,
+   "annualized_excess_pct": -3.23,
+   "t_stat": -0.28106646294688126,
+   "p_value": 0.7786594233995283
+  },
+  {
+   "variant": "V2_excl_ret20_volratio_top20",
+   "window": "2024-01-02",
+   "aligned": 652,
+   "trades": 475,
+   "win_rate_pct": 47.37,
+   "total_return_pct": 31.896,
+   "max_drawdown_pct": 16.803,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -1.3,
+   "t_stat": -0.10442204184996923,
+   "p_value": 0.9168344314335357
+  },
+  {
+   "variant": "V2_excl_ret20_volratio_top20",
+   "window": "2025-01-02",
+   "aligned": 410,
+   "trades": 332,
+   "win_rate_pct": 48.49,
+   "total_return_pct": 25.693,
+   "max_drawdown_pct": 13.837,
+   "benchmark_return_pct": 19.06,
+   "annualized_excess_pct": 2.75,
+   "t_stat": 0.16721454742037314,
+   "p_value": 0.8672012383861194
+  }
+ ],
+ "summary": {
+  "V0_baseline": {
+   "mean": -26.893333333333334,
+   "median": -26.58,
+   "positive": 0,
+   "min": -30.51,
+   "max": -23.59
+  },
+  "V1_excl_ret20_top20": {
+   "mean": -19.723333333333333,
+   "median": -19.74,
+   "positive": 0,
+   "min": -20.91,
+   "max": -18.52
+  },
+  "V2_excl_ret20_volratio_top20": {
+   "mean": -0.5933333333333334,
+   "median": -1.3,
+   "positive": 1,
+   "min": -3.23,
+   "max": 2.75
+  }
+ },
+ "cost_comparison": [
+  {
+   "variant": "V0_baseline",
+   "gross_pct": -33.294,
+   "net_pct": -49.871,
+   "drag_pct": 16.58,
+   "gross_trades": 748
+  },
+  {
+   "variant": "V1_excl_ret20_top20",
+   "gross_pct": -26.29,
+   "net_pct": -39.835,
+   "drag_pct": 13.55,
+   "gross_trades": 592
+  }
+ ],
+ "variants": {
+  "V0_baseline": [],
+  "V1_excl_ret20_top20": [
+   "ret_20"
+  ],
+  "V2_excl_ret20_volratio_top20": [
+   "ret_20",
+   "vol_ratio"
+  ]
+ },
+ "args": {
+  "dataset": "D:/tdx_dataset_v3",
+  "max_stocks": 400,
+  "windows": "2023-07-03,2024-01-02,2025-01-02",
+  "top_frac": 0.2,
+  "top_n": 5,
+  "position_pct": 0.25,
+  "horizon": 5,
+  "all_csv": false,
+  "out": "reports/tail_exclusion_with_p.json"
+ }
+}

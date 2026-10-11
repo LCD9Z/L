@@ -1,0 +1,90 @@
+{
+ "count": 120,
+ "results": [
+  {
+   "symbol": "sh600519",
+   "status": "OK",
+   "verdict": "一致",
+   "n_common": 118,
+   "dates_equal": true,
+   "n_extra_tencent": 2,
+   "extra_tencent_range": [
+    "2026-10-08",
+    "2026-10-09"
+   ],
+   "max_px_diff": 0.0,
+   "px_date": "",
+   "max_vol_rel": 2.776e-05,
+   "vol_date": "2026-09-14",
+   "host": "https://web.ifzq.gtimg.cn"
+  },
+  {
+   "symbol": "sz000001",
+   "status": "OK",
+   "verdict": "一致",
+   "n_common": 118,
+   "dates_equal": true,
+   "n_extra_tencent": 2,
+   "extra_tencent_range": [
+    "2026-10-08",
+    "2026-10-09"
+   ],
+   "max_px_diff": 0.0,
+   "px_date": "",
+   "max_vol_rel": 7.1e-07,
+   "vol_date": "2026-08-11",
+   "host": "https://web.ifzq.gtimg.cn"
+  },
+  {
+   "symbol": "sz300750",
+   "status": "OK",
+   "verdict": "一致",
+   "n_common": 118,
+   "dates_equal": true,
+   "n_extra_tencent": 2,
+   "extra_tencent_range": [
+    "2026-10-08",
+    "2026-10-09"
+   ],
+   "max_px_diff": 0.0,
+   "px_date": "",
+   "max_vol_rel": 2.89e-06,
+   "vol_date": "2026-08-14",
+   "host": "https://web.ifzq.gtimg.cn"
+  },
+  {
+   "symbol": "sh688981",
+   "status": "OK",
+   "verdict": "一致",
+   "n_common": 118,
+   "dates_equal": true,
+   "n_extra_tencent": 2,
+   "extra_tencent_range": [
+    "2026-10-08",
+    "2026-10-09"
+   ],
+   "max_px_diff": 0.0,
+   "px_date": "",
+   "max_vol_rel": 0.0,
+   "vol_date": "",
+   "host": "https://web.ifzq.gtimg.cn"
+  },
+  {
+   "symbol": "sz002594",
+   "status": "OK",
+   "verdict": "一致",
+   "n_common": 118,
+   "dates_equal": true,
+   "n_extra_tencent": 2,
+   "extra_tencent_range": [
+    "2026-10-08",
+    "2026-10-09"
+   ],
+   "max_px_diff": 0.0,
+   "px_date": "",
+   "max_vol_rel": 2.66e-06,
+   "vol_date": "2026-09-16",
+   "host": "https://web.ifzq.gtimg.cn"
+  }
+ ]
+}

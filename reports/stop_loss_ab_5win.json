@@ -1,0 +1,164 @@
+{
+ "rows": [
+  {
+   "variant": "A_固定持有",
+   "window": "2023-07-03",
+   "stop_atr_k": 0.0,
+   "annualized_excess_pct": -3.78,
+   "trades": 190,
+   "max_drawdown_pct": 45.48,
+   "win_rate_pct": 44.74,
+   "n_stops": 0,
+   "stop_rate_pct": 0.0,
+   "avg_days_to_stop": null
+  },
+  {
+   "variant": "B_ATR止损_k2.0",
+   "window": "2023-07-03",
+   "stop_atr_k": 2.0,
+   "annualized_excess_pct": 14.78,
+   "trades": 269,
+   "max_drawdown_pct": 32.21,
+   "win_rate_pct": 33.83,
+   "n_stops": 191,
+   "stop_rate_pct": 71.0,
+   "avg_days_to_stop": 9.57
+  },
+  {
+   "variant": "A_固定持有",
+   "window": "2024-01-02",
+   "stop_atr_k": 0.0,
+   "annualized_excess_pct": 10.8,
+   "trades": 160,
+   "max_drawdown_pct": 30.7,
+   "win_rate_pct": 50.0,
+   "n_stops": 0,
+   "stop_rate_pct": 0.0,
+   "avg_days_to_stop": null
+  },
+  {
+   "variant": "B_ATR止损_k2.0",
+   "window": "2024-01-02",
+   "stop_atr_k": 2.0,
+   "annualized_excess_pct": 10.73,
+   "trades": 228,
+   "max_drawdown_pct": 24.502,
+   "win_rate_pct": 32.89,
+   "n_stops": 162,
+   "stop_rate_pct": 71.05,
+   "avg_days_to_stop": 9.75
+  },
+  {
+   "variant": "A_固定持有",
+   "window": "2024-07-01",
+   "stop_atr_k": 0.0,
+   "annualized_excess_pct": 12.22,
+   "trades": 132,
+   "max_drawdown_pct": 28.817,
+   "win_rate_pct": 50.0,
+   "n_stops": 0,
+   "stop_rate_pct": 0.0,
+   "avg_days_to_stop": null
+  },
+  {
+   "variant": "B_ATR止损_k2.0",
+   "window": "2024-07-01",
+   "stop_atr_k": 2.0,
+   "annualized_excess_pct": 16.29,
+   "trades": 186,
+   "max_drawdown_pct": 29.326,
+   "win_rate_pct": 33.87,
+   "n_stops": 130,
+   "stop_rate_pct": 69.89,
+   "avg_days_to_stop": 10.23
+  },
+  {
+   "variant": "A_固定持有",
+   "window": "2025-01-02",
+   "stop_atr_k": 0.0,
+   "annualized_excess_pct": 20.92,
+   "trades": 100,
+   "max_drawdown_pct": 18.63,
+   "win_rate_pct": 51.0,
+   "n_stops": 0,
+   "stop_rate_pct": 0.0,
+   "avg_days_to_stop": null
+  },
+  {
+   "variant": "B_ATR止损_k2.0",
+   "window": "2025-01-02",
+   "stop_atr_k": 2.0,
+   "annualized_excess_pct": 24.11,
+   "trades": 141,
+   "max_drawdown_pct": 16.023,
+   "win_rate_pct": 36.88,
+   "n_stops": 95,
+   "stop_rate_pct": 67.38,
+   "avg_days_to_stop": 10.19
+  },
+  {
+   "variant": "A_固定持有",
+   "window": "2025-07-01",
+   "stop_atr_k": 0.0,
+   "annualized_excess_pct": -1.94,
+   "trades": 75,
+   "max_drawdown_pct": 20.358,
+   "win_rate_pct": 48.0,
+   "n_stops": 0,
+   "stop_rate_pct": 0.0,
+   "avg_days_to_stop": null
+  },
+  {
+   "variant": "B_ATR止损_k2.0",
+   "window": "2025-07-01",
+   "stop_atr_k": 2.0,
+   "annualized_excess_pct": 25.02,
+   "trades": 105,
+   "max_drawdown_pct": 17.546,
+   "win_rate_pct": 36.19,
+   "n_stops": 73,
+   "stop_rate_pct": 69.52,
+   "avg_days_to_stop": 10.29
+  }
+ ],
+ "summary": {
+  "A_固定持有": {
+   "mean": 7.644000000000001,
+   "dd_mean": 28.797,
+   "trades_mean": 131.4,
+   "stop_rate_mean": 0.0,
+   "avg_days_mean": null,
+   "values": [
+    -3.78,
+    10.8,
+    12.22,
+    20.92,
+    -1.94
+   ]
+  },
+  "B_ATR止损_k2.0": {
+   "mean": 18.186,
+   "dd_mean": 23.9214,
+   "trades_mean": 185.8,
+   "stop_rate_mean": 69.768,
+   "avg_days_mean": 10.006,
+   "values": [
+    14.78,
+    10.73,
+    16.29,
+    24.11,
+    25.02
+   ]
+  }
+ },
+ "args": {
+  "dataset": "D:/tdx_dataset_v3",
+  "windows": "2023-07-03,2024-01-02,2024-07-01,2025-01-02,2025-07-01",
+  "max_stocks": 300,
+  "horizon": 20,
+  "top_n": 5,
+  "stop_k": 2.0,
+  "out": "reports/stop_loss_ab_5win.json"
+ },
+ "complete": true
+}

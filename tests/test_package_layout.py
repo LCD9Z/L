@@ -37,7 +37,7 @@ PACKAGES = {
     "pit": [
         "pit_integrity", "pit_universe_builder", "pit_event_master",
         "pit_trading_filter", "pit_research_rows", "pit_fundamentals",
-        "pit_quarterly", "statistical_industry",
+        "pit_quarterly", "statistical_industry", "pit_snapshot_store",
     ],
     "tdx": ["tdx_csv_adapter", "tdx_inventory", "tdx_lifecycle"],
     "corporate": ["corporate_actions", "corporate_action_provider", "corporate_action_ingest"],

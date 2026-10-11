@@ -1,0 +1,39 @@
+{
+ "windows": [
+  {
+   "oos_start": "2025-07-01",
+   "assets": 367,
+   "baseline": {
+    "total_return_pct": -31.213,
+    "max_drawdown_pct": 43.27,
+    "trades": 294,
+    "win_rate_pct": 47.96,
+    "annualized_excess": -0.4282167399834013,
+    "verdict": "INCONCLUSIVE"
+   },
+   "overlay": {
+    "total_return_pct": -19.891,
+    "max_drawdown_pct": 29.638,
+    "trades": 294,
+    "win_rate_pct": 47.96,
+    "annualized_excess": -0.3112886564026227,
+    "verdict": "INCONCLUSIVE"
+   },
+   "excess_delta_pp": 11.693,
+   "regime_day_counts": {
+    "震荡": 136,
+    "萌芽": 64,
+    "明确": 94
+   }
+  }
+ ],
+ "args": {
+  "dataset": "D:/tdx_dataset",
+  "max_stocks": 400,
+  "min_periods": 252,
+  "windows": "2025-07-01",
+  "config": "",
+  "out": "reports/regime_overlay_study_w5.json",
+  "survivorship_evidence": ""
+ }
+}

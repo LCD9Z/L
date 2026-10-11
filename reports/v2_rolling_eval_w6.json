@@ -1,0 +1,31 @@
+{
+ "windows": [
+  {
+   "oos_start": "2025-07-01",
+   "aligned": 293,
+   "assets": 343,
+   "verdict": "ALPHA_NOT_ESTABLISHED",
+   "statistical_verdict": "ALPHA_NOT_ESTABLISHED",
+   "alpha_status": "RELEASABLE",
+   "annualized_excess": -0.21805430911798307,
+   "t_stat": -0.9606718661255103,
+   "p_value": 0.33671718136829476,
+   "ci_lower": -0.0025770368996568967,
+   "ci_upper": 0.0008026799071497324,
+   "benchmark_return_pct": 15.36,
+   "trades": 289,
+   "win_rate_pct": 43.6,
+   "total_return_pct": -14.544,
+   "max_drawdown_pct": 26.089
+  }
+ ],
+ "args": {
+  "dataset": "D:/tdx_dataset_v2",
+  "max_stocks": 400,
+  "min_periods": 252,
+  "min_rows_asset": 504,
+  "windows": "2025-07-01",
+  "out": "reports/v2_rolling_eval_w6.json",
+  "survivorship_evidence": "D:/tdx_dataset_v2/evidence.json"
+ }
+}

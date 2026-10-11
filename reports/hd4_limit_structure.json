@@ -1,0 +1,56 @@
+{
+ "hypothesis": "H-D4",
+ "factor": "one_way_rate_20",
+ "direction": "negative",
+ "raw_ic_mean": -0.01937517712596218,
+ "raw_t": -9.02439772308278,
+ "raw_n": 507,
+ "resid_ic_mean": 0.06429837575727608,
+ "resid_t": 9.729104037502102,
+ "resid_n": 507,
+ "subwindows": [
+  {
+   "start": "2016-08-01",
+   "end": "2021-06-30",
+   "n": 239,
+   "resid_ic": 0.05962487445453377,
+   "t": 7.5326366465292205,
+   "p": 4.972584311366352e-14
+  },
+  {
+   "start": "2021-07-01",
+   "end": "2026-09-30",
+   "n": 251,
+   "resid_ic": 0.06673230178101187,
+   "t": 6.233889934737897,
+   "p": 4.5499282136542357e-10
+  }
+ ],
+ "ortho_order": [
+  "log_amount_20",
+  "vol_20",
+  "max_ret_20",
+  "one_way_rate_20"
+ ],
+ "ortho_success_periods": 507,
+ "corr_with_max_ret_20": 0.13542892823650385,
+ "diag_resid_ic_without_max_ret_20": 0.06281055167290214,
+ "diag_resid_t_without_max_ret_20": 8.892446724391338,
+ "verdict": "不成立",
+ "nonzero_frac_median": 0.012789768185451638,
+ "degenerate": true,
+ "degeneracy_floor": 0.05,
+ "skipped_no_limit_ratio": 3053,
+ "args": {
+  "dataset": "D:/tdx_dataset_v3",
+  "pool": "",
+  "max_stocks": 1500,
+  "min_rows": 200,
+  "horizon": 5,
+  "step": 5,
+  "min_cross_section": 100,
+  "out": "reports/hd4_limit_structure.json"
+ },
+ "elapsed_sec": 262.1,
+ "complete": true
+}

@@ -1,0 +1,323 @@
+{
+ "rows": [
+  {
+   "combo": "C5_V0_基线",
+   "top_n": 5,
+   "pos_pct": 0.25,
+   "exclusions": [],
+   "window": "2023-07-03",
+   "trades": 195,
+   "total_return_pct": 1.764,
+   "max_drawdown_pct": 36.739,
+   "benchmark_return_pct": 16.84,
+   "annualized_excess_pct": -1.08,
+   "t_stat": -0.07879843716665301,
+   "p_value": 0.9371929471441811
+  },
+  {
+   "combo": "C5_V0_基线",
+   "top_n": 5,
+   "pos_pct": 0.25,
+   "exclusions": [],
+   "window": "2024-01-02",
+   "trades": 165,
+   "total_return_pct": 38.707,
+   "max_drawdown_pct": 30.243,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": 3.92,
+   "t_stat": 0.2653557145183863,
+   "p_value": 0.7907354482837319
+  },
+  {
+   "combo": "C5_V0_基线",
+   "top_n": 5,
+   "pos_pct": 0.25,
+   "exclusions": [],
+   "window": "2025-01-02",
+   "trades": 105,
+   "total_return_pct": 39.382,
+   "max_drawdown_pct": 17.866,
+   "benchmark_return_pct": 19.06,
+   "annualized_excess_pct": 12.8,
+   "t_stat": 0.7591661398199908,
+   "p_value": 0.44775317838466444
+  },
+  {
+   "combo": "C5_V2_仅尾部剔除",
+   "top_n": 5,
+   "pos_pct": 0.25,
+   "exclusions": [
+    "ret_20",
+    "vol_ratio"
+   ],
+   "window": "2023-07-03",
+   "trades": 190,
+   "total_return_pct": -6.624,
+   "max_drawdown_pct": 45.48,
+   "benchmark_return_pct": 16.84,
+   "annualized_excess_pct": -3.78,
+   "t_stat": -0.2795626186988529,
+   "p_value": 0.7798130898646705
+  },
+  {
+   "combo": "C5_V2_仅尾部剔除",
+   "top_n": 5,
+   "pos_pct": 0.25,
+   "exclusions": [
+    "ret_20",
+    "vol_ratio"
+   ],
+   "window": "2024-01-02",
+   "trades": 160,
+   "total_return_pct": 66.402,
+   "max_drawdown_pct": 30.7,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": 10.8,
+   "t_stat": 0.7730236530176254,
+   "p_value": 0.4395083824825623
+  },
+  {
+   "combo": "C5_V2_仅尾部剔除",
+   "top_n": 5,
+   "pos_pct": 0.25,
+   "exclusions": [
+    "ret_20",
+    "vol_ratio"
+   ],
+   "window": "2025-01-02",
+   "trades": 100,
+   "total_return_pct": 60.29,
+   "max_drawdown_pct": 18.63,
+   "benchmark_return_pct": 19.06,
+   "annualized_excess_pct": 20.92,
+   "t_stat": 1.2673032632092587,
+   "p_value": 0.20504687416803735
+  },
+  {
+   "combo": "C20_V0_仅分散",
+   "top_n": 20,
+   "pos_pct": 0.05,
+   "exclusions": [],
+   "window": "2023-07-03",
+   "trades": 779,
+   "total_return_pct": -16.641,
+   "max_drawdown_pct": 47.415,
+   "benchmark_return_pct": 16.84,
+   "annualized_excess_pct": -9.0,
+   "t_stat": -0.9490074869352936,
+   "p_value": 0.3426168042299529
+  },
+  {
+   "combo": "C20_V0_仅分散",
+   "top_n": 20,
+   "pos_pct": 0.05,
+   "exclusions": [],
+   "window": "2024-01-02",
+   "trades": 657,
+   "total_return_pct": 2.781,
+   "max_drawdown_pct": 31.649,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -8.75,
+   "t_stat": -0.896932141597365,
+   "p_value": 0.36975512783880493
+  },
+  {
+   "combo": "C20_V0_仅分散",
+   "top_n": 20,
+   "pos_pct": 0.05,
+   "exclusions": [],
+   "window": "2025-01-02",
+   "trades": 419,
+   "total_return_pct": 31.009,
+   "max_drawdown_pct": 14.795,
+   "benchmark_return_pct": 19.06,
+   "annualized_excess_pct": 7.9,
+   "t_stat": 0.6684812250456165,
+   "p_value": 0.5038264625510558
+  },
+  {
+   "combo": "C20_V2_联合",
+   "top_n": 20,
+   "pos_pct": 0.05,
+   "exclusions": [
+    "ret_20",
+    "vol_ratio"
+   ],
+   "window": "2023-07-03",
+   "trades": 722,
+   "total_return_pct": -9.169,
+   "max_drawdown_pct": 40.141,
+   "benchmark_return_pct": 16.84,
+   "annualized_excess_pct": -6.49,
+   "t_stat": -0.7070911240959403,
+   "p_value": 0.47950985144920466
+  },
+  {
+   "combo": "C20_V2_联合",
+   "top_n": 20,
+   "pos_pct": 0.05,
+   "exclusions": [
+    "ret_20",
+    "vol_ratio"
+   ],
+   "window": "2024-01-02",
+   "trades": 599,
+   "total_return_pct": 9.153,
+   "max_drawdown_pct": 28.254,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -6.45,
+   "t_stat": -0.6545968999425217,
+   "p_value": 0.5127273205642444
+  },
+  {
+   "combo": "C20_V2_联合",
+   "top_n": 20,
+   "pos_pct": 0.05,
+   "exclusions": [
+    "ret_20",
+    "vol_ratio"
+   ],
+   "window": "2025-01-02",
+   "trades": 397,
+   "total_return_pct": 9.234,
+   "max_drawdown_pct": 19.259,
+   "benchmark_return_pct": 19.06,
+   "annualized_excess_pct": -3.54,
+   "t_stat": -0.3041677548908525,
+   "p_value": 0.7610000895550721
+  },
+  {
+   "combo": "C30_V2_联合",
+   "top_n": 30,
+   "pos_pct": 0.033,
+   "exclusions": [
+    "ret_20",
+    "vol_ratio"
+   ],
+   "window": "2023-07-03",
+   "trades": 1020,
+   "total_return_pct": -10.685,
+   "max_drawdown_pct": 33.637,
+   "benchmark_return_pct": 16.84,
+   "annualized_excess_pct": -7.41,
+   "t_stat": -0.8901714838174716,
+   "p_value": 0.3733738140414895
+  },
+  {
+   "combo": "C30_V2_联合",
+   "top_n": 30,
+   "pos_pct": 0.033,
+   "exclusions": [
+    "ret_20",
+    "vol_ratio"
+   ],
+   "window": "2024-01-02",
+   "trades": 854,
+   "total_return_pct": 11.485,
+   "max_drawdown_pct": 25.757,
+   "benchmark_return_pct": 34.32,
+   "annualized_excess_pct": -6.06,
+   "t_stat": -0.6692458419976894,
+   "p_value": 0.5033386679524079
+  },
+  {
+   "combo": "C30_V2_联合",
+   "top_n": 30,
+   "pos_pct": 0.033,
+   "exclusions": [
+    "ret_20",
+    "vol_ratio"
+   ],
+   "window": "2025-01-02",
+   "trades": 586,
+   "total_return_pct": 10.675,
+   "max_drawdown_pct": 15.744,
+   "benchmark_return_pct": 19.06,
+   "annualized_excess_pct": -3.07,
+   "t_stat": -0.28566744848932013,
+   "p_value": 0.7751328385100893
+  }
+ ],
+ "summary": {
+  "C5_V0_基线": {
+   "n_windows": 3,
+   "mean": 5.213333333333334,
+   "std": 7.029803221522871,
+   "range": 13.88,
+   "positive_windows": 2,
+   "trades_mean": 155,
+   "values": [
+    -1.08,
+    3.92,
+    12.8
+   ]
+  },
+  "C5_V2_仅尾部剔除": {
+   "n_windows": 3,
+   "mean": 9.313333333333334,
+   "std": 12.41692930371005,
+   "range": 24.700000000000003,
+   "positive_windows": 2,
+   "trades_mean": 150,
+   "values": [
+    -3.78,
+    10.8,
+    20.92
+   ]
+  },
+  "C20_V0_仅分散": {
+   "n_windows": 3,
+   "mean": -3.283333333333333,
+   "std": 9.685857387621054,
+   "range": 16.9,
+   "positive_windows": 1,
+   "trades_mean": 618.3333333333334,
+   "values": [
+    -9.0,
+    -8.75,
+    7.9
+   ]
+  },
+  "C20_V2_联合": {
+   "n_windows": 3,
+   "mean": -5.493333333333333,
+   "std": 1.6917545133184464,
+   "range": 2.95,
+   "positive_windows": 0,
+   "trades_mean": 572.6666666666666,
+   "values": [
+    -6.49,
+    -6.45,
+    -3.54
+   ]
+  },
+  "C30_V2_联合": {
+   "n_windows": 3,
+   "mean": -5.513333333333334,
+   "std": 2.221043298392297,
+   "range": 4.34,
+   "positive_windows": 0,
+   "trades_mean": 820,
+   "values": [
+    -7.41,
+    -6.06,
+    -3.07
+   ]
+  }
+ },
+ "args": {
+  "dataset": "D:/tdx_dataset_v3",
+  "windows": "2023-07-03,2024-01-02,2025-01-02",
+  "max_stocks": 300,
+  "top_frac": 0.2,
+  "threshold": 70.0,
+  "horizon": 20,
+  "out": "reports/combo_study_h20_fixed.json"
+ },
+ "windows": [
+  "2023-07-03",
+  "2024-01-02",
+  "2025-01-02"
+ ],
+ "complete": true
+}

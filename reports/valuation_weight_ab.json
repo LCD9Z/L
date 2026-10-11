@@ -1,0 +1,116 @@
+{
+ "rows": [
+  {
+   "variant": "A_等权",
+   "window": "2023-07-03",
+   "annualized_excess_pct": -3.78,
+   "trades": 190,
+   "max_drawdown_pct": 45.48,
+   "total_return_pct": -6.624
+  },
+  {
+   "variant": "B_估值加权",
+   "window": "2023-07-03",
+   "annualized_excess_pct": -11.56,
+   "trades": 190,
+   "max_drawdown_pct": 45.155,
+   "total_return_pct": -26.664
+  },
+  {
+   "variant": "A_等权",
+   "window": "2024-01-02",
+   "annualized_excess_pct": 10.8,
+   "trades": 160,
+   "max_drawdown_pct": 30.7,
+   "total_return_pct": 66.402
+  },
+  {
+   "variant": "B_估值加权",
+   "window": "2024-01-02",
+   "annualized_excess_pct": 2.05,
+   "trades": 160,
+   "max_drawdown_pct": 30.7,
+   "total_return_pct": 31.069
+  },
+  {
+   "variant": "A_等权",
+   "window": "2025-01-02",
+   "annualized_excess_pct": 20.92,
+   "trades": 100,
+   "max_drawdown_pct": 18.63,
+   "total_return_pct": 60.29
+  },
+  {
+   "variant": "B_估值加权",
+   "window": "2025-01-02",
+   "annualized_excess_pct": 19.62,
+   "trades": 100,
+   "max_drawdown_pct": 16.697,
+   "total_return_pct": 57.334
+  }
+ ],
+ "summary": {
+  "A_等权": {
+   "mean": 9.313333333333334,
+   "median": 10.8,
+   "dd_mean": 31.60333333333333,
+   "values": [
+    -3.78,
+    10.8,
+    20.92
+   ]
+  },
+  "B_估值加权": {
+   "mean": 3.37,
+   "median": 2.05,
+   "dd_mean": 30.850666666666665,
+   "values": [
+    -11.56,
+    2.05,
+    19.62
+   ]
+  },
+  "paired": {
+   "deltas": [
+    -7.780000000000001,
+    -8.75,
+    -1.3000000000000007
+   ],
+   "median": -7.780000000000001,
+   "mean": -5.943333333333334,
+   "t": -2.5415240013892904
+  }
+ },
+ "args": {
+  "dataset": "D:/tdx_dataset_v3",
+  "windows": "2023-07-03,2024-01-02,2025-01-02",
+  "max_stocks": 300,
+  "horizon": 20,
+  "top_n": 5,
+  "metric": "pe_ttm",
+  "out": "reports/valuation_weight_ab.json"
+ },
+ "weight_stats": {
+  "metric": "pe_ttm",
+  "days_covered": 39,
+  "n_low": 2583,
+  "n_mid": 2681,
+  "n_high": 2618,
+  "weights": {
+   "low": 1.5,
+   "mid": 1.0,
+   "high": 0.5
+  },
+  "cut_points": {
+   "low_pct": 0.33,
+   "high_pct": 0.67
+  },
+  "coverage": {
+   "date": "2026-08-19",
+   "requested": 300,
+   "covered": 286,
+   "ratio": 0.9533333333333334
+  }
+ },
+ "complete": true
+}

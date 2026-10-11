@@ -1,0 +1,1466 @@
+{
+  "swallowed_exceptions": [
+    {
+      "file": "agents_base.py",
+      "line": 24,
+      "type": "Exception"
+    },
+    {
+      "file": "crawl4ai_fetcher.py",
+      "line": 79,
+      "type": "ValueError"
+    },
+    {
+      "file": "data_quality.py",
+      "line": 46,
+      "type": "(TypeError, ValueError, ZeroDivisionError)"
+    },
+    {
+      "file": "llm_client.py",
+      "line": 107,
+      "type": "json.JSONDecodeError"
+    },
+    {
+      "file": "main.py",
+      "line": 92,
+      "type": "(ValueError, IndexError)"
+    },
+    {
+      "file": "public_daily_source.py",
+      "line": 39,
+      "type": "OSError"
+    },
+    {
+      "file": "screen_pipeline.py",
+      "line": 70,
+      "type": "(TypeError, ValueError)"
+    },
+    {
+      "file": "factors\\factor_registry.py",
+      "line": 67,
+      "type": "(TypeError, ValueError)"
+    },
+    {
+      "file": "risk\\liquidity.py",
+      "line": 22,
+      "type": "Exception"
+    },
+    {
+      "file": "risk\\liquidity.py",
+      "line": 14,
+      "type": "Exception"
+    },
+    {
+      "file": "runtime\\runtime_env.py",
+      "line": 41,
+      "type": "OSError"
+    },
+    {
+      "file": "runtime\\runtime_profile.py",
+      "line": 47,
+      "type": "ValueError"
+    },
+    {
+      "file": "scripts\\update_certified_dataset.py",
+      "line": 119,
+      "type": "(TypeError, ValueError)"
+    }
+  ],
+  "silent_defaults": [
+    {
+      "file": "backtest_engine.py",
+      "line": 56,
+      "expr": "bar.get('open') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "backtest_engine.py",
+      "line": 56,
+      "expr": "bar.get('low') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "backtest_engine.py",
+      "line": 62,
+      "expr": "bar.get('open') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "backtest_engine.py",
+      "line": 62,
+      "expr": "bar.get('high') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "candidate_prefilter.py",
+      "line": 9,
+      "expr": "fact_sheet.get('quote') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "candidate_prefilter.py",
+      "line": 10,
+      "expr": "fact_sheet.get('meta') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "candidate_prefilter.py",
+      "line": 12,
+      "expr": "fact_sheet.get('kline') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "candidate_prefilter.py",
+      "line": 26,
+      "expr": "fact_sheet.get('event_risk') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "candidate_prefilter.py",
+      "line": 11,
+      "expr": "meta.get('code') or q.get('code') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "candidate_prefilter.py",
+      "line": 25,
+      "expr": "fact_sheet.get('quant_score') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "crawl4ai_fetcher.py",
+      "line": 170,
+      "expr": "getattr(result, 'html', '') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "crawl4ai_fetcher.py",
+      "line": 185,
+      "expr": "getattr(result, 'cleaned_html', None) or getattr(result, 'html', None) or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "crawl4ai_fetcher.py",
+      "line": 296,
+      "expr": "x.get('published_at') or x.get('crawled_at') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "daily_stock_pick.py",
+      "line": 93,
+      "expr": "proc.stdout or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "daily_stock_pick.py",
+      "line": 93,
+      "expr": "proc.stderr or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "daily_stock_pick.py",
+      "line": 171,
+      "expr": "x.get('综合评分') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "historical_universe.py",
+      "line": 12,
+      "expr": "data.get('stocks') or data.get('codes') or data.get('items') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "industry_context.py",
+      "line": 47,
+      "expr": "stock.get('核心逻辑') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "industry_context.py",
+      "line": 46,
+      "expr": "stock.get('综合评分') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "market_regime.py",
+      "line": 42,
+      "expr": "bars.get(code) or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "orchestrator.py",
+      "line": 98,
+      "expr": "self.session.analyst_reports or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "phase15_governance.py",
+      "line": 44,
+      "expr": "validation.get('data_quality') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "phase15_governance.py",
+      "line": 45,
+      "expr": "validation.get('performance') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "phase15_governance.py",
+      "line": 46,
+      "expr": "validation.get('red_team_audit') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "phase15_governance.py",
+      "line": 32,
+      "expr": "validation.get('issues') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "phase15_governance.py",
+      "line": 43,
+      "expr": "validation.get('issues') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "pool_manager.py",
+      "line": 58,
+      "expr": "s.get('核心逻辑') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "pool_manager.py",
+      "line": 64,
+      "expr": "w.get('note') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "pool_manager.py",
+      "line": 66,
+      "expr": "s.get('综合评分') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "pool_manager.py",
+      "line": 127,
+      "expr": "r.get('核心逻辑') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "pool_manager.py",
+      "line": 129,
+      "expr": "r.get('综合评分') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "pool_manager.py",
+      "line": 74,
+      "expr": "w.get('note') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "pool_manager.py",
+      "line": 74,
+      "expr": "w.get('note') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "portfolio_backtest.py",
+      "line": 97,
+      "expr": "hist[-1].get('amount') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "real_alpha_pipeline.py",
+      "line": 51,
+      "expr": "r.get('volume') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "real_alpha_pipeline.py",
+      "line": 51,
+      "expr": "r.get('amount') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "release_gate.py",
+      "line": 84,
+      "expr": "ev.get('missing_delisted_codes') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "run_ci.py",
+      "line": 185,
+      "expr": "suite.get(key, '0') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "screen_pipeline.py",
+      "line": 60,
+      "expr": "row.get('factors') or row.get('factor') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "screen_pipeline.py",
+      "line": 134,
+      "expr": "enrich(row) or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "v3_data_bus.py",
+      "line": 26,
+      "expr": "fact.get('kline', []) or fact.get('history', {}).get('bars', []) or fact.get('bars', []) or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "v3_data_bus.py",
+      "line": 38,
+      "expr": "fact.get('news', []) or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "v3_data_bus.py",
+      "line": 51,
+      "expr": "fact.get('events') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "v3_data_bus.py",
+      "line": 59,
+      "expr": "fact.get('quality') or fact.get('meta', {}).get('quality') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "v3_data_bus.py",
+      "line": 53,
+      "expr": "fact.get('moneyflow') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "v3_data_bus.py",
+      "line": 54,
+      "expr": "fact.get('top_list') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "v3_data_bus.py",
+      "line": 23,
+      "expr": "fact.get('quote') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "v3_data_bus.py",
+      "line": 30,
+      "expr": "row.get('date') or row.get('trade_date') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "v3_data_bus.py",
+      "line": 40,
+      "expr": "row.get('title') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "ashare\\ashare_cross_section.py",
+      "line": 41,
+      "expr": "r.get('factors') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "ashare\\ashare_event_engine.py",
+      "line": 57,
+      "expr": "_text(r.get('source_url') or r.get('url')) or None",
+      "sentinel": "None"
+    },
+    {
+      "file": "ashare\\ashare_factor_engine.py",
+      "line": 32,
+      "expr": "x.get('trade_date') or x.get('date') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "ashare\\ashare_flow_engine.py",
+      "line": 44,
+      "expr": "r.get('reason') or r.get('name') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "ashare\\ashare_market.py",
+      "line": 65,
+      "expr": "x.get('date') or x.get('trade_date') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "ashare\\ashare_universe.py",
+      "line": 12,
+      "expr": "row.get('code') or row.get('ts_code') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "ashare\\ashare_universe.py",
+      "line": 50,
+      "expr": "row.get('quant_score') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "corporate\\corporate_actions.py",
+      "line": 168,
+      "expr": "action.get('cash_dividend', 0.0) or 0.0",
+      "sentinel": "0.0"
+    },
+    {
+      "file": "factors\\factor_gate.py",
+      "line": 55,
+      "expr": "report.get('horizons') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "factors\\factor_gate.py",
+      "line": 77,
+      "expr": "corr.get(f, {}).get(k) or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "factors\\factor_ic_lab.py",
+      "line": 93,
+      "expr": "b.get('amount') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "factors\\factor_ic_lab.py",
+      "line": 94,
+      "expr": "b.get('volume') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "factors\\factor_ic_lab.py",
+      "line": 571,
+      "expr": "p['factors'].get(f) or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "fetch\\akshare_source.py",
+      "line": 110,
+      "expr": "row.get('日期') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "fetch\\kline.py",
+      "line": 50,
+      "expr": "(data or {}).get('klines') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "fetch\\kline.py",
+      "line": 83,
+      "expr": "(d.get('data') or {}).get(tx_code) or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "fetch\\kline.py",
+      "line": 84,
+      "expr": "node.get('qfqday') or node.get('day') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "fetch\\kline.py",
+      "line": 83,
+      "expr": "d.get('data') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "fetch\\news.py",
+      "line": 66,
+      "expr": "(data.get('result') or {}).get('cmsArticleWebOld') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "fetch\\news.py",
+      "line": 207,
+      "expr": "sheet.get('quant_factors') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "fetch\\news.py",
+      "line": 208,
+      "expr": "sheet.get('quant_score') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "fetch\\news.py",
+      "line": 217,
+      "expr": "sheet.get('kline') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "fetch\\news.py",
+      "line": 236,
+      "expr": "sheet.get('news') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "fetch\\news.py",
+      "line": 169,
+      "expr": "q.get('quote_time') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "fetch\\news.py",
+      "line": 173,
+      "expr": "q.get('note') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "fetch\\news.py",
+      "line": 111,
+      "expr": "row.get('url') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "fetch\\news.py",
+      "line": 66,
+      "expr": "data.get('result') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "fetch\\quote.py",
+      "line": 45,
+      "expr": "data.get('f57') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "notify\\feishu_notifier.py",
+      "line": 87,
+      "expr": "session.trade_proposal.content or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "notify\\feishu_notifier.py",
+      "line": 97,
+      "expr": "session.final_decision.content or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "notify\\lark_notify.py",
+      "line": 94,
+      "expr": "s.get('深析决策') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "pit\\pit_fundamentals.py",
+      "line": 133,
+      "expr": "record.get('report_period') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "pit\\pit_fundamentals.py",
+      "line": 139,
+      "expr": "record.get('announce_date') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "pit\\pit_fundamentals.py",
+      "line": 159,
+      "expr": "r.get('report_period') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "pit\\pit_fundamentals.py",
+      "line": 134,
+      "expr": "record.get('code') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "pit\\pit_fundamentals.py",
+      "line": 197,
+      "expr": "r.get('report_period') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "pit\\pit_fundamentals.py",
+      "line": 198,
+      "expr": "r.get('actual_disclose') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "pit\\pit_fundamentals.py",
+      "line": 196,
+      "expr": "r.get('code') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "regime\\adx_router.py",
+      "line": 229,
+      "expr": "self.config.get('manual_override') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "reporting\\report_generator.py",
+      "line": 208,
+      "expr": "report.recommendation or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "reporting\\report_generator.py",
+      "line": 337,
+      "expr": "report.recommendation or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "reporting\\report_generator.py",
+      "line": 394,
+      "expr": "report.recommendation or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "risk\\liquidity.py",
+      "line": 18,
+      "expr": "row.get('close') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "risk\\liquidity.py",
+      "line": 19,
+      "expr": "row.get('volume') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "risk\\liquidity.py",
+      "line": 50,
+      "expr": "b['amount'] or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "risk\\market_risk_gate.py",
+      "line": 113,
+      "expr": "_f(bar.get('limit_ratio')) or 0.0",
+      "sentinel": "0.0"
+    },
+    {
+      "file": "risk\\market_risk_gate.py",
+      "line": 106,
+      "expr": "bar.get('date') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "risk\\market_risk_gate.py",
+      "line": 244,
+      "expr": "risk_by_day.get(str(day)) or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "risk\\market_risk_gate.py",
+      "line": 238,
+      "expr": "risk_by_day.get(d) or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "scripts\\build_certified_dataset_v2.py",
+      "line": 149,
+      "expr": "row.get('code') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\enumerate_delisted_universe.py",
+      "line": 136,
+      "expr": "(data.get('data') or {}).get(code) or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "scripts\\enumerate_delisted_universe.py",
+      "line": 137,
+      "expr": "inner.get('qfqday') or inner.get('day') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "scripts\\enumerate_delisted_universe.py",
+      "line": 136,
+      "expr": "data.get('data') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "scripts\\fetch_corporate_actions.py",
+      "line": 129,
+      "expr": "res.get('data') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "scripts\\fetch_corporate_actions.py",
+      "line": 113,
+      "expr": "data.get('result') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "scripts\\fetch_corporate_actions.py",
+      "line": 131,
+      "expr": "res.get('pages') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\fetch_corporate_actions.py",
+      "line": 140,
+      "expr": "row.get('SECUCODE') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\fetch_corporate_actions.py",
+      "line": 137,
+      "expr": "row.get('SECURITY_CODE') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\fetch_corporate_actions.py",
+      "line": 153,
+      "expr": "row.get('SECURITY_NAME_ABBR') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\fetch_corporate_actions.py",
+      "line": 154,
+      "expr": "row.get('IMPL_PLAN_PROFILE') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\fetch_corporate_actions.py",
+      "line": 155,
+      "expr": "row.get('ASSIGN_PROGRESS') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\fetch_delisted_klines.py",
+      "line": 64,
+      "expr": "(json.loads(body).get('data') or {}).get(code) or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "scripts\\fetch_delisted_klines.py",
+      "line": 65,
+      "expr": "inner.get('qfqday') or inner.get('day') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "scripts\\fetch_delisted_klines.py",
+      "line": 64,
+      "expr": "json.loads(body).get('data') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "scripts\\gen_layout_doc.py",
+      "line": 122,
+      "expr": "ast.get_docstring(tree) or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\migrate_tracking_records.py",
+      "line": 38,
+      "expr": "r['logic'] or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\patch_limit_ratio.py",
+      "line": 72,
+      "expr": "r.get('date') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\patch_limit_ratio.py",
+      "line": 63,
+      "expr": "reader.fieldnames or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "scripts\\patch_limit_ratio.py",
+      "line": 76,
+      "expr": "r.get('limit_ratio') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\rerun_studies_corrected.py",
+      "line": 84,
+      "expr": "proc.stdout or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\run_alpha_gap_probe.py",
+      "line": 63,
+      "expr": "row['amount'] or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_alpha_gap_probe.py",
+      "line": 300,
+      "expr": "kv[1]['mean_rho'] or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_analysis.py",
+      "line": 95,
+      "expr": "risk_d.get('最终交易指令') or trade_d.get('交易指令') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\run_analysis.py",
+      "line": 104,
+      "expr": "risk_d.get('推荐日期') or risk_d.get('日期') or trade_d.get('推荐日期') or trade_d.get('日期') or None",
+      "sentinel": "None"
+    },
+    {
+      "file": "scripts\\run_daily_factor_screen.py",
+      "line": 90,
+      "expr": "b['amount'] or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_delta_statistics_audit.py",
+      "line": 133,
+      "expr": "json.loads(f.read_text(encoding='utf-8')).get('rows') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "scripts\\run_disclosure_factor_study.py",
+      "line": 79,
+      "expr": "r.get('actual_disclose') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\run_disclosure_factor_study.py",
+      "line": 82,
+      "expr": "r.get('revisions') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_disclosure_factor_study.py",
+      "line": 83,
+      "expr": "r.get('first_scheduled') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\run_disclosure_factor_study.py",
+      "line": 78,
+      "expr": "r.get('code') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\run_factor_correlation.py",
+      "line": 131,
+      "expr": "x['amount'] or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_five_factor_ab.py",
+      "line": 281,
+      "expr": "args.survivorship_evidence or None",
+      "sentinel": "None"
+    },
+    {
+      "file": "scripts\\run_five_factor_ab.py",
+      "line": 152,
+      "expr": "b['amount'] or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_five_factor_ab.py",
+      "line": 206,
+      "expr": "seg[k - 1].get('close') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_five_factor_ab.py",
+      "line": 207,
+      "expr": "seg[k].get('close') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_ic_diagnosis.py",
+      "line": 182,
+      "expr": "res['L0M0'][fac]['ic_mean'] or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_ic_diagnosis.py",
+      "line": 183,
+      "expr": "res['L1M1'][fac]['ic_mean'] or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_ic_diagnosis.py",
+      "line": 114,
+      "expr": "eb['open'] or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_ic_diagnosis.py",
+      "line": 115,
+      "expr": "xb['close'] or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_ic_diagnosis.py",
+      "line": 126,
+      "expr": "bars[i]['close'] or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_ic_diagnosis.py",
+      "line": 135,
+      "expr": "bars[k - 1]['close'] or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_limit_structure_study.py",
+      "line": 109,
+      "expr": "bar.get('limit_ratio') or 0.0",
+      "sentinel": "0.0"
+    },
+    {
+      "file": "scripts\\run_multiple_testing_audit.py",
+      "line": 155,
+      "expr": "data.get('windows') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "scripts\\run_regime_overlay_study.py",
+      "line": 138,
+      "expr": "args.survivorship_evidence or None",
+      "sentinel": "None"
+    },
+    {
+      "file": "scripts\\run_signal_diagnosis.py",
+      "line": 113,
+      "expr": "b.get('amount') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_st_reversal_study.py",
+      "line": 199,
+      "expr": "bars[entry_i].get('limit_ratio') or 0.0",
+      "sentinel": "0.0"
+    },
+    {
+      "file": "scripts\\run_st_reversal_study.py",
+      "line": 205,
+      "expr": "bars[entry_i].get('open') or 0.0",
+      "sentinel": "0.0"
+    },
+    {
+      "file": "scripts\\run_tail_exclusion_study.py",
+      "line": 315,
+      "expr": "g.get('total_return_pct') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_tail_exclusion_study.py",
+      "line": 316,
+      "expr": "net['total_return_pct'] or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\run_tdx_evaluation.py",
+      "line": 150,
+      "expr": "result.get('missing_evidence') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "scripts\\run_tdx_evaluation.py",
+      "line": 159,
+      "expr": "pre.get('issues') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "scripts\\run_tdx_evaluation.py",
+      "line": 167,
+      "expr": "pre.get('base') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "scripts\\run_tdx_evaluation.py",
+      "line": 168,
+      "expr": "base.get('reports') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "scripts\\run_tdx_evaluation.py",
+      "line": 135,
+      "expr": "args.survivorship_evidence or None",
+      "sentinel": "None"
+    },
+    {
+      "file": "scripts\\run_tdx_rolling_eval.py",
+      "line": 208,
+      "expr": "payload.get('diagnostics') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "scripts\\run_tdx_rolling_eval.py",
+      "line": 246,
+      "expr": "args.survivorship_evidence or None",
+      "sentinel": "None"
+    },
+    {
+      "file": "scripts\\run_tdx_rolling_eval.py",
+      "line": 207,
+      "expr": "payload.get('series') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "scripts\\run_tdx_rolling_eval.py",
+      "line": 308,
+      "expr": "a.get('bootstrap_mean_ci') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "scripts\\run_tdx_rolling_eval.py",
+      "line": 309,
+      "expr": "a.get('bootstrap_mean_ci') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "scripts\\run_tdx_rolling_eval.py",
+      "line": 332,
+      "expr": "a_ew.get('bootstrap_mean_ci') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "scripts\\run_tdx_rolling_eval.py",
+      "line": 333,
+      "expr": "a_ew.get('bootstrap_mean_ci') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "scripts\\run_tdx_universe_ic.py",
+      "line": 151,
+      "expr": "events.get(code) or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "scripts\\run_tracking.py",
+      "line": 48,
+      "expr": "d.get('股票代码') or d.get('code') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\run_tracking.py",
+      "line": 49,
+      "expr": "d.get('最终交易指令') or d.get('交易指令') or d.get('final_action') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\run_tracking.py",
+      "line": 53,
+      "expr": "d.get('一票否决理由') or d.get('关键执行条件') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\run_tracking.py",
+      "line": 84,
+      "expr": "args.code or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "scripts\\update_certified_dataset.py",
+      "line": 242,
+      "expr": "new_rows.get(c) or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "scripts\\update_certified_dataset.py",
+      "line": 141,
+      "expr": "row.get('turnover') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "scripts\\update_certified_dataset.py",
+      "line": 251,
+      "expr": "replace_series.get(c) or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "scripts\\update_certified_dataset.py",
+      "line": 289,
+      "expr": "reader.fieldnames or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "stage2\\stage2_enrichment.py",
+      "line": 17,
+      "expr": "row.get('bars') or row.get('kline') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "stage2\\stage2_enrichment.py",
+      "line": 18,
+      "expr": "row.get('moneyflow') or row.get('money_flow') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "stage2\\stage2_enrichment.py",
+      "line": 19,
+      "expr": "row.get('top_list') or row.get('dragon_tiger') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "stage2\\stage2_enrichment.py",
+      "line": 20,
+      "expr": "row.get('events') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "stage2\\stage2_enrichment.py",
+      "line": 24,
+      "expr": "row.get('code') or row.get('ts_code') or ''",
+      "sentinel": "''"
+    },
+    {
+      "file": "stage2\\stage2_scoring.py",
+      "line": 66,
+      "expr": "_num(row.get('cross_section_score')) or 0.0",
+      "sentinel": "0.0"
+    },
+    {
+      "file": "stage2\\stage2_scoring.py",
+      "line": 68,
+      "expr": "_num(row.get('cross_section_score')) or 0.0",
+      "sentinel": "0.0"
+    },
+    {
+      "file": "stage2\\stage2_scoring.py",
+      "line": 42,
+      "expr": "r.get('moneyflow') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "stage2\\stage2_scoring.py",
+      "line": 43,
+      "expr": "r.get('moneyflow') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "stage2\\stage2_scoring.py",
+      "line": 44,
+      "expr": "r.get('top_list') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "stage2\\stage2_scoring.py",
+      "line": 45,
+      "expr": "r.get('top_list') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "stage2\\stage2_scoring.py",
+      "line": 46,
+      "expr": "r.get('microstructure') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "stage2\\stage2_scoring.py",
+      "line": 47,
+      "expr": "r.get('microstructure') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "stage2\\stage2_scoring.py",
+      "line": 48,
+      "expr": "r.get('microstructure') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "stage2\\stage2_scoring.py",
+      "line": 49,
+      "expr": "r.get('event_risk') or {}",
+      "sentinel": "{}"
+    },
+    {
+      "file": "tdx_native\\backfill.py",
+      "line": 51,
+      "expr": "b.get('close') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "tdx_native\\daily_report.py",
+      "line": 33,
+      "expr": "seg[k - 1].get('close') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "tdx_native\\daily_report.py",
+      "line": 34,
+      "expr": "seg[k].get('close') or 0",
+      "sentinel": "0"
+    },
+    {
+      "file": "tdx_native\\daily_report.py",
+      "line": 131,
+      "expr": "t.get('risk_flags') or []",
+      "sentinel": "[]"
+    },
+    {
+      "file": "tdx_native\\fetch_names.py",
+      "line": 59,
+      "expr": "api.get_security_list(mkt, start) or []",
+      "sentinel": "[]"
+    }
+  ],
+  "unannotated_optional": [
+    {
+      "file": "cycle_price_action.py",
+      "line": 8,
+      "func": "_ema",
+      "annotation": "(无)"
+    },
+    {
+      "file": "cycle_price_action.py",
+      "line": 18,
+      "func": "locate_cycle_phase",
+      "annotation": "(无)"
+    },
+    {
+      "file": "execution_rules.py",
+      "line": 6,
+      "func": "first_sellable_index",
+      "annotation": "(无)"
+    },
+    {
+      "file": "industry_strength.py",
+      "line": 9,
+      "func": "_ret",
+      "annotation": "(无)"
+    },
+    {
+      "file": "llm_client.py",
+      "line": 87,
+      "func": "extract_json",
+      "annotation": "(无)"
+    },
+    {
+      "file": "pool_manager.py",
+      "line": 30,
+      "func": "_extract_stage",
+      "annotation": "(无)"
+    },
+    {
+      "file": "portfolio_backtest.py",
+      "line": 12,
+      "func": "_next_bar",
+      "annotation": "(无)"
+    },
+    {
+      "file": "stock_scoring.py",
+      "line": 17,
+      "func": "_ema",
+      "annotation": "(无)"
+    },
+    {
+      "file": "walk_forward.py",
+      "line": 13,
+      "func": "_turnover",
+      "annotation": "(无)"
+    },
+    {
+      "file": "alpha\\alpha_survival_lab.py",
+      "line": 74,
+      "func": "_t_stat",
+      "annotation": "(无)"
+    },
+    {
+      "file": "alpha\\alpha_survival_lab.py",
+      "line": 90,
+      "func": "block_bootstrap_mean_ci",
+      "annotation": "(无)"
+    },
+    {
+      "file": "alpha\\alpha_survival_lab.py",
+      "line": 113,
+      "func": "permutation_pvalue",
+      "annotation": "(无)"
+    },
+    {
+      "file": "ashare\\ashare_cross_section.py",
+      "line": 7,
+      "func": "_num",
+      "annotation": "(无)"
+    },
+    {
+      "file": "ashare\\ashare_flow_engine.py",
+      "line": 11,
+      "func": "_f",
+      "annotation": "(无)"
+    },
+    {
+      "file": "factors\\factor_gate.py",
+      "line": 8,
+      "func": "_num",
+      "annotation": "(无)"
+    },
+    {
+      "file": "factors\\factor_gate.py",
+      "line": 18,
+      "func": "_pearson",
+      "annotation": "(无)"
+    },
+    {
+      "file": "factors\\factor_validation.py",
+      "line": 14,
+      "func": "_num",
+      "annotation": "(无)"
+    },
+    {
+      "file": "fetch\\common.py",
+      "line": 75,
+      "func": "_d",
+      "annotation": "(无)"
+    },
+    {
+      "file": "fetch\\common.py",
+      "line": 86,
+      "func": "_safe_float",
+      "annotation": "(无)"
+    },
+    {
+      "file": "fetch\\kline.py",
+      "line": 250,
+      "func": "fetch_close_on",
+      "annotation": "(无)"
+    },
+    {
+      "file": "fetch\\quote.py",
+      "line": 87,
+      "func": "f",
+      "annotation": "(无)"
+    },
+    {
+      "file": "fetch\\transport.py",
+      "line": 111,
+      "func": "_http_get",
+      "annotation": "(无)"
+    },
+    {
+      "file": "regime\\regime_backtest_report.py",
+      "line": 9,
+      "func": "_cagr",
+      "annotation": "(无)"
+    },
+    {
+      "file": "risk\\a_share_risk.py",
+      "line": 7,
+      "func": "atr",
+      "annotation": "(无)"
+    },
+    {
+      "file": "scripts\\build_certified_dataset_v2.py",
+      "line": 162,
+      "func": "main",
+      "annotation": "int"
+    },
+    {
+      "file": "scripts\\enumerate_delisted_universe.py",
+      "line": 143,
+      "func": "main",
+      "annotation": "int"
+    },
+    {
+      "file": "scripts\\run_analysis.py",
+      "line": 69,
+      "func": "track_from_results",
+      "annotation": "(无)"
+    },
+    {
+      "file": "scripts\\run_contrarian_portfolio.py",
+      "line": 238,
+      "func": "load_benchmark",
+      "annotation": "(无)"
+    },
+    {
+      "file": "scripts\\run_multiple_testing_audit.py",
+      "line": 104,
+      "func": "_dig",
+      "annotation": "Any"
+    },
+    {
+      "file": "scripts\\run_tail_exclusion_study.py",
+      "line": 148,
+      "func": "_make_filter",
+      "annotation": "(无)"
+    },
+    {
+      "file": "scripts\\run_universe_replication.py",
+      "line": 102,
+      "func": "_make_filter",
+      "annotation": "(无)"
+    },
+    {
+      "file": "stage2\\stage2_ablation.py",
+      "line": 15,
+      "func": "_num",
+      "annotation": "(无)"
+    },
+    {
+      "file": "stage2\\stage2_ablation.py",
+      "line": 39,
+      "func": "_field",
+      "annotation": "(无)"
+    },
+    {
+      "file": "stage2\\stage2_scoring.py",
+      "line": 13,
+      "func": "_num",
+      "annotation": "(无)"
+    },
+    {
+      "file": "tdx_native\\backfill.py",
+      "line": 88,
+      "func": "run",
+      "annotation": "Dict"
+    },
+    {
+      "file": "tdx_native\\backfill.py",
+      "line": 185,
+      "func": "_summarize",
+      "annotation": "(无)"
+    },
+    {
+      "file": "track\\costs.py",
+      "line": 63,
+      "func": "net_return_pct",
+      "annotation": "(无)"
+    },
+    {
+      "file": "track\\stats.py",
+      "line": 27,
+      "func": "is_hit",
+      "annotation": "(无)"
+    }
+  ],
+  "guard_risks": [
+    {
+      "pattern": "market_regime.py",
+      "expr": "bulls >= 2",
+      "risk": "离线数据集只有 1 个指数 → 恒假 → 永远返回 RANGE",
+      "status": "已修（单指数降级 + degraded 标记）",
+      "file": "market_regime.py",
+      "line": 80
+    }
+  ],
+  "dataset_columns": {
+    "available": true,
+    "dataset": "D:/tdx_dataset_v3",
+    "columns": [
+      "date",
+      "open",
+      "high",
+      "low",
+      "close",
+      "volume",
+      "amount",
+      "turnover",
+      "is_st",
+      "st_basis",
+      "source",
+      "name",
+      "limit_ratio",
+      "limit_basis"
+    ],
+    "never_referenced": []
+  }
+}

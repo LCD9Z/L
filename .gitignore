@@ -19,9 +19,18 @@ __pycache__/
 .ruff_cache/
 
 # --- 运行产物 ---
-reports/
+# reports/ 只跟踪「被报告引用的证据 JSON」（含可复现的输入参数与结果）；
+# 日志、中间产物、临时探针仍忽略。
+#
+# 动因：报告引用的数字必须能随代码一起被验证 —— 否则报告与证据脱钩，
+# 换会话/换人时无法判断「这个数字是怎么来的」（与「防断线」目标冲突）。
+# 判定规则：未跟踪的 = 可重生成的中间产物；已跟踪的 = 证据快照。
+reports/*
+!reports/*.json
+reports/_*.json
 runtime_logs/
 *.log
+*.partial
 
 # --- 覆盖率产物（pytest --cov 与 CI 会生成） ---
 coverage.xml

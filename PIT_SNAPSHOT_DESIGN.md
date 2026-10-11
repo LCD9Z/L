@@ -1,10 +1,29 @@
 # PIT 快照落盘方案（设计）
 
-> **设计时间**：2026-10-11　**状态**：**设计稿，未实施**
+> **设计时间**：2026-10-11　**状态**：**设计稿已部分实施 —— P0 已落地**（见 `PIT_SNAPSHOT_P0_REPORT.md`）
 > **动因**：`ASTOCK_DATA_ASSESSMENT.md` 的结论 —— 抓取型数据源（a-stock-data 等）
 > **只给当前值**，直接进回测即前视。项目要补「PIT 行业变迁史 / 退市日 / 日频估值历史」
 > 三个缺口，**唯一不引入前视的办法是自己每天落盘一次、自建历史**。
 > **前置**：`pit/` 包已有 `PitFundamentals.as_of(code, date)` 这一 PIT 查询范式，本方案沿用其形状。
+
+---
+
+## 实施进度
+
+| 期 | 内容 | 状态 |
+|:--:|------|:---:|
+| **P0** | L1 上市日/退市日（baostock） | ✅ **已落地（2026-10-11）** —— `pit/pit_snapshot_store.py` + `scripts/run_pit_snapshot_ingest.py`，28 项守卫测试；对账见 `PIT_SNAPSHOT_P0_REPORT.md` |
+| P1 | L2 申万行业变迁史 | ⏳ 待做 |
+| P2 | L3 估值历史（2016+） | ⏳ 待做 |
+| P3 | L4 快照（仅前瞻） | ⏳ 待做 |
+
+> **P0 实施中的两处设计修正**（已回写本文档 §四）：
+> 1. **去掉 `effective_field` 间接层** —— 首版让 `l1_stock_basic` 指向 `ipo_date`，
+>    导致同名的 `effective_date` 列被**静默绕过**（测试当场抓到）。现统一用保留列名
+>    `effective_date`。**少一层间接 = 少一处静默失效。**
+> 2. **单轴需显式授权** —— `immutable_fact` 数据集必须在登记表给出 `justification`，
+>    且有全局守卫测试（`test_every_immutable_fact_dataset_documents_justification`）
+>    阻止裸声明。默认仍是 `revisable`（双轴），未登记数据集走最严格口径。
 
 ---
 

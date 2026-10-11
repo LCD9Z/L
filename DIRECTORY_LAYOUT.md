@@ -9,8 +9,8 @@
 | 指标 | 值 |
 |------|----|
 | 子包数 | **20** |
-| 已入包模块 | **88**（约 11,442 行） |
-| 根目录 `.py` | **57**（约 6,160 行） |
+| 已入包模块 | **89**（约 11,784 行） |
+| 根目录 `.py` | **57**（约 6,218 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -305,7 +305,7 @@ PHASE62 系列 —— TDX 指数 / 序列接入（v4.9 选择性移植）。
 | `phase62/phase62_series.py` | 19 |
 | `phase62/phase62_tdx_index.py` | 70 |
 
-### `pit/`　（8 模块，约 1,181 行）
+### `pit/`　（9 模块，约 1,523 行）
 
 **职责**：Point-in-time (PIT) 研究数据子集。
 
@@ -351,6 +351,7 @@ Point-in-time (PIT) 研究数据子集。
 | `pit/pit_integrity.py` | 88 |
 | `pit/pit_quarterly.py` | 209 |
 | `pit/pit_research_rows.py` | 44 |
+| `pit/pit_snapshot_store.py` | 342 |
 | `pit/pit_trading_filter.py` | 57 |
 | `pit/pit_universe_builder.py` | 91 |
 | `pit/statistical_industry.py` | 227 |
@@ -748,7 +749,7 @@ TuShare 数据接入（可选依赖）。
 | `data_fetcher.py` | 101 | 8 | 0 |
 | `main.py` | 158 | 0 | 1 |
 | `paper_trading.py` | 16 | 0 | 0 |
-| `run_ci.py` | 262 | 0 | 0 |
+| `run_ci.py` | 303 | 0 | 0 |
 | `stock_god.py` | 71 | 0 | 0 |
 
 ### 高耦合核心（被多处依赖或依赖多处）
@@ -771,7 +772,7 @@ TuShare 数据接入（可选依赖）。
 | `phase22_alpha_runner.py` | 15 | 0 | 2 |
 | `phase41_data_workbench.py` | 123 | 0 | 2 |
 | `pool_manager.py` | 166 | 1 | 1 |
-| `portfolio_backtest.py` | 172 | 1 | 3 |
+| `portfolio_backtest.py` | 189 | 1 | 3 |
 | `professional_committee.py` | 89 | 1 | 1 |
 | `prompt_engine.py` | 187 | 0 | 3 |
 | `real_alpha_pipeline.py` | 209 | 0 | 4 |

@@ -1,0 +1,74 @@
+{
+ "windows": [
+  {
+   "oos_start": "2024-01-02",
+   "assets": 391,
+   "legacy": {
+    "total_return_pct": -17.562,
+    "max_drawdown_pct": 35.575,
+    "trades": 625,
+    "annualized_excess": -0.1534644490573711,
+    "t_stat": -0.9435712386541627,
+    "p_value": 0.3453887954343502
+   },
+   "new": {
+    "total_return_pct": -1.047,
+    "max_drawdown_pct": 33.264,
+    "trades": 624,
+    "annualized_excess": -0.0838993537681317,
+    "t_stat": -0.5364334278557262,
+    "p_value": 0.5916590338553593
+   },
+   "excess_delta_pp": 6.957
+  },
+  {
+   "oos_start": "2025-01-02",
+   "assets": 387,
+   "legacy": {
+    "total_return_pct": 10.48,
+    "max_drawdown_pct": 32.178,
+    "trades": 402,
+    "annualized_excess": 0.009147348749873392,
+    "t_stat": 0.047339571745402695,
+    "p_value": 0.962242589729077
+   },
+   "new": {
+    "total_return_pct": 10.423,
+    "max_drawdown_pct": 32.185,
+    "trades": 402,
+    "annualized_excess": 0.008861006561143412,
+    "t_stat": 0.04584591390462806,
+    "p_value": 0.9634330632574766
+   },
+   "excess_delta_pp": -0.029
+  }
+ ],
+ "cost_models": {
+  "legacy": {
+   "commission_rate": 0.0003,
+   "min_commission": 5.0,
+   "stamp_duty_sell": 0.0005,
+   "slippage_rate": 0.0005,
+   "transfer_fee_rate": 0.0,
+   "stamp_duty_change_date": "0001-01-01",
+   "stamp_duty_sell_before": 0.001
+  },
+  "new": {
+   "commission_rate": 0.0003,
+   "min_commission": 5.0,
+   "stamp_duty_sell": 0.0005,
+   "slippage_rate": 0.0005,
+   "transfer_fee_rate": 1e-05,
+   "stamp_duty_change_date": "2023-08-28",
+   "stamp_duty_sell_before": 0.001
+  }
+ },
+ "args": {
+  "dataset": "D:/tdx_dataset_v3",
+  "max_stocks": 400,
+  "min_periods": 252,
+  "min_rows_asset": 504,
+  "windows": "2024-01-02,2025-01-02",
+  "out": "reports/cost_model_check_with_p.json"
+ }
+}

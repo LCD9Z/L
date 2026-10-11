@@ -1,0 +1,112 @@
+{
+ "rows": [
+  {
+   "variant": "A_固定持有",
+   "window": "2023-07-03",
+   "stop_atr_k": 0.0,
+   "annualized_excess_pct": -3.78,
+   "trades": 190,
+   "max_drawdown_pct": 45.48,
+   "win_rate_pct": 44.74,
+   "n_stops": 0,
+   "stop_rate_pct": 0.0,
+   "avg_days_to_stop": null
+  },
+  {
+   "variant": "B_ATR止损_k2.0",
+   "window": "2023-07-03",
+   "stop_atr_k": 2.0,
+   "annualized_excess_pct": 14.78,
+   "trades": 269,
+   "max_drawdown_pct": 32.21,
+   "win_rate_pct": 33.83,
+   "n_stops": 191,
+   "stop_rate_pct": 71.0,
+   "avg_days_to_stop": 9.57
+  },
+  {
+   "variant": "A_固定持有",
+   "window": "2024-01-02",
+   "stop_atr_k": 0.0,
+   "annualized_excess_pct": 10.8,
+   "trades": 160,
+   "max_drawdown_pct": 30.7,
+   "win_rate_pct": 50.0,
+   "n_stops": 0,
+   "stop_rate_pct": 0.0,
+   "avg_days_to_stop": null
+  },
+  {
+   "variant": "B_ATR止损_k2.0",
+   "window": "2024-01-02",
+   "stop_atr_k": 2.0,
+   "annualized_excess_pct": 10.73,
+   "trades": 228,
+   "max_drawdown_pct": 24.502,
+   "win_rate_pct": 32.89,
+   "n_stops": 162,
+   "stop_rate_pct": 71.05,
+   "avg_days_to_stop": 9.75
+  },
+  {
+   "variant": "A_固定持有",
+   "window": "2025-01-02",
+   "stop_atr_k": 0.0,
+   "annualized_excess_pct": 20.92,
+   "trades": 100,
+   "max_drawdown_pct": 18.63,
+   "win_rate_pct": 51.0,
+   "n_stops": 0,
+   "stop_rate_pct": 0.0,
+   "avg_days_to_stop": null
+  },
+  {
+   "variant": "B_ATR止损_k2.0",
+   "window": "2025-01-02",
+   "stop_atr_k": 2.0,
+   "annualized_excess_pct": 24.11,
+   "trades": 141,
+   "max_drawdown_pct": 16.023,
+   "win_rate_pct": 36.88,
+   "n_stops": 95,
+   "stop_rate_pct": 67.38,
+   "avg_days_to_stop": 10.19
+  }
+ ],
+ "summary": {
+  "A_固定持有": {
+   "mean": 9.313333333333334,
+   "dd_mean": 31.60333333333333,
+   "trades_mean": 150,
+   "stop_rate_mean": 0.0,
+   "avg_days_mean": null,
+   "values": [
+    -3.78,
+    10.8,
+    20.92
+   ]
+  },
+  "B_ATR止损_k2.0": {
+   "mean": 16.54,
+   "dd_mean": 24.245,
+   "trades_mean": 212.66666666666666,
+   "stop_rate_mean": 69.81,
+   "avg_days_mean": 9.836666666666666,
+   "values": [
+    14.78,
+    10.73,
+    24.11
+   ]
+  }
+ },
+ "args": {
+  "dataset": "D:/tdx_dataset_v3",
+  "windows": "2023-07-03,2024-01-02,2025-01-02",
+  "max_stocks": 300,
+  "horizon": 20,
+  "top_n": 5,
+  "stop_k": 2.0,
+  "out": "reports/stop_loss_ab.json"
+ },
+ "complete": true
+}
