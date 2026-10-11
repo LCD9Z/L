@@ -569,7 +569,6 @@
    "flagged_share_mean": 0.1737
   }
  },
- "main_gate": "abs",
  "liq_modes": [
   "abs",
   "median",
@@ -581,5 +580,7 @@
   "end": "20171231"
  },
  "runtime_sec": 397.3,
- "note": "标签统一用前复权价（收益必须先复权）；raw_factor=未复权价算因子；raw_flag_excluded=未复权且剔除窗口内含超涨跌停跳空的样本。主输出 ic 为 abs 口径；ic_by_gate 含全部口径。2026-10-07 起 _factors_at 与生产 compute_factors 逐字一致（原 amihud 分母固定 20 / 样本门槛 20 的偏差已修）。"
+ "note": "标签统一用前复权价（收益必须先复权）；raw_factor=未复权价算因子；raw_flag_excluded=未复权且剔除窗口内含超涨跌停跳空的样本。主输出 ic 为 abs 口径；ic_by_gate 含全部口径。2026-10-07 起 _factors_at 与生产 compute_factors 逐字一致（原 amihud 分母固定 20 / 样本门槛 20 的偏差已修）。",
+ "script_default_gate": "abs",
+ "verdict_gate": "median"
 }
