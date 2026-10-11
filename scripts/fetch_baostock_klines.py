@@ -128,22 +128,25 @@ def main() -> int:
                 t = t.replace(".", "")
                 allcodes.add(f"{t[:2]}.{t[2:]}")
         print(f"  从本地列表读入 {len(allcodes)} 个代码（跳过网络枚举）", flush=True)
-    for y in range(2003, int(end[:4]) + 1):
-        # 每年**只试 1 个日期**（试多个会成倍拉长启动时间，实测 96 次请求超时）
-        d = f"{y}-12-31"
-        if d > end:
-            d = end
-        rr = bs.query_all_stock(day=d)
-        if rr.error_code == "0" and rr.data:
-            allcodes.update(r[0] for r in rr.data)
-            probe_hits += 1
-        elif rr.error_code == "0":
-            # 12-31 非交易日时，退一天再试一次
-            rr2 = bs.query_all_stock(day=f"{y}-12-30")
-            if rr2.error_code == "0" and rr2.data:
-                allcodes.update(r[0] for r in rr2.data)
-                probe_hits += 1
     if not allcodes:
+        # ⚠️ 整个枚举块必须在 if 内 —— 初版只把 print 放进来，
+        # 导致给了 --codes 后**仍会跑一遍网络枚举**（既慢又污染代码集：
+        # 实测 1000 被叠加成 3516，4 个分片各拉 879 只，等于重复 14 倍）。
+        for y in range(2003, int(end[:4]) + 1):
+            # 每年**只试 1 个日期**（试多个会成倍拉长启动时间，实测 96 次请求超时）
+            d = f"{y}-12-31"
+            if d > end:
+                d = end
+            rr = bs.query_all_stock(day=d)
+            if rr.error_code == "0" and rr.data:
+                allcodes.update(r[0] for r in rr.data)
+                probe_hits += 1
+            elif rr.error_code == "0":
+                # 12-31 非交易日时，退一天再试一次
+                rr2 = bs.query_all_stock(day=f"{y}-12-30")
+                if rr2.error_code == "0" and rr2.data:
+                    allcodes.update(r[0] for r in rr2.data)
+                    probe_hits += 1
         print(f"  多日期枚举：命中 {probe_hits} 个年度快照 → 合并 "
               f"{len(allcodes)} 个代码", flush=True)
     # 只保留股票（sh.6/sz.0/sz.3），排除指数与基金
