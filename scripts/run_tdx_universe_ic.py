@@ -373,24 +373,41 @@ def main() -> int:
     if bad_files:
         print(f"      ⚠️ {len(bad_files)} 个文件读取失败被跳过"
               f"（前 5：{bad_files[:5]}）", flush=True)
+
+    def _f(v: Optional[float], spec: str = "+.6f") -> str:
+        """格式化可能为 None 的统计量（2026-10-11 修复）。
+
+        原代码直接 `f"{a['ic_mean']:+.6f}"`，当某口径因样本不足、
+        `stat()` 返回 `{"ic_mean": None, "t": None, "n": 0}` 时抛
+        `TypeError: unsupported format string passed to NoneType.__format__`。
+        **该异常发生在写 JSON 之前，导致整个窗口白跑**（W1 就这样废掉的）。
+        """
+        return "      n/a" if v is None else format(v, spec)
+
+    # ⚠️ 先落盘，再打印（2026-10-11 调整）。
+    # 原顺序是「打印 → 落盘」，而打印曾因 None 格式化抛异常 →
+    # 整个窗口算完却什么都没存下（W1 就这样白跑 7 分钟）。
+    # 落盘是**结果**，打印只是**显示**——结果必须优先保住。
+    text = json.dumps(out, ensure_ascii=False, indent=1)
+    if args.out:
+        with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(text)
+        print(f"已写入: {args.out}")
+
     print("[4/4] 结果：")
     print(f"{'因子':14s} {'原始价 IC/t':>20s} {'复权价 IC/t':>20s} {'剔跳空 IC/t':>20s}")
     for f in FACTORS:
         r = res["raw_factor"][f]
         a = res["adj_factor"][f]
         x = res["raw_flag_excluded"][f]
-        print(f"{f:14s} {r['ic_mean']:+.6f}/{r['t']:+.2f}  "
-              f"{a['ic_mean']:+.6f}/{a['t']:+.2f}  {x['ic_mean']:+.6f}/{x['t']:+.2f}")
+        print(f"{f:14s} {_f(r['ic_mean'])!s}/{_f(r['t'], '+.2f')!s}  "
+              f"{_f(a['ic_mean'])!s}/{_f(a['t'], '+.2f')!s}  "
+              f"{_f(x['ic_mean'])!s}/{_f(x['t'], '+.2f')!s}")
     print(f"\n{'子集（复权价）':18s} {'IC / t（全样本）':>24s} {'IC / t（剔跳空）':>24s}")
     for s in SUBSETS:
         a, x = comp_res[s], comp_ex[s]
-        print(f"{s:18s} {a['ic_mean']:+.6f}/{a['t']:+.2f}      "
-              f"{x['ic_mean']:+.6f}/{x['t']:+.2f}")
-    text = json.dumps(out, ensure_ascii=False, indent=1)
-    if args.out:
-        with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(text)
-        print(f"已写入: {args.out}")
+        print(f"{s:18s} {_f(a['ic_mean'])!s}/{_f(a['t'], '+.2f')!s}      "
+              f"{_f(x['ic_mean'])!s}/{_f(x['t'], '+.2f')!s}")
     return 0
 
 
