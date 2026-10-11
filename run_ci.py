@@ -89,8 +89,49 @@ _VENV_CANDIDATES = (
 )
 
 
+def _venv_usable(base: str) -> bool:
+    """该 venv 是否**真正可用** —— 其基础解释器必须存在。
+
+    ⚠️ 只检查 ``<base>/Scripts/<tool>.exe`` 是否存在**不够**。2026-10-10 实测：
+    ``~/.workbuddy/binaries/python/envs/default`` 的 ``Scripts/*.exe`` 一应俱全，
+    但其 ``pyvenv.cfg`` 声明的 base 解释器
+    （``~/.workbuddy/binaries/python/versions/3.13.12/python.exe``）指向一个
+    **已失效的 symlink**（``…/resources/vendor/python`` 不存在）——
+    直接运行该 venv 的 ``mypy.exe`` 会打印
+    ``did not find executable at '…': …`` 并让本地 CI **假失败**。
+
+    非 venv 目录（无 ``pyvenv.cfg``）不做额外判断，保持原有 PATH 回退语义。
+    """
+    cfg = Path(base) / "pyvenv.cfg"
+    if not cfg.is_file():
+        return True
+    home = ""
+    exe = ""
+    try:
+        for line in cfg.read_text(encoding="utf-8", errors="replace").splitlines():
+            key, _, val = line.partition("=")
+            key = key.strip().lower()
+            val = val.strip()
+            if key == "home":
+                home = val
+            elif key == "executable":
+                exe = val
+    except OSError:
+        return False
+    if exe and Path(exe).is_file():
+        return True
+    if home:
+        base_exe = "python.exe" if os.name == "nt" else "python3"
+        if (Path(home) / base_exe).is_file():
+            return True
+    return False
+
+
 def _find_tool_exe(module: str) -> Optional[str]:
-    """在已知 venv 与 PATH 中查找 `<module>` 可执行文件。"""
+    """在已知 venv 与 PATH 中查找**可用**的 `<module>` 可执行文件。
+
+    候选中**跳过已损坏的 venv**（见 :func:`_venv_usable`），避免因环境原因假失败。
+    """
     import shutil
     subdir = "Scripts" if os.name == "nt" else "bin"
     suffix = ".exe" if os.name == "nt" else ""
@@ -98,7 +139,7 @@ def _find_tool_exe(module: str) -> Optional[str]:
         if not base:
             continue
         candidate = Path(base) / subdir / f"{module}{suffix}"
-        if candidate.is_file():
+        if candidate.is_file() and _venv_usable(base):
             return str(candidate)
     return shutil.which(module)
 

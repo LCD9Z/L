@@ -5,6 +5,8 @@
 两份声明。任何一份改了而另一份没跟上，本地预演就不再能代表 CI 结果——
 那正是「CI 未在远端跑通」这一遗留事项的核心风险。
 """
+import os
+
 import pytest
 
 import run_ci
@@ -93,3 +95,61 @@ def test_credentials_step_passes_on_repository():
 def test_run_ci_targets_project_root():
     assert (run_ci.ROOT / "requirements.txt").exists()
     assert (run_ci.ROOT / "run_ci.py").exists()
+
+
+# --- 工具回退：跳过已损坏的 venv（2026-10-11 环境回归的守卫） -------------
+#
+# 背景：本机 `~/.workbuddy/binaries/python/envs/default` 的 Scripts/*.exe 齐全，
+# 但其 pyvenv.cfg 声明的 base 解释器指向**失效的 symlink**，运行该 venv 的
+# mypy.exe 会打印 "did not find executable at ..." 并让本地 CI 假失败。
+# 只检查可执行文件存在是不够的 —— 必须校验 venv 的基础解释器。
+
+def _write_venv(base, *, home: str, exe: str) -> None:
+    (base / "pyvenv.cfg").write_text(
+        f"home = {home}\nexecutable = {exe}\n", encoding="utf-8")
+
+
+def test_venv_usable_treats_plain_dir_as_usable(tmp_path):
+    """非 venv 目录不做额外判断 —— 保持原有 PATH 回退语义。"""
+    assert run_ci._venv_usable(str(tmp_path)) is True
+
+
+def test_venv_usable_accepts_venv_with_existing_base_interpreter(tmp_path):
+    base = tmp_path / "good"
+    base.mkdir()
+    py = tmp_path / "python.exe"
+    py.write_text("", encoding="utf-8")
+    _write_venv(base, home=str(tmp_path), exe=str(py))
+    assert run_ci._venv_usable(str(base)) is True
+
+
+def test_venv_usable_rejects_venv_with_missing_base_interpreter(tmp_path):
+    """⚠️ 核心守卫：base 解释器不存在时必须判为不可用。"""
+    base = tmp_path / "broken"
+    base.mkdir()
+    missing = tmp_path / "nope" / "python.exe"
+    _write_venv(base, home=str(tmp_path / "nope"), exe=str(missing))
+    assert run_ci._venv_usable(str(base)) is False
+
+
+def test_find_tool_exe_skips_broken_venv(tmp_path, monkeypatch):
+    """候选顺序里坏 venv 在前时，必须继续找到后面可用的那个。"""
+    subdir = "Scripts" if os.name == "nt" else "bin"
+    suffix = ".exe" if os.name == "nt" else ""
+
+    broken = tmp_path / "broken"
+    (broken / subdir).mkdir(parents=True)
+    (broken / subdir / f"mypy{suffix}").write_text("", encoding="utf-8")
+    _write_venv(broken, home=str(tmp_path / "nope"),
+                exe=str(tmp_path / "nope" / "python.exe"))
+
+    good = tmp_path / "good"
+    (good / subdir).mkdir(parents=True)
+    tool = good / subdir / f"mypy{suffix}"
+    tool.write_text("", encoding="utf-8")
+    py = tmp_path / "python.exe"
+    py.write_text("", encoding="utf-8")
+    _write_venv(good, home=str(tmp_path), exe=str(py))
+
+    monkeypatch.setattr(run_ci, "_VENV_CANDIDATES", (str(broken), str(good)))
+    assert run_ci._find_tool_exe("mypy") == str(tool)

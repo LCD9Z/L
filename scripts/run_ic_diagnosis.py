@@ -90,6 +90,12 @@ def main() -> int:
     all_dates = sorted({str(b["date"]) for bars in data.values() for b in bars})
     signal_dates = set(all_dates)
     rebalance_dates = all_dates[:: args.step]
+    # ⚠️ 纯性能修正（语义不变）：`pos` 只依赖 `date`，不依赖个股，
+    # 原实现把它写在「逐日期 × 逐股」双层循环内层，用 `all_dates.index(date)`
+    # 反复做 O(len(all_dates)) 线性查找（800 只 × ~200 个调仓日 ≈ 16 万次）。
+    # 外提为字典后为 O(1)。等价性：`date in signal_dates` 恒真（signal_dates == set(all_dates)），
+    # 故 `date_pos.get(date, -1)` 与原 `all_dates.index(date)` 完全一致。
+    date_pos = {d: k for k, d in enumerate(all_dates)}
 
     combos = ["L0M0", "L0M1", "L1M0", "L1M1"]
     ic_series: Dict[str, Dict[str, List[float]]] = {
@@ -118,7 +124,7 @@ def main() -> int:
             # --- M1 可交易性屏蔽 ---
             is_st = str(bars[i].get("is_st", "0")) == "1"
             lim = _limit_pct(c, is_st) - 0.002
-            pos = all_dates.index(date) if date in signal_dates else -1
+            pos = date_pos.get(date, -1) if date in signal_dates else -1
             next_day_ok = (pos >= 0 and pos + 1 < len(all_dates)
                            and str(eb["date"]) == all_dates[pos + 1])
             # t+1 涨停（买不到）
