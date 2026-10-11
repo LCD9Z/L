@@ -320,19 +320,28 @@ def main() -> int:
                 if (v > 0) == (DIRECTIONS[f] > 0):
                     if key == "plain":
                         n_p += 1
-                    elif key == "o1_vs_loga":
+                    elif key == "o1_vs_loga" and f != "loga20":
+                        # ⚠️ loga20 是 O1 的基准，不能对自己取残差 → 不计入
+                        # （首版把它当 0，导致 loga20 被误判为 proxy_factor）
                         n_o1 += 1
                     else:
                         n_o2 += 1
-        if n_o1 >= 4 and n_o2 >= 4 and n_p >= 4:
+        if f == "loga20":
+            # O1 不适用（它是基准本身），只能用 O2 判
+            v = ("independent_robust" if n_o2 >= 4
+                 else "proxy_factor" if n_o2 <= 2 else "INCONCLUSIVE")
+        elif n_o1 >= 4 and n_o2 >= 4 and n_p >= 4:
             v = "independent_robust"
         elif n_o1 <= 2 or n_o2 <= 2:
             v = "proxy_factor"
         else:
             v = "INCONCLUSIVE"
-        verdict[f] = {"plain_consistent": n_p, "o1_consistent": n_o1,
-                      "o2_consistent": n_o2, "verdict": v, "n_windows": len(reg)}
-        print(f"  {f:<10} plain {n_p}/{len(reg)} | O1 {n_o1}/{len(reg)} | "
+        verdict[f] = {"plain_consistent": n_p,
+                      "o1_consistent": n_o1 if f != "loga20" else None,
+                      "o2_consistent": n_o2, "verdict": v, "n_windows": len(reg),
+                      "o1_applicable": f != "loga20"}
+        o1s = f"{n_o1}/{len(reg)}" if f != "loga20" else "  n/a"
+        print(f"  {f:<10} plain {n_p}/{len(reg)} | O1 {o1s} | "
               f"O2 {n_o2}/{len(reg)}  →  {v}")
     out["verdict"] = verdict
 
