@@ -149,6 +149,10 @@ def main() -> int:
     ap.add_argument("--data-end", default="2026-09-10")
     ap.add_argument("--workers", type=int, default=2,
                     help="K 线并发数。**端点限速严格**：实测并发 6 会被 HTTP 501 封禁")
+    ap.add_argument("--kline-count", type=int, default=8000,
+                    help="取 K 线时回溯的天数。默认 8000（覆盖 2003 年至今）。"
+                         "原默认 640 只能看到最近 2.5 年，会把早年退市股误判为"
+                         "「从未上市」（2026-10-11 修）")
     ap.add_argument("--skip-kline", action="store_true",
                     help="只做枚举与差集，不逐个取 K 线")
     args = ap.parse_args()
@@ -200,32 +204,74 @@ def main() -> int:
 
     print("\n[3/3] 按 K 线末日判定是否在窗口内退市 ...")
     print(f"      候选 {len(only_tx)} 个，并发 {args.workers}")
-    delisted: List[Dict[str, str]] = []
-    done = 0
     t0k = time.time()
 
     def _probe(code: str) -> Optional[Dict[str, str]]:
-        first, last = kline_span(code)
+        first, last = kline_span(code, args.kline_count)
         if last and last < args.data_end and last >= args.window_start:
             return {"code": code, "name": existing[code],
                     "first": first or "", "last": last}
         return None
 
+    # ---- 断点续传（2026-10-11 新增）----
+    # 背景：本步逐个请求 K 线，全量候选可达数千只，耗时以小时计；
+    # 而后台任务会静默死亡（实测 25-40 分钟）。原实现只在**全部完成**后
+    # 落盘，一旦中途死机则进度全失——这正是本机环境已知的坑。
+    # 对策：**逐只追加**到 jsonl（append-only，抗中断），重启时跳过已完成项。
+    resume_path = os.path.join(out_dir, "probe_progress.jsonl")
+    done: Set[str] = set()
+    delisted: List[Dict[str, str]] = []
+    if os.path.exists(resume_path):
+        with open(resume_path, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    continue                     # 死机时可能留下半行
+                done.add(rec["code"])
+                if rec.get("hit"):
+                    delisted.append(rec["hit"])
+        print(f"      断点续传：已完成 {len(done)} 只，命中 {len(delisted)}")
+
+    todo = [c for c in only_tx if c not in done]
+    print(f"      本次待查 {len(todo)}/{len(only_tx)}"
+          f"（K 线跨度 {args.kline_count} 天）")
+
     # 端点限速严格：实测并发 6 时被 HTTP 501 封禁。默认并发 2。
     # 一旦 SourceBlocked **立即中止** —— 继续跑会得出"零退市股"的假结论。
-    try:
-        with ThreadPoolExecutor(max_workers=max(1, args.workers)) as pool:
-            for res in pool.map(_probe, only_tx):
-                done += 1
-                if res is not None:
-                    delisted.append(res)
-                if done % 50 == 0:
-                    print(f"      {done}/{len(only_tx)}  命中 {len(delisted)}  "
-                          f"({time.time()-t0k:.0f}s)", flush=True)
-    except SourceBlocked as exc:
-        print(f"\n      !! 中止：{exc}")
-        print(f"      已完成 {done}/{len(only_tx)}；结果不完整，**不写入文件**。")
-        return 3
+    if todo:
+        fh = open(resume_path, "a", encoding="utf-8", newline="\n")  # noqa: SIM115
+        try:
+            with ThreadPoolExecutor(max_workers=max(1, args.workers)) as pool:
+                for code, res in zip(todo, pool.map(_probe, todo),
+                                     strict=False):
+                    done.add(code)
+                    if res is not None:
+                        delisted.append(res)
+                    # 逐只追加（含未命中，以便下轮跳过）
+                    fh.write(json.dumps({"code": code, "hit": res},
+                                        ensure_ascii=False) + "\n")
+                    done_n = len(done)
+                    if done_n % 20 == 0:
+                        fh.flush()
+                        os.fsync(fh.fileno())
+                        print(f"      {done_n}/{len(only_tx)}  "
+                              f"命中 {len(delisted)}  ({time.time()-t0k:.0f}s)",
+                              flush=True)
+        except SourceBlocked as exc:
+            fh.flush()
+            os.fsync(fh.fileno())
+            fh.close()
+            print(f"\n      !! 中止：{exc}")
+            print(f"      已完成 {len(done)}/{len(only_tx)}；"
+                  f"**进度已落盘**，修复限流后重跑即可续。")
+            return 3
+        fh.flush()
+        os.fsync(fh.fileno())
+        fh.close()
     delisted.sort(key=lambda d: d["code"])
 
     print(f"\n      【窗口内退市】{len(delisted):,} 只")
