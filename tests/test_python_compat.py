@@ -26,8 +26,15 @@ SOURCE_FILES = sorted(
 def _find_ruff():
     """定位 ruff 可执行文件。
 
-    依次尝试：PATH → 当前解释器同级的 Scripts/bin 目录 → python -m ruff。
+    依次尝试：PATH → 当前解释器同级的 Scripts/bin 目录 → **隔离 venv**（复用 run_ci 的解析）。
     返回可调用的 argv 前缀列表，找不到则返回 None。
+
+    ⚠️ 2026-10-11 实测：本机 ruff **既不在 PATH、也不在系统解释器同级目录**，
+    而 WorkBuddy 把 ruff/mypy 装在隔离 venv
+    （`~/.workbuddy*/binaries/python/envs/default/Scripts`）。
+    原实现到此返回 `None` → 下面的 py310 权威语法检查**被静默跳过**，
+    而 CI 汇总只多一行「跳过 1」、**不会失败** —— 属"不报错的失效"，
+    正是本项目最警惕的一类缺陷。故补上隔离 venv 解析。
     """
     exe = shutil.which("ruff") or shutil.which("ruff.exe")
     if exe:
@@ -37,6 +44,18 @@ def _find_ruff():
         cand = os.path.join(bindir, name)
         if os.path.exists(cand):
             return [cand]
+    # 复用 run_ci 的隔离 venv 解析 —— 它已含「跳过已损坏 venv」的校验，
+    # 避免两处候选列表各自漂移（cf. 凭据扫描「共用而非内联」的守卫原则）。
+    try:
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        import run_ci
+        found = run_ci._find_tool_exe("ruff")
+        if found:
+            return [found]
+    except (ImportError, AttributeError, OSError):
+        pass
     return None
 
 
@@ -163,3 +182,63 @@ def test_mypy_directory_mode_covers_every_source_file():
     pattern = re.compile(_mypy_exclude_pattern())
     skipped = [p.name for p in Path(".").glob("*.py") if pattern.search(p.name)]
     assert skipped == [], f"以下源文件被 mypy exclude 静默跳过: {skipped}"
+
+
+# ---------------------------------------------------------------------------
+# ruff 解析守卫（2026-10-11 的静默降级）
+# ---------------------------------------------------------------------------
+#
+# 背景：本机 ruff 既不在 PATH、也不在系统解释器同级目录，而 WorkBuddy 把它装在
+# 隔离 venv。原 `_find_ruff()` 返回 None → 上面的 py310 权威语法检查被
+# **静默跳过**（CI 只多一行「跳过 1」，仍然 PASS）。以下两条锁住该行为。
+
+def _isolated_venv_ruff() -> str | None:
+    """本机隔离 venv 里的 ruff 路径（存在才返回）。"""
+    sub = "Scripts" if os.name == "nt" else "bin"
+    for base in (os.path.expanduser("~/.workbuddy/binaries/python/envs/default"),
+                 os.path.expanduser("~/.workbuddy-ai/binaries/python/envs/default")):
+        for name in ("ruff", "ruff.exe"):
+            cand = os.path.join(base, sub, name)
+            if os.path.exists(cand):
+                return cand
+    return None
+
+
+def test_ruff_resolution_uses_isolated_venv_when_present():
+    """⚠️ 隔离 venv 里有 ruff 时，解析**必须**成功 —— 否则权威检查被静默跳过。
+
+    这是环境自适应断言：本机没有 ruff 时跳过（保持原有的优雅降级），
+    但只要 ruff 就在隔离 venv 里，解析失败就必须**大声失败**，而不是默默少跑一项检查。
+    """
+    venv_ruff = _isolated_venv_ruff()
+    if venv_ruff is None:
+        pytest.skip("本机隔离 venv 未安装 ruff")
+    assert RUFF is not None, (
+        f"隔离 venv 有 ruff（{venv_ruff}）但解析失败 → "
+        f"test_no_py310_incompatible_syntax_via_ruff 会被静默跳过")
+
+
+def test_find_ruff_falls_back_to_venv_candidates(tmp_path, monkeypatch):
+    """PATH 与解释器同级都没有 ruff 时，必须继续在隔离 venv 里找。"""
+    sub = "Scripts" if os.name == "nt" else "bin"
+    venv = tmp_path / "venv"
+    (venv / sub).mkdir(parents=True)
+    fake = venv / sub / ("ruff.exe" if os.name == "nt" else "ruff")
+    fake.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr(shutil, "which", lambda *a, **k: None)
+    monkeypatch.setattr(sys, "executable", str(tmp_path / "python.exe"))
+    import run_ci
+    monkeypatch.setattr(run_ci, "_VENV_CANDIDATES", (str(venv),))
+
+    assert _find_ruff() == [str(fake)]
+
+
+def test_find_ruff_returns_none_when_nowhere(tmp_path, monkeypatch):
+    """处处都没有 ruff 时返回 None（保持原有优雅降级语义，不得抛异常）。"""
+    monkeypatch.setattr(shutil, "which", lambda *a, **k: None)
+    monkeypatch.setattr(sys, "executable", str(tmp_path / "python.exe"))
+    import run_ci
+    monkeypatch.setattr(run_ci, "_VENV_CANDIDATES", (str(tmp_path / "nope"),))
+
+    assert _find_ruff() is None

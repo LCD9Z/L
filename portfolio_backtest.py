@@ -58,6 +58,9 @@ def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000
     costs=costs or Costs(); cash=float(initial_capital); positions: List[Dict[str, Any]]=[]; trades: List[Dict[str, Any]]=[]; curve: List[Dict[str, Any]]=[]
     capacity_capped=0
     stop_triggered=0; stop_days: List[int]=[]
+    # sqrt 冲击成本的**实际取值**记录（H-IMPACT 登记 §四「必报」项）：
+    # 只在 impact_model=True 时累积，单位 bps。默认关闭 → 行为与历史版本完全一致。
+    impact_buy_bps: List[float]=[]; impact_sell_bps: List[float]=[]
     dates=_dates(data); cal_pos={str(d):i for i,d in enumerate(dates)}; indexed={c:_by_date(v) for c,v in data.items()}
     for day in dates:
         still=[]
@@ -86,6 +89,7 @@ def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000
                 if impact_model:
                     slip=sqrt_impact([x for x in bars if str(x['date'])<=day],
                                      p['shares']*float(b['close']))
+                if impact_model: impact_sell_bps.append(slip*10000.0)
                 gross=p['shares']*float(b['close'])*(1-slip); proceeds=gross-_trade_cost(gross,'sell',costs,day); cash+=proceeds
                 _ed=cal_pos.get(day,0)-cal_pos.get(p['entry_date'],0)
                 if stop_hit:
@@ -144,6 +148,7 @@ def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000
             if capped: capacity_capped+=1
             gross=shares*entry; total=gross+_trade_cost(gross,'buy',costs,nxt['date'])
             if total>cash: continue
+            if impact_model: impact_buy_bps.append(slip*10000.0)
             cash-=total; entry_date=str(nxt['date']); due=_horizon_date(data[code],entry_date,horizon)
             positions.append({'code':code,'signal_date':day,'entry_date':entry_date,'entry_price':round(entry,4),'shares':shares,'score':round(score,2),'risk':round(risk,2),'cost_basis':total,'exit_due':due,'last_close':float(nxt['close']),
                               'peak_close':float(nxt['close'])})
@@ -160,6 +165,18 @@ def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000
         'stop_rate_pct':round(stop_triggered/n_closed*100,2) if n_closed else None,
         'avg_days_to_stop':round(sum(stop_days)/len(stop_days),2) if stop_days else None,
         'n_closed':n_closed,
+    }
+    # sqrt 冲击成本的量级核对（H-IMPACT 登记 §四「必报」）：买入端与卖出端**分开**报。
+    def _bps(v: List[float]) -> Dict[str, Any]:
+        if not v:
+            return {'n': 0, 'mean_bps': None, 'max_bps': None, 'min_bps': None}
+        return {'n': len(v), 'mean_bps': round(sum(v)/len(v), 2),
+                'max_bps': round(max(v), 2), 'min_bps': round(min(v), 2)}
+
+    out['impact_stats']={
+        'impact_model':impact_model,
+        'buy':_bps(impact_buy_bps),
+        'sell':_bps(impact_sell_bps),
     }
     return out
 

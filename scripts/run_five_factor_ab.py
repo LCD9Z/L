@@ -479,6 +479,7 @@ def main() -> int:
                 "max_drawdown_pct": res.get("max_drawdown_pct"),
                 "trades": res.get("trades"), "win_rate_pct": res.get("win_rate_pct"),
                 "capacity_capped_buys": res.get("capacity_capped_buys", 0),
+                "impact_stats": res.get("impact_stats"),
             }
             if len(common) >= 252:
                 a = analyse_alpha({d: s_ret[d] for d in common},
