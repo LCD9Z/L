@@ -1,0 +1,63 @@
+{
+ "verdict": {
+  "verdict": "INCONCLUSIVE",
+  "reason": "有效窗口仅 2 个，不足 4 个，无法判定",
+  "n_windows": 2,
+  "n_factors_consistent": 0,
+  "per_factor": {
+   "ret20": {
+    "一致窗口数": 2,
+    "总窗口数": 2,
+    "一致": null
+   },
+   "vol20": {
+    "一致窗口数": 2,
+    "总窗口数": 2,
+    "一致": null
+   },
+   "amihud20": {
+    "一致窗口数": 0,
+    "总窗口数": 2,
+    "一致": null
+   },
+   "loga20": {
+    "一致窗口数": 2,
+    "总窗口数": 2,
+    "一致": null
+   },
+   "maxret20": {
+    "一致窗口数": 2,
+    "总窗口数": 2,
+    "一致": null
+   }
+  }
+ },
+ "windows_valid": [
+  "W2",
+  "W3"
+ ],
+ "windows_inconclusive": [
+  {
+   "tag": "W1",
+   "label": "2003-2007",
+   "cross_sections": 116
+  },
+  {
+   "tag": "W4",
+   "label": "2018-2022",
+   "cross_sections": 0
+  },
+  {
+   "tag": "W5",
+   "label": "2023-2026",
+   "cross_sections": 0
+  },
+  {
+   "tag": "R",
+   "label": "2021-08~2026-09",
+   "cross_sections": 0
+  }
+ ],
+ "main_gate": "median",
+ "min_cross_section": 200
+}
