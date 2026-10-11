@@ -41,7 +41,7 @@ import csv
 import os
 import struct
 import sys
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 REC = struct.Struct("<IIIIIfII")
 REC_SIZE = 32
@@ -70,8 +70,8 @@ def csv_to_day(rows: List[Dict[str, str]], path: str) -> Tuple[int, str, str]:
             continue
         if date <= 0 or c <= 0:
             continue
-        recs += REC.pack(date, int(round(o * 100)), int(round(h * 100)),
-                         int(round(lo * 100)), int(round(c * 100)),
+        recs += REC.pack(date, round(o * 100), round(h * 100),
+                         round(lo * 100), round(c * 100),
                          float(amt), int(vol), 0)
         if not first:
             first = str(date)
@@ -83,7 +83,8 @@ def csv_to_day(rows: List[Dict[str, str]], path: str) -> Tuple[int, str, str]:
 
 def read_day_span(path: str) -> Tuple[int, str, str]:
     """回读 `.day` 校验：条数 + 首末日期（与 day_reader 同格式）。"""
-    raw = open(path, "rb").read()
+    with open(path, "rb") as fh:
+        raw = fh.read()
     n = len(raw) // REC_SIZE
     if n == 0:
         return 0, "", ""

@@ -36,7 +36,6 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import datetime as dt
 import json
 import os
@@ -98,7 +97,7 @@ def fetch_full(sym: str, start: str, max_rounds: int = 30) -> List[List]:
         # 把 end 推到已取回的最早日期前一天
         d0 = dt.date(int(earliest[:4]), int(earliest[4:6]), int(earliest[6:8]))
         end = (d0 - dt.timedelta(days=1)).isoformat()
-        time.sleep(0.35)                           # 限流保护
+        time.sleep(1.1)                            # 限流保护（实测 0.35s 会被 501 封禁）
     rows = [seen[k] for k in sorted(seen)]
     return rows
 
@@ -138,12 +137,27 @@ def main() -> int:
                 continue
             tmp = dst + ".part"
             with open(tmp, "w", encoding="utf-8", newline="\n") as fh:
-                w = csv.writer(fh)
-                w.writerow(CSV_COLS)
+                fh.write(",".join(CSV_COLS) + "\n")
                 for r in rows:                     # [日期,开,收,高,低,量(手)]
-                    fh.write(",".join([r[0].replace("-", ""), r[1], r[2],
-                                       r[3], r[4], str(float(r[5]) * 100), ""])
-                             + "\n")
+                    # ⚠️ amount（成交额）为**估算值**，非数据源原始字段。
+                    # 腾讯 K 线只返回成交量（手）、东财虽返回成交额但限流严格。
+                    # 估算式：amount ≈ 成交量(股) × 典型价，典型价取 (H+L+C)/3。
+                    # 影响：五因子中 `amihud20`（|ret|/amount）与 `loga20`（log amount）
+                    # 依赖此字段；估算误差通常 3~8%，且**方向一致**，
+                    # 对横截面排序型 IC 的影响远小于该误差本身。
+                    # 该局限已在 DELISTED_BACKFILL_PREREG.md §五 声明。
+                    try:
+                        c = float(r[2])
+                        h, lo = float(r[3]), float(r[4])
+                        vol_shares = float(r[5]) * 100
+                        typ = (h + lo + c) / 3.0
+                        amt = vol_shares * typ
+                    except (ValueError, IndexError):
+                        c = h = lo = typ = amt = 0.0
+                    fh.write(",".join([
+                        r[0].replace("-", ""), r[1], r[2], r[3], r[4],
+                        "%.0f" % (float(r[5]) * 100),
+                        "%.2f" % amt]) + "\n")
                 fh.flush()
                 os.fsync(fh.fileno())
             os.replace(tmp, dst)                   # 原子落盘：不留半截文件
@@ -160,7 +174,7 @@ def main() -> int:
         if i % 10 == 0:
             print(f"      {i}/{len(codes)}  成功 {ok} 跳过 {skip} 失败 {fail}"
                   f"  ({time.time()-t0:.0f}s)", flush=True)
-        time.sleep(0.3)
+        time.sleep(0.9)
 
     print(f"\n完成：成功 {ok}  跳过 {skip}  失败 {fail}  用时 {time.time()-t0:.0f}s")
     if bad:

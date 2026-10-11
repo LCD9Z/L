@@ -41,6 +41,8 @@ reports/*
 !reports/long_history/*
 !reports/cross_decade/
 !reports/cross_decade/*
+!reports/delisted/
+!reports/delisted/*
 
 # --- 凭据：绝不入库 ---
 # 飞书 Webhook 等同于该群发帖权限，谁拿到都能往群里发消息
