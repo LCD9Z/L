@@ -108,6 +108,10 @@ def main() -> int:
     ap.add_argument("--out", required=True, help="CSV 输出目录")
     ap.add_argument("--start", default="2003-01-01", help="回溯下限")
     ap.add_argument("--limit", type=int, default=0, help="0=全部（测试用）")
+    ap.add_argument("--shard", default="", help="分片 N/M，如 1/4（多进程并行用）")
+    ap.add_argument("--retry", type=int, default=3, help="遇限流的重试次数")
+    ap.add_argument("--backoff", type=float, default=20.0,
+                    help="退避基数（秒），第 n 次等待 backoff*2^(n-1)")
     ap.add_argument("--overwrite", action="store_true")
     args = ap.parse_args()
 
@@ -117,6 +121,13 @@ def main() -> int:
     with open(args.list, encoding="utf-8") as fh:
         recs = json.load(fh)
     codes = [r["code"] for r in recs]
+    if args.shard:
+        try:
+            n, m = (int(x) for x in args.shard.split("/"))
+            codes = [c for i, c in enumerate(codes) if i % m == n - 1]
+            print(f"  分片 {n}/{m} -> {len(codes)} 只", flush=True)
+        except Exception:
+            print(f"  --shard 格式错误：{args.shard}"); return 2
     if args.limit:
         codes = codes[:args.limit]
     print(f"待拉取 {len(codes)} 只（回溯下限 {args.start}）", flush=True)
@@ -130,7 +141,21 @@ def main() -> int:
             skip += 1
             continue
         try:
-            rows = fetch_full(code, args.start)
+            # 退避重试：实测 4 分片并行时跑约 120s 即被 HTTP 501。
+            # 直接 break 会浪费已跑进度，故改为「等待 → 重试」，
+            # 连续失败超过阈值才真正中止。
+            rows = None
+            for attempt in range(args.retry):
+                try:
+                    rows = fetch_full(code, args.start)
+                    break
+                except SourceBlocked as exc:
+                    if attempt == args.retry - 1:
+                        raise
+                    wait = args.backoff * (2 ** attempt)
+                    print(f"      [{code}] {exc} → 退避 {wait:.0f}s 后重试 "
+                          f"({attempt+1}/{args.retry})", flush=True)
+                    time.sleep(wait)
             if not rows:
                 bad.append(f"{code}: 无数据")
                 fail += 1
