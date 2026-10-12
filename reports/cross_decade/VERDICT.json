@@ -42,5 +42,6 @@
  ],
  "windows_inconclusive": [],
  "main_gate": "median",
- "min_cross_section": 200
+ "min_cross_section": 200,
+ "source": "D:/new_tdx/vipdoc"
 }

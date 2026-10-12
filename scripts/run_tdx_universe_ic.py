@@ -364,6 +364,10 @@ def main() -> int:
         "liq_abs": args.liq_abs,
         "range": {"start": args.start, "end": args.end or None},
         "runtime_sec": round(time.time() - t0, 1),
+        # ⚠️ 2026-10-12 补：数据集标识（整改清单 P0-2 —— 每项结论可追溯到唯一数据集）。
+        # 缺失时守卫 test_verdict_artifacts_declare_source 会失败。
+        # 曾因「v3 vs 通达信」混淆出过实质性错误，故此处显式落盘。
+        "source": str(args.data),
         "note": "标签统一用前复权价（收益必须先复权）；raw_factor=未复权价算因子；"
                 "raw_flag_excluded=未复权且剔除窗口内含超涨跌停跳空的样本。"
                 "主输出 ic 为 abs 口径；ic_by_gate 含全部口径。"
