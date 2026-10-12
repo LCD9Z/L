@@ -62,3 +62,18 @@
   故障都可能重新引入**，`--rebuild-norm` 遇到「raw 有、norm 无」之外的异常只报不猜。
 * **吞吐**：实测约 4.1s/只（含 2,533 行/只），全量约 6.5 小时；期间任何崩溃均可
   `--resume` 续跑 + `--rebuild-norm` 补齐。
+
+## 6. 执行记录（2026-10-13 06:4x，实际操作结果）
+
+| 步 | 动作 | 结果与证据 |
+|---|---|---|
+| 1 | 归档 raw `2026-10-12.jsonl` | 239,080,703 B → `raw/baostock/query_history_k_data_plus/_archive/`；sha256 `d4d4183e…` **移前移后逐位一致** |
+| 2 | 归档 norm `2026-10-12.csv` | 33,701 B → `normalized/l3_valuation/_archive/`；sha256 `146b16f7…` **移前移后逐位一致** |
+| 3 | `meta/ingest_log.jsonl` 留痕 | 追加 2 条：`action=archived`（含 from/to/bytes/sha256/next）· `action=note, status=ANOMALY` |
+| 4 | **发现孤立日志缺口** | 条目 `20261012-2042`（ts 2026-10-12T20:42:48，3 只/174 行，raw/norm sha256 俱全）声称写入 `ingest_date=2026-10-13`，但两文件实测均不在（全盘搜索无其他快照根）；bash 历史不可用，去向无法重建 → 已显式留痕 **不静默跳过**。归档清点确认 2026-10-13 命名空间为空，不影响重采 |
+| 5 | 全市场回填重启 | `--dataset l3_valuation --root D:/pit_snapshots --date 2026-10-13 --universe D:/tdx_dataset_v3 --start 2016-01-01 --end 2026-10-13 --resume --flush-every 100`（5,667 只；实测约 6.5h；日志 `meta/l3_backfill_2026-10-13.log`） |
+| 6 | 回填后验收 | **待执行**：§4 五条标准（退出码 0 / n_stocks≈5,667 / 缺口 0 / 对账 impossible=0 / CI 6/6） |
+
+**环境备忘**：采集必须用**系统 Python 3.13.15**（`C:/Users/T430/AppData/Local/Programs/Python/Python313/python.exe`，
+baostock 0.9.3）；隔离 venv 无 baostock。**后台运行必须用受管后台任务**——
+`nohup … &` 分离的进程会随工具壳层退出被静默 kill（日志无 traceback，2026-10-13 06:44 实测）。
