@@ -154,7 +154,7 @@ def main() -> int:
                     if (c.startswith("sh.6") or c.startswith("sz.0")
                         or c.startswith("sz.3")))
     if not stocks:
-        print(f"  !! 股票列表为空；中止", flush=True)
+        print("  !! 股票列表为空；中止", flush=True)
         bs.logout()
         return 2
     # 分片：支持多进程并行（baostock 非线程安全，故用多进程而非多线程）

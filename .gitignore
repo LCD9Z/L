@@ -22,6 +22,7 @@ __pycache__/
 reports/
 runtime_logs/
 *.log
+*.partial
 
 # --- 例外：研究证据必须入库 ---
 # reports/ 里混了两类东西，不能一刀切忽略（2026-10-02 审计发现）：
