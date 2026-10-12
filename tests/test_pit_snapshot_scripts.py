@@ -10,6 +10,9 @@
    会**严重高估幸存者偏差**（本项目实测：98 只里只有 6 只真实退市）。
 4. **申万标签的 PIT 取法错误** —— 若不取「生效日 ≤ 当日的最新一条」，
    会拿到未来才生效的行业（前视）。
+5. **L1 的 raw 层被过滤** —— `raw/` 若存 `type == "1"` 的子集，
+   就退化成 `normalized/` 的副本，**丧失「复核过滤本身是否正确」的能力**
+   （本项目 2026-10-11 实际发生过：磁盘 5,561 行 vs 全量 8,992 行）。
 """
 
 from __future__ import annotations
@@ -76,6 +79,107 @@ def test_normalize_l1_marks_delisted():
              "out_date": "2009-12-29", "status": "0"}]
     r = ing._normalize_l1(recs, "RUN", "2026-10-11T21:00:00+08:00")[0]
     assert r["is_delisted"] == "1"
+
+
+# ---------------------------------------------------------------------------
+# L1 的 raw 层必须是「未过滤全量」
+#
+# ⚠️ 2026-10-11 的 L1 raw 曾由旧版脚本写入**过滤后**数据（磁盘 5,561 行 vs 全量
+# 8,992 行）—— raw 因此退化成 normalized 的副本，**丧失「复核过滤本身」的能力**。
+# 本组守卫纯函数、不依赖网络，锁住该类复发。
+# ---------------------------------------------------------------------------
+def _api_row(code: str, typ: str, name: str = "某标的") -> Dict[str, str]:
+    return {"code": code, "code_name": name, "ipoDate": "2000-01-01",
+            "outDate": "", "type": typ, "status": "1"}
+
+
+def test_split_l1_filters_only_type_1_into_recs():
+    """`recs` 只保留 `type == "1"`（股票）；2=指数 / 4=可转债 / 5=ETF 必须剔除。"""
+    api = [_api_row("sh.600000", "1", "浦发银行"), _api_row("sh.000001", "2", "上证指数"),
+           _api_row("sh.110000", "4"), _api_row("sh.510300", "5")]
+    recs, _raw = ing._split_l1(api)
+    assert [r["code"] for r in recs] == ["600000"], "非股票类型不得进入 recs"
+
+
+def test_split_l1_raw_is_unfiltered_full():
+    """⚠️ 核心守卫：raw 必须**原样等于**输入全量，不得只返回过滤后的子集。"""
+    api = [_api_row("sh.600000", "1"), _api_row("sh.000001", "2"),
+           _api_row("sh.110000", "4"), _api_row("sh.510300", "5")]
+    _recs, raw = ing._split_l1(api)
+    assert len(raw) == len(api) == 4, "raw 必须是未过滤全量（含非股票类型）"
+    assert raw == api, "raw 不得改写、不得过滤"
+
+
+def test_split_l1_raw_is_strict_superset_of_recs_when_mixed():
+    """混合类型时 `len(raw) > len(recs)` —— 相等即说明 raw 被过滤了。"""
+    api = [_api_row("sh.600000", "1"), _api_row("sh.000001", "2")]
+    recs, raw = ing._split_l1(api)
+    assert len(raw) > len(recs), "raw 与 recs 等长 ⇒ raw 存的是过滤后数据（本类缺陷）"
+
+
+def test_split_l1_code_is_normalized_to_6_digits():
+    """`sh.600000` → `600000`（去掉市场前缀）。"""
+    recs, _raw = ing._split_l1([_api_row("sz.000001", "1", "平安银行")])
+    assert recs[0]["code"] == "000001"
+
+
+def test_fetch_l1_delegates_to_split_l1():
+    """防回归：`_fetch_l1` 必须经 `_split_l1` 拆分，不得内联出第二套过滤逻辑。"""
+    src = (ROOT / "scripts" / "run_pit_snapshot_ingest.py").read_text(encoding="utf-8")
+    assert "return _split_l1(api_rows)" in src, (
+        "_fetch_l1 必须委托给 _split_l1 —— 两套过滤逻辑会漂移"
+    )
+
+
+def _l1_norm_row(code: str) -> Dict[str, str]:
+    return {"code": code, "code_name": "X", "ipo_date": "2000-01-01", "out_date": "",
+            "status": "1", "is_delisted": "0", "effective_date": "2000-01-01",
+            "as_of": "2026-10-12T08:00:00+08:00", "ingest_run_id": "RUN"}
+
+
+def test_self_check_flags_filtered_l1_raw():
+    """⚠️ 核心守卫：L1 的 raw 行数 ≤ 规范层行数 ⇒ 必须 WARN（raw 被过滤）。"""
+    rows = [_l1_norm_row("600000")]
+    problems, metrics = ing._self_check(rows, ing.L1_DATASET, raw_rows=1)
+    assert any("raw 疑似被过滤" in p for p in problems), "过滤后的 raw 必须被标出"
+    assert metrics["raw_rows"] == 1
+
+
+def test_self_check_accepts_full_l1_raw():
+    """raw 行数 > 规范层行数（含指数/可转债/ETF）⇒ 不得告警。"""
+    rows = [_l1_norm_row("600000")]
+    problems, metrics = ing._self_check(rows, ing.L1_DATASET, raw_rows=3)
+    assert not any("raw 疑似被过滤" in p for p in problems)
+    assert metrics["raw_rows"] == 3
+
+
+def test_self_check_does_not_flag_l2_raw_equality():
+    """L2 的 raw 就是解析后的记录，与规范层等长属**正常** → 不得误报。"""
+    rows = [{"code": "000001", "industry_code": "480301", "industry_l1": "480000",
+             "industry_l2": "480300", "effective_date": "2021-07-30",
+             "as_of": "2026-10-12T08:00:00+08:00", "ingest_run_id": "RUN"}]
+    problems, _m = ing._self_check(rows, ing.L2_DATASET, raw_rows=1)
+    assert not any("raw 疑似被过滤" in p for p in problems)
+
+
+def test_ingest_log_entry_includes_raw_rows():
+    """采集日志必须记录 raw 行数 —— 否则过滤缺陷在审计链里**隐形**。"""
+    src = (ROOT / "scripts" / "run_pit_snapshot_ingest.py").read_text(encoding="utf-8")
+    assert '"raw_rows": len(raw_rows)' in src, (
+        "日志缺 raw_rows ⇒ 无法从审计链发现 raw 被过滤（2026-10-11 的缺陷正是这样隐形的）"
+    )
+
+
+def test_ingest_log_distinguishes_write_from_skip():
+    """日志必须能区分「实际写入」与「已存在跳过」。
+
+    否则两条 `raw_sha256` 相同、`force: false` 的记录无法分辨哪条真写了
+    —— 2026-10-11 的 22:44 / 22:45 两条正是此情形。
+    """
+    src = (ROOT / "scripts" / "run_pit_snapshot_ingest.py").read_text(encoding="utf-8")
+    assert 'action = "write"' in src, "缺少写入动作标记"
+    assert 'action = "skip"' in src, "缺少跳过动作标记"
+    assert '"action": action' in src, "日志未写入 action 字段"
 
 
 # ---------------------------------------------------------------------------

@@ -81,14 +81,32 @@ def _fetch_l1() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         rs = bs.query_stock_basic()
         if rs.error_code != "0":
             raise RuntimeError(f"baostock 查询失败: {rs.error_code} {rs.error_msg}")
-        raw: List[Dict[str, Any]] = []
+        api_rows: List[Dict[str, Any]] = []
         while rs.next():
-            raw.append(dict(zip(rs.fields, rs.get_row_data(), strict=False)))
+            api_rows.append(dict(zip(rs.fields, rs.get_row_data(), strict=False)))
     finally:
         bs.logout()
 
+    return _split_l1(api_rows)
+
+
+def _split_l1(
+    api_rows: List[Dict[str, Any]],
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """把 baostock 全量结果拆成 ``(股票记录, 未过滤原始行)``。
+
+    ⚠️ **返回的原始行必须是「未过滤全量」**，不得只返回 ``type == "1"`` 的子集。
+
+    ``raw/`` 层的用途是**日后复核「过滤本身是否正确」**（例如某年是否漏判了
+    指数/可转债的 ``type``、板块代码是否变化）。若 raw 存的是过滤后数据，
+    raw 就退化成 ``normalized/`` 的副本，复核能力归零。
+
+    2026-10-11 的 L1 raw 曾由旧版脚本写入**过滤后**数据
+    （磁盘 5,561 行 vs 全量 8,992 行）—— 本函数 + ``tests/test_pit_snapshot_scripts.py``
+    的守卫防止其复发。**纯函数、无 I/O**，故守卫测试不依赖网络。
+    """
     recs: List[Dict[str, Any]] = []
-    for r in raw:
+    for r in api_rows:
         if str(r.get("type", "")).strip() != "1":
             continue  # 2=指数 · 4=可转债 · 5=ETF —— 不剔除会让退市统计混入指数
         code6 = str(r.get("code", "")).strip().split(".")[-1]
@@ -101,7 +119,7 @@ def _fetch_l1() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
                 "status": str(r.get("status", "")).strip(),
             }
         )
-    return recs, raw
+    return recs, list(api_rows)
 
 
 def _normalize_l1(recs: List[Dict[str, Any]], run_id: str, as_of: str) -> List[Dict[str, str]]:
@@ -285,7 +303,9 @@ def _reconcile_l2(store: PitSnapshotStore, dataset_dir: str, ingest_date: str) -
 # ===========================================================================
 # 通用自检
 # ===========================================================================
-def _self_check(rows: List[Dict[str, str]], dataset: str) -> Tuple[List[str], Dict[str, Any]]:
+def _self_check(
+    rows: List[Dict[str, str]], dataset: str, raw_rows: Optional[int] = None
+) -> Tuple[List[str], Dict[str, Any]]:
     problems: List[str] = []
     cfg = SELF_CHECK[dataset]
     meta = dataset_meta(dataset)
@@ -306,6 +326,18 @@ def _self_check(rows: List[Dict[str, str]], dataset: str) -> Tuple[List[str], Di
             problems.append(f"WARN 字段 {f} 缺失率 {rate:.2%} > 上限 {cfg['max_missing_rate']:.2%}")
 
     metrics: Dict[str, Any] = {"n_rows": n, "n_unique_codes": len({r["code"] for r in rows})}
+
+    # ⚠️ raw 层必须是**未过滤**的源响应。
+    # baostock 的 query_stock_basic 全量含 指数(2)/可转债(4)/ETF(5)，股票(type=1)仅约 62%
+    # → L1 的 raw 行数应**显著多于**规范层行数。若 ≤，即说明 raw 被过滤了
+    #   （2026-10-11 实际发生过：raw 5,561 = 规范层 5,561，属 stale 缺陷）。
+    if raw_rows is not None:
+        metrics["raw_rows"] = raw_rows
+        if dataset == L1_DATASET and raw_rows <= n:
+            problems.append(
+                f"WARN L1 raw 层 {raw_rows} 行 ≤ 规范层 {n} 行 —— raw 疑似被过滤"
+                "（应为源响应全量，含指数/可转债/ETF）"
+            )
 
     if dataset == L1_DATASET:
         n_del = sum(1 for r in rows if r["is_delisted"] == "1")
@@ -354,13 +386,16 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
         raise SystemExit(f"未实现的数据集: {dataset}")
 
     print("[3/5] 自检（阈值事前固定）...", flush=True)
-    problems, metrics = _self_check(rows, dataset)
+    problems, metrics = _self_check(rows, dataset, len(raw_rows))
     for p in problems:
         print(f"      {p}", flush=True)
     fails = [p for p in problems if p.startswith("FAIL")]
     print(f"      指标: {json.dumps(metrics, ensure_ascii=False)}", flush=True)
 
     print("[4/5] 落盘（只追加）...", flush=True)
+    # ⚠️ 必须区分「实际写入」与「因已存在而跳过」—— 否则日志里两条 sha 相同的记录
+    # 无法分辨哪条真写了（2026-10-11 的 22:44 / 22:45 两条即为此情形）。
+    action = "write"
     try:
         if blob is not None:
             raw_path = store.append_raw_bytes(
@@ -372,6 +407,7 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
         print(f"      raw  : {raw_path}", flush=True)
         print(f"      norm : {norm_p}", flush=True)
     except OverwriteRefusedError as exc:
+        action = "skip"
         print(f"      SKIP {exc}（用 --force 覆盖）", flush=True)
         raw_path = store.raw_path(source, endpoint, ingest_date, suffix)
         norm_p = store.norm_path(dataset, ingest_date)
@@ -385,11 +421,13 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
         "ingest_date": ingest_date,
         "pit_mode": meta["pit_mode"],
         "rows": len(rows),
+        "raw_rows": len(raw_rows),
         "raw_sha256": sha256_of_file(raw_path) if raw_path.exists() else None,
         "norm_sha256": sha256_of_file(norm_p) if norm_p.exists() else None,
         "status": "FAIL" if fails else ("WARN" if problems else "OK"),
         "problems": problems,
         "metrics": metrics,
+        "action": action,
         "force": bool(args.force),
     }
     store.log_ingest(entry)
