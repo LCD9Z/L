@@ -174,14 +174,19 @@ def main() -> int:
                     try:
                         c = float(r[2])
                         h, lo = float(r[3]), float(r[4])
-                        vol_shares = float(r[5]) * 100
+                        # ⚠️ 2026-10-12 修正：腾讯 volume 单位是**股**，不是「手」。
+                        # 实测 91 只「通达信 volume / 腾讯 volume」中位比 = **1.0**；
+                        # 此前按「手」多乘 100 → volume 与 amount 均放大 100 倍。
+                        # 好在是**常数缩放**，不影响横截面排序，IC 结论不受影响；
+                        # 但数据必须修正。
+                        vol_shares = float(r[5])
                         typ = (h + lo + c) / 3.0
                         amt = vol_shares * typ
                     except (ValueError, IndexError):
                         c = h = lo = typ = amt = 0.0
                     fh.write(",".join([
                         r[0].replace("-", ""), r[1], r[2], r[3], r[4],
-                        "%.0f" % (float(r[5]) * 100),
+                        "%.0f" % vol_shares,
                         "%.2f" % amt]) + "\n")
                 fh.flush()
                 os.fsync(fh.fileno())
