@@ -39,6 +39,7 @@ import json
 import math
 import os
 import sys
+from pathlib import Path
 from typing import Dict, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -186,6 +187,10 @@ def main() -> int:
 
     print("[2/3] 逐期算 IC ...", flush=True)
     out: Dict = {"windows": {}, "n_stocks": len(series),
+                 # ⚠️ 数据集标识（整改清单 P0-2）—— 缺了会被
+                 # test_data_asset_registry 抓住（2026-10-13 确实被抓住过一次）。
+                 "source": str(Path(args.src).resolve()),
+                 "source_dataset_id": "D5",
                  "amount_is_estimated": True,
                  "note": "amount 为 volume×(H+L+C)/3 估算值；"
                          "amihud20/loga20 结论应视为较弱证据"}
@@ -220,7 +225,7 @@ def main() -> int:
         print(f"{tag:>18}", end="")
     print()
     reg = ["W1", "W2", "W3", "W4", "W5"]
-    consistent: Dict[str, int] = {k: 0 for k in FACTORS}
+    consistent: Dict[str, int] = dict.fromkeys(FACTORS, 0)
     flipped: Dict[str, List[str]] = {k: [] for k in FACTORS}
     # ⚠️ 2026-10-12 修正：区分「方向不一致」与「无法判定（无数据）」。
     # 原实现把 W1/W2 的「无数据」也计入「未同号」，导致 4/4 有效窗口全同号的

@@ -25,10 +25,24 @@ class Costs:
     stamp_duty_sell_before: float = STAMP_DUTY_SELL_BEFORE
 
 
+def _norm_date(d) -> str:
+    """把日期统一成 YYYYMMDD（去横杠）。
+
+    ⚠️ 2026-10-13 修：原实现直接 `str(trade_date) >= str(change)`，
+    而 `change` 常量写作 `"2023-08-28"`（带横杠）、`trade_date` 来自
+    K 线的 `"20230825"`（不带）→ **字符串比较时 '-' < '0'**，
+    使 `"20230825" >= "2023-08-28"` 恒为 True → **印花税分段完全失效**。
+    （由 `tests/test_execution_stress.py` 当场抓出。）
+    """
+    return str(d).replace("-", "").replace("/", "").strip()[:8]
+
+
 def _stamp_rate(c, trade_date=None):
     """卖出印花税率：trade_date 早于生效日时用旧税率；未提供日期按现行税率。"""
     change = getattr(c, 'stamp_duty_change_date', None)
-    if not trade_date or not change or str(trade_date) >= str(change):
+    if not trade_date or not change:
+        return c.stamp_duty_sell
+    if _norm_date(trade_date) >= _norm_date(change):
         return c.stamp_duty_sell
     return c.stamp_duty_sell_before
 
