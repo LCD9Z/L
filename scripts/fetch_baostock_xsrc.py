@@ -59,7 +59,7 @@ HEADER = "date,open,close,high,low,volume,amount"
 
 
 def _fetch_segment(bs, secid: str, start: str, end: str) -> Optional[List[List[str]]]:
-    """取一段（约 4 年）的日线。返回 None 表示源异常（须重试）。"""
+    """取一段的日线。返回 None 表示源异常（须重试）。"""
     try:
         rs = bs.query_history_k_data_plus(
             secid, FIELDS, start_date=start, end_date=end,
@@ -78,7 +78,28 @@ def _fetch_segment(bs, secid: str, start: str, end: str) -> Optional[List[List[s
 
 
 def fetch_full(bs, secid: str, start: str, end: str) -> Optional[List[List[str]]]:
-    """按日期分段拉全历史（每段 ≤4 年，恒 <2000 行）。"""
+    """取全历史：**先试一次拉全**（快，1 请求），
+    若返回行数 ≥ 2000（可能是「一页」截断），**改为日期分段重拉**（安全）。
+
+    ## 为什么要这样
+
+    腾讯限流顽固（实测 30 分钟卡住），baostock 是唯一能给**原始 amount** 的源。
+    但 baostock 有「一页陷阱」：某页**恰好** 2000 行时会去取下一页，
+    若失败则**静默结束**（副本侧从源码定位）。
+
+    → 权衡：一次拉全 1 请求/只（快）；**命中 2000 整数倍即判可疑**，
+      自动降级为日期分段（每段 ≤4 年，恒 <2000，永不触发翻页）。
+    """
+    # 第一次：一次拉全
+    whole = _fetch_segment(bs, secid, start, end)
+    if whole is None:
+        return None
+    if len(whole) < PER_PAGE:
+        return whole                                # 不足一页，安全
+
+    # ≥2000 行：可能是截断，也可能是真的很多 —— 用分段复核
+    print(f"      [{secid}] 一次拉全得 {len(whole)} 行（≥{PER_PAGE}）"
+          f" → 降级为日期分段复核", flush=True)
     d0 = _dt.date.fromisoformat(start)
     d1 = _dt.date.fromisoformat(end)
     rows: Dict[str, List[str]] = {}
@@ -93,7 +114,11 @@ def fetch_full(bs, secid: str, start: str, end: str) -> Optional[List[List[str]]
         if seg_end >= d1:
             break
         cur = seg_end + _dt.timedelta(days=1)
-    return [rows[k] for k in sorted(rows)]
+    merged = [rows[k] for k in sorted(rows)]
+    if len(merged) > len(whole):
+        print(f"      [{secid}] ⚠️ 分段得 {len(merged)} > 一次拉全 {len(whole)}"
+              f" → 确有一次拉全被截断（守卫判据有效）", flush=True)
+    return merged
 
 
 def _secid(code: str) -> str:
