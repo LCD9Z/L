@@ -190,7 +190,11 @@ def main() -> int:
                  "note": "amount 为 volume×(H+L+C)/3 估算值；"
                          "amihud20/loga20 结论应视为较弱证据"}
     for tag, _s, _e in WINDOWS:
-        got = dict.fromkeys(FACTORS, [])
+        # ⚠️ 不能用 dict.fromkeys(FACTORS, []) —— 那会让 5 个因子**共享同一个
+        # list 对象**，append 全进同一个列表，导致 5 个因子 IC 完全相同。
+        # （2026-10-12 实测踩到：我曾为消 ruff C420 改成 dict.fromkeys，
+        #  结果 5 因子 IC 全是 -0.0326/-4.34。）
+        got = {k: [] for k in FACTORS}
         n_cs = 0
         for _d, slot in buckets[tag].items():
             y = slot["y"]
@@ -216,7 +220,12 @@ def main() -> int:
         print(f"{tag:>18}", end="")
     print()
     reg = ["W1", "W2", "W3", "W4", "W5"]
-    consistent: Dict[str, int] = dict.fromkeys(FACTORS, 0)
+    consistent: Dict[str, int] = {k: 0 for k in FACTORS}
+    flipped: Dict[str, List[str]] = {k: [] for k in FACTORS}
+    # ⚠️ 2026-10-12 修正：区分「方向不一致」与「无法判定（无数据）」。
+    # 原实现把 W1/W2 的「无数据」也计入「未同号」，导致 4/4 有效窗口全同号的
+    # 因子被判 3/5 →「整体存疑」——**机械误判**：无数据 ≠ 方向相反。
+    # 整改清单 P0-1 要求「不允许择优汇报」，同样要求如实区分「相反」与「缺失」。
     for k in FACTORS:
         print(f"  {k:<10}{DIRECTIONS[k]:>+5}", end="")
         for tag, _s, _e in WINDOWS:
@@ -229,21 +238,46 @@ def main() -> int:
                 print(f"{'n/a':>18}", end="")
                 continue
             ok = (v["ic_mean"] > 0) == (DIRECTIONS[k] > 0)
-            if ok and tag in reg:
-                consistent[k] += 1
+            if ok:
+                if tag in reg:
+                    consistent[k] += 1
+            else:
+                flipped[k].append(tag)
             print(f"{v['ic_mean']:+.4f}/{v['t']:+.2f}{'✓' if ok else '✗':>3}",
                   end="")
         print()
     out["consistent_windows"] = consistent
 
-    n_ok = sum(1 for k in FACTORS if consistent[k] >= 4)
+    # 覆盖率（防「无数据被悄悄当成一致」或「当成不一致」）
+    usable = [t for t, _s, _e in WINDOWS if out["windows"].get(t)]
+    missing = [t for t, _s, _e in WINDOWS if not out["windows"].get(t)]
+    out["coverage"] = {"usable_windows": usable, "missing_windows": missing,
+                       "n_stocks": len(series)}
+    print(f"\n  窗口覆盖：可用 {len(usable)}/{len(WINDOWS)}"
+          + (f"　缺失 {missing}" if missing else ""))
+
+    # 判定：在**可用正式窗口**里数同号数（而非在全部 6 个里数）
+    n_reg_usable = sum(1 for t in reg if out["windows"].get(t))
+    n_ok = sum(1 for k in FACTORS
+               if n_reg_usable > 0 and consistent[k] >= min(4, n_reg_usable)
+               and not flipped[k])
+    if missing:
+        concl = (f"⚠️ 覆盖率不足（缺 {missing}）→ 判定降级为「部分一致」；"
+                 f"既不得当作「跨源一致」，也不得当作「方向相反」")
+    elif n_ok >= 4:
+        concl = "跨源一致"
+    elif n_ok == 3:
+        concl = "部分一致"
+    else:
+        concl = "⚠️ 整体存疑（须上报，启动全项目复审）"
     out["verdict"] = {
         "factors_consistent_ge4": n_ok,
-        "conclusion": ("跨源一致" if n_ok >= 4
-                       else "部分一致" if n_ok == 3
-                       else "⚠️ 整体存疑（须上报，启动全项目复审）")}
-    print(f"\n  → 方向一致（≥4 窗口）的因子：{n_ok}/5 → "
-          f"{out['verdict']['conclusion']}")
+        "n_regular_windows_usable": n_reg_usable,
+        "flipped": {k: v for k, v in flipped.items() if v},
+        "conclusion": concl}
+    print(f"\n  → 同号因子 {n_ok}/5（可用正式窗口 {n_reg_usable} 个）；"
+          f"翻转 {[k for k, v in flipped.items() if v]}")
+    print(f"  → 判定：{concl}")
 
     if args.out:
         os.makedirs(os.path.dirname(args.out), exist_ok=True)
