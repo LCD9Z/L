@@ -1,0 +1,38 @@
+{
+  "sample_codes": 24,
+  "failed_codes": [],
+  "window": [
+    "2023-01-01",
+    "2025-12-31"
+  ],
+  "bps_relative_diff": {
+    "n": 15890,
+    "median": 0.0,
+    "p90": 0.004994,
+    "max": 0.334482,
+    "share_le_1pct": 0.9498
+  },
+  "eps_relative_diff": {
+    "n": 13135,
+    "median": 0.016132,
+    "p90": 0.173193,
+    "max": 3.632802,
+    "share_le_1pct": 0.4253
+  },
+  "eps_signed_diff_median": -0.000495,
+  "pit_alignment": {
+    "aligned": 175,
+    "early": 0,
+    "late": 0,
+    "no_event": 1,
+    "no_data": 4
+  },
+  "pit_early_share": 0.0,
+  "pit_aligned_share": 0.9943,
+  "early_examples": [],
+  "caveats": [
+    "PIT 检验仅覆盖有巨潮披露日的 (code, period) 对；样本为抽样而非全市场",
+    "early 只是嫌疑，须人工核对具体披露事件后才能定性",
+    "baostock 用不复权价、本项目 v3 用 qfq —— 故只比隐含分母，不比比率本身"
+  ]
+}

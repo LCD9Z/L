@@ -20,7 +20,7 @@
    文件名不出现在代码里。此时以**引用它的报告**中的命令行为准。
 3. **同一份证据可能被多份报告引用** —— 这属正常（如 `five_factor_ab_v2.json` 被 4 份引用）。
 
-**当前跟踪 54 份证据。**
+**当前跟踪 55 份证据。**
 
 ---
 
@@ -58,6 +58,7 @@
 | `impact_cost.json` | 6,444 | `bb88751fe5da` | IMPACT_AND_CAPACITY_REPORT.md<br>IMPACT_COST_PREREG.md | — |
 | `industry_ic_attribution.json` | 58,556 | `318ab564785f` | BENCHMARK_ALIGNMENT.md | `run_industry_ic_attribution.py` |
 | `industry_ic_attribution_sw.json` | 69,367 | `9b6fec09ca0b` | （暂无报告直接引用） | `run_industry_ic_attribution.py` |
+| `l3_reconciliation.json` | 909 | `2b73609df254` | PIT_SNAPSHOT_P2_REPORT.md | — |
 | `multiple_testing_audit.json` | 9,523 | `7b1c929483c4` | P0_P1_EXECUTION_REPORT.md | `run_multiple_testing_audit.py` |
 | `pit_gaps.json` | 1,620 | `051603363874` | （暂无报告直接引用） | — |
 | `pit_l1_reconciliation.json` | 841 | `b674dabad7fe` | PIT_SNAPSHOT_P0_REPORT.md | — |

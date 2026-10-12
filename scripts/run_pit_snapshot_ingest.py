@@ -32,7 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from pit.baostock_guard import assert_not_truncated  # noqa: E402
+from pit.baostock_guard import assert_not_truncated, suspect_truncation  # noqa: E402
 from pit.pit_snapshot_store import (  # noqa: E402
     DATASET_REGISTRY,
     OverwriteRefusedError,
@@ -46,6 +46,7 @@ from pit.pit_snapshot_store import (  # noqa: E402
 # --- 源定义 ---
 L1_DATASET = "l1_stock_basic"
 L2_DATASET = "l2_sw_industry"
+L3_DATASET = "l3_valuation"
 
 SW_URL = "https://www.swsresearch.com/swindex/pdf/SwClass2021/StockClassifyUse_stock.xls"
 SW_UA = "Mozilla/5.0 (compatible; ai-stock-god-pit/1.0)"
@@ -61,6 +62,12 @@ SELF_CHECK: Dict[str, Dict[str, float]] = {
         "min_rows": 10000.0,       # 记录数下限（实测 12925）
         "min_stocks": 5000.0,      # 覆盖股票数下限（实测 5930）
         "max_missing_rate": 0.01,
+    },
+    L3_DATASET: {
+        # 行数取决于 `--universe` 与 `--limit`，故下限只用于拦「整体抓取失败」。
+        "min_rows": 1000.0,
+        # `close` 是估值比率的分母：缺了该行无意义（实测 baostock 停牌日仍给 close）。
+        "max_missing_rate": 0.02,
     },
 }
 
@@ -307,6 +314,128 @@ def _reconcile_l2(store: PitSnapshotStore, dataset_dir: str, ingest_date: str) -
 
 
 # ===========================================================================
+# L3 · baostock 日频估值历史（**不复权**）
+# ===========================================================================
+L3_FIELDS = "date,code,close,peTTM,pbMRQ,psTTM,pcfNcfTTM,turn,tradestatus,isST"
+
+#: 6 位代码 → baostock 市场前缀。**不认识的号段直接抛错，不猜**
+#: （猜错会静默取到别的标的 —— 与本项目反复出现的「对象标识」问题同类）。
+_PREFIX_BY_FIRST = {"6": "sh", "5": "sh", "9": "sh",
+                    "0": "sz", "2": "sz", "3": "sz",
+                    "4": "bj", "8": "bj"}
+
+
+def bs_symbol(code: str) -> str:
+    """``600519`` → ``sh.600519``。未知号段抛错。"""
+    c = str(code).zfill(6)
+    pref = _PREFIX_BY_FIRST.get(c[0])
+    if pref is None:
+        raise ValueError(f"未知号段，无法确定市场前缀: {code!r}")
+    return f"{pref}.{c}"
+
+
+def _universe_codes(dataset_dir: str, limit: int = 0) -> List[str]:
+    """从本地数据集目录取股票代码（6 位，升序）。"""
+    d = Path(dataset_dir) / "stocks"
+    if not d.is_dir():
+        raise RuntimeError(f"数据集目录不存在: {d}")
+    codes = sorted(p.stem for p in d.glob("*.csv") if p.stem.isdigit())
+    return codes[:limit] if limit > 0 else codes
+
+
+def _fetch_one_l3(symbol: str, start: str, end: str) -> List[Dict[str, Any]]:
+    """单只标的的日频估值原始行（**调用方须已登录**）。
+
+    ``adjustflag='3'`` = **不复权** —— 与 ``peTTM``/``pbMRQ`` 的口径一致
+    （估值比率的分母是**未复权**的收盘价；用复权价会引入系统性偏差）。
+    """
+    import baostock as bs  # 惰性导入：可选依赖
+
+    rs = bs.query_history_k_data_plus(
+        symbol, L3_FIELDS, start_date=start, end_date=end,
+        frequency="d", adjustflag="3",
+    )
+    if rs.error_code != "0":
+        raise RuntimeError(f"{symbol}: {rs.error_code} {rs.error_msg}")
+    out: List[Dict[str, Any]] = []
+    while rs.next():
+        out.append(dict(zip(rs.fields, rs.get_row_data(), strict=False)))
+    return out
+
+
+def _fetch_l3(codes: List[str], start: str, end: str,
+              progress_every: int = 200) -> Tuple[List[Dict[str, Any]], int, List[str], List[str]]:
+    """批量取日频估值。
+
+    返回 ``(原始行, 原始行数, 疑似截断且重取一致, 重取发现真截断)``。
+
+    ⚠️ **分页截断的处理**：``query_history_k_data_plus`` 的页长 = 2000
+    （见 :mod:`pit.baostock_guard`）。**单只标的**行数恰为 2000 整数倍时，
+    既可能是「该标的在该窗口恰好这么多天」，也可能是**下一页请求失败的静默截断**。
+    → 对该标的**重取一次**：
+      * 两次行数**不同** ⇒ 真截断（取较大者，并记入「真截断」清单）
+      * 两次**相同**   ⇒ 记为「疑似但稳定」（合法，但须人工确认，在自检里报出）
+    """
+    import baostock as bs  # 惰性导入：可选依赖
+
+    lg = bs.login()
+    if lg.error_code != "0":
+        raise RuntimeError(f"baostock 登录失败: {lg.error_code} {lg.error_msg}")
+
+    raw: List[Dict[str, Any]] = []
+    suspect_stable: List[str] = []
+    real_truncated: List[str] = []
+    try:
+        for i, code in enumerate(codes, 1):
+            sym = bs_symbol(code)
+            rows = _fetch_one_l3(sym, start, end)
+            if suspect_truncation(len(rows)):
+                again = _fetch_one_l3(sym, start, end)
+                if len(again) != len(rows):
+                    real_truncated.append(f"{code}:{len(rows)}→{len(again)}")
+                    rows = again if len(again) > len(rows) else rows
+                else:
+                    suspect_stable.append(f"{code}:{len(rows)}")
+            raw.extend(rows)
+            if progress_every and i % progress_every == 0:
+                print(f"      ... {i}/{len(codes)} 只（累计 {len(raw):,} 行）", flush=True)
+    finally:
+        bs.logout()
+    return raw, len(raw), suspect_stable, real_truncated
+
+
+def _num_or_blank(v: Any) -> str:
+    """原样透传为字符串（空即空）。**不做类型兜底、不插补**。"""
+    return str(v).strip() if v is not None else ""
+
+
+def _normalize_l3(recs: List[Dict[str, Any]], run_id: str, as_of: str) -> List[Dict[str, str]]:
+    """``effective_date`` 取交易日（该行事实发生的日期）。"""
+    out: List[Dict[str, str]] = []
+    for r in recs:
+        day = _num_or_blank(r.get("date"))
+        if not day:
+            continue  # 无日期 → 无法定位 PIT 生效点，**丢弃而非猜**
+        sym = _num_or_blank(r.get("code"))
+        code = sym.split(".")[-1].zfill(6) if sym else ""
+        out.append({
+            "code": code,
+            "close": _num_or_blank(r.get("close")),
+            "pe_ttm": _num_or_blank(r.get("peTTM")),
+            "pb_mrq": _num_or_blank(r.get("pbMRQ")),
+            "ps_ttm": _num_or_blank(r.get("psTTM")),
+            "pcf_ncf_ttm": _num_or_blank(r.get("pcfNcfTTM")),
+            "turnover": _num_or_blank(r.get("turn")),
+            "trade_status": _num_or_blank(r.get("tradestatus")),
+            "is_st": _num_or_blank(r.get("isST")),
+            "effective_date": day,
+            "as_of": as_of,
+            "ingest_run_id": run_id,
+        })
+    return out
+
+
+# ===========================================================================
 # 通用自检
 # ===========================================================================
 def _self_check(
@@ -358,6 +487,9 @@ def _self_check(
             problems.append(f"FAIL 覆盖股票数 {n_stk} < 下限 {cfg['min_stocks']:.0f}")
         metrics["n_stocks"] = n_stk
 
+    if dataset == L3_DATASET:
+        metrics["n_stocks"] = len({r["code"] for r in rows})
+
     return problems, metrics
 
 
@@ -371,6 +503,8 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
 
     print(f"\n########## {dataset} ##########", flush=True)
     blob: Optional[bytes] = None
+    suspect_stable: List[str] = []
+    real_trunc: List[str] = []
     if dataset == L1_DATASET:
         source, endpoint, suffix = "baostock", "query_stock_basic", ".jsonl"
         print("[1/5] 采集 baostock:query_stock_basic ...", flush=True)
@@ -388,11 +522,38 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
         rows = _normalize_l2(recs2, run_id, as_of)
         raw_rows = recs2
         print(f"      记录 {len(rows)} 行 · 股票 {len({r['code'] for r in rows})} 只", flush=True)
+    elif dataset == L3_DATASET:
+        source, endpoint, suffix = "baostock", "query_history_k_data_plus", ".jsonl"
+        if not args.universe:
+            raise SystemExit("L3 需要 --universe <数据集目录>（如 D:/tdx_dataset_v3）")
+        if not (args.start and args.end):
+            raise SystemExit("L3 需要 --start 与 --end（YYYY-MM-DD）")
+        codes = _universe_codes(args.universe, args.limit)
+        print(f"[1/5] 采集 baostock:query_history_k_data_plus"
+              f"（{len(codes)} 只 · {args.start}~{args.end} · 不复权）...", flush=True)
+        raw_rows, n_raw, suspect_stable, real_trunc = _fetch_l3(codes, args.start, args.end)
+        print(f"      原始 {n_raw:,} 行", flush=True)
+        print("[2/5] 规范化（双时间轴）...", flush=True)
+        rows = _normalize_l3(raw_rows, run_id, as_of)
+        print(f"      规范 {len(rows):,} 行 · 标的 {len({r['code'] for r in rows}):,} 只", flush=True)
     else:  # pragma: no cover - argparse choices 已限制
         raise SystemExit(f"未实现的数据集: {dataset}")
 
     print("[3/5] 自检（阈值事前固定）...", flush=True)
     problems, metrics = _self_check(rows, dataset, len(raw_rows))
+    if dataset == L3_DATASET:
+        metrics["n_suspect_stable"] = len(suspect_stable)
+        metrics["n_real_truncated"] = len(real_trunc)
+        if real_trunc:
+            problems.append(
+                f"FAIL 重取发现**真截断** {len(real_trunc)} 只（两次行数不同），"
+                f"例: {real_trunc[:5]}"
+            )
+        if suspect_stable:
+            problems.append(
+                f"WARN 行数恰为 2000 整数倍且重取一致 {len(suspect_stable)} 只"
+                f"（合法但**须人工确认**）: {suspect_stable[:5]}"
+            )
     for p in problems:
         print(f"      {p}", flush=True)
     fails = [p for p in problems if p.startswith("FAIL")]
@@ -442,6 +603,11 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
         print("      ❌ 自检 FAIL → 非零退出（不得静默通过）", flush=True)
 
     if args.reconcile:
+        if dataset == L3_DATASET:
+            raise SystemExit(
+                "L3 的对账请用 scripts/run_l3_valuation_reconciliation.py"
+                "（与 pit_fundamentals 的 pb/pe_ttm 对账，口径与 L1/L2 不同）"
+            )
         print(f"[5/5] 与 {args.reconcile} 交叉核对 ...", flush=True)
         rec = (_reconcile_l1 if dataset == L1_DATASET else _reconcile_l2)(
             store, args.reconcile, ingest_date
@@ -464,7 +630,8 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    ap = argparse.ArgumentParser(description="PIT 快照采集（L1 上市/退市日 · L2 申万行业变迁史）")
+    ap = argparse.ArgumentParser(
+        description="PIT 快照采集（L1 上市/退市日 · L2 申万行业变迁史 · L3 日频估值历史）")
     ap.add_argument("--root", default="D:/pit_snapshots", help="快照库根目录")
     ap.add_argument("--dataset", default=L1_DATASET, choices=sorted(DATASET_REGISTRY))
     ap.add_argument("--all", action="store_true", help="采集全部已登记数据集")
@@ -472,9 +639,22 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--force", action="store_true", help="覆盖已落盘日期（留痕）")
     ap.add_argument("--reconcile", default=None, help="与本地数据集交叉核对（如 D:/tdx_dataset_v3）")
     ap.add_argument("--out", default=None, help="对账结果 JSON 输出路径")
+    # --- L3 专用 ---
+    ap.add_argument("--universe", default=None,
+                    help="L3：本地数据集目录（取其 stocks/*.csv 的代码作为标的池）")
+    ap.add_argument("--start", default=None, help="L3：起始日 YYYY-MM-DD")
+    ap.add_argument("--end", default=None, help="L3：结束日 YYYY-MM-DD")
+    ap.add_argument("--limit", type=int, default=0,
+                    help="L3：只取前 N 只（0=全部；小样本试跑用）")
     args = ap.parse_args(argv)
 
     targets = sorted(DATASET_REGISTRY) if args.all else [args.dataset]
+    # `--all` 默认**跳过 L3** —— 它需要 --universe/--start/--end。
+    # 缺参时**显式跳过并说明**，比直接抛错更合适（`--all` 的语义是「能采的都采」），
+    # 但绝不静默跳过。
+    if args.all and L3_DATASET in targets and not (args.universe and args.start and args.end):
+        targets = [d for d in targets if d != L3_DATASET]
+        print(f"ⓘ --all 跳过 {L3_DATASET}（缺 --universe / --start / --end）", flush=True)
     rc = 0
     for ds in targets:
         rc = max(rc, _ingest_one(ds, args))

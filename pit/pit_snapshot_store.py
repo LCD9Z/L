@@ -88,6 +88,24 @@ DATASET_REGISTRY: Dict[str, Dict[str, Any]] = {
             "`as_of` 轴记录采集时刻供溯源，但不用于筛选。"
         ),
     },
+    "l3_valuation": {
+        # ⚠️ **保守用 `revisable`（双轴）**，理由：
+        #   ① **每日追加**时 `as_of ≈ effective_date`，双轴完全可用，无副作用；
+        #   ② **历史回填**时 `as_of = 采集日`（如 2026-10-12）≠ `effective_date`（如 2016-01-04）
+        #      → 双轴下回填记录**对历史日期不可见**。这正是诚实的语义：
+        #      **「这些数据我们在采集日之前并没有」**。
+        #   ③ 若要让回填用于历史回测，须**先通过对账**（见 `PIT_SNAPSHOT_P2_REPORT.md`）
+        #      并**显式授权**改为 `immutable_fact` —— 不在采集阶段预先声明。
+        #      依据：设计文档「不因为「源给了回溯窗口」就默认其 PIT 正确 —— 回溯值同样要对账」。
+        "pit_mode": MODE_REVISABLE,
+        "primary_key": "code",
+        "unique_key": ("code", "effective_date"),
+        "note": (
+            "日频估值历史（baostock query_history_k_data_plus，adjustflag='3' 不复权）："
+            "close / pe_ttm / pb_mrq / ps_ttm / pcf_ncf_ttm / turnover / trade_status / is_st。"
+            "回填用于历史回测前必须先做抽样对账并显式授权。"
+        ),
+    },
 }
 
 # 规范化表的**保留列名**。

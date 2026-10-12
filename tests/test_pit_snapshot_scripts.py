@@ -28,7 +28,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import run_pit_gap_check as gap  # noqa: E402
 import run_pit_snapshot_ingest as ing  # noqa: E402
-from pit.pit_snapshot_store import PitSnapshotStore  # noqa: E402
+from pit.pit_snapshot_store import DATASET_REGISTRY, PitSnapshotStore  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -247,6 +247,71 @@ def test_gap_check_calendar_is_guarded_against_silent_truncation():
     """防回归：交易日历被截断会报出**假缺口**，必须守卫。"""
     src = (ROOT / "scripts" / "run_pit_gap_check.py").read_text(encoding="utf-8")
     assert "assert_not_truncated(n_raw" in src, "断更检测的日历未接截断守卫"
+
+
+# ---------------------------------------------------------------------------
+# L3 日频估值历史（脚本纯函数）
+# ---------------------------------------------------------------------------
+def test_bs_symbol_prefix_mapping():
+    """号段 → 市场前缀。"""
+    assert ing.bs_symbol("600519") == "sh.600519"
+    assert ing.bs_symbol("000001") == "sz.000001"
+    assert ing.bs_symbol("300750") == "sz.300750"
+    assert ing.bs_symbol("688981") == "sh.688981"
+    assert ing.bs_symbol("830799") == "bj.830799"
+    assert ing.bs_symbol("519") == "sz.000519", "不足 6 位须补零后再判号段"
+
+
+def test_bs_symbol_rejects_unknown_prefix():
+    """⚠️ 未知号段必须**抛错**，不得猜 —— 猜错会静默取到别的标的。"""
+    with pytest.raises(ValueError, match="未知号段"):
+        ing.bs_symbol("700001")
+
+
+def test_normalize_l3_maps_fields_and_keeps_effective_date():
+    raw = [{"date": "2024-01-02", "code": "sh.600519", "close": "1685.01",
+            "peTTM": "29.732", "pbMRQ": "9.718", "psTTM": "9.0",
+            "pcfNcfTTM": "37.3", "turn": "0.2", "tradestatus": "1", "isST": "0"}]
+    r = ing._normalize_l3(raw, "RUN", "2026-10-12T20:00:00+08:00")[0]
+    assert r["code"] == "600519"
+    assert r["effective_date"] == "2024-01-02", "effective_date 必须取交易日"
+    assert r["pe_ttm"] == "29.732" and r["pb_mrq"] == "9.718"
+    assert r["as_of"] == "2026-10-12T20:00:00+08:00"
+    assert r["ingest_run_id"] == "RUN"
+
+
+def test_normalize_l3_drops_rows_without_date():
+    """⚠️ 无日期 → 无法定位 PIT 生效点 → **丢弃而非猜**。"""
+    raw = [{"date": "", "code": "sh.600519", "close": "1"},
+           {"date": "2024-01-02", "code": "sh.600519", "close": "2"}]
+    assert len(ing._normalize_l3(raw, "RUN", "T")) == 1
+
+
+def test_normalize_l3_does_not_coerce_or_impute():
+    """**缺失即缺失**：空值原样保留为空串，不填 0、不插补。"""
+    raw = [{"date": "2024-01-02", "code": "sh.600519", "close": "1",
+            "peTTM": "", "pbMRQ": None}]
+    r = ing._normalize_l3(raw, "RUN", "T")[0]
+    assert r["pe_ttm"] == "" and r["pb_mrq"] == ""
+
+
+def test_l3_registered_with_composite_unique_key():
+    """L3 必须已登记，且主键为 (code, effective_date)（同一标的多日）。"""
+    assert "l3_valuation" in DATASET_REGISTRY
+    assert DATASET_REGISTRY["l3_valuation"]["unique_key"] == ("code", "effective_date")
+    assert DATASET_REGISTRY["l3_valuation"]["pit_mode"] == "revisable", (
+        "回填的 as_of=采集日 ≠ effective_date —— 未通过对账前不得声明 immutable_fact"
+    )
+
+
+def test_universe_codes_reads_sorted_digits_only(tmp_path: Path):
+    d = tmp_path / "ds" / "stocks"
+    d.mkdir(parents=True)
+    for name in ("600519.csv", "000001.csv", "note.txt", "abc.csv"):
+        (d / name).write_text("x", encoding="utf-8")
+    got = ing._universe_codes(str(tmp_path / "ds"))
+    assert got == ["000001", "600519"], "只取 6 位数字代码并升序"
+    assert ing._universe_codes(str(tmp_path / "ds"), limit=1) == ["000001"]
 
 
 # ---------------------------------------------------------------------------
