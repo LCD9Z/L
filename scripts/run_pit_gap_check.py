@@ -39,6 +39,7 @@ from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from pit.baostock_guard import assert_not_truncated  # noqa: E402
 from pit.pit_snapshot_store import (  # noqa: E402
     DATASET_REGISTRY,
     PitSnapshotStore,
@@ -61,14 +62,18 @@ def _trading_days_baostock(start: str, end: str) -> List[str]:
         if rs.error_code != "0":
             raise RuntimeError(f"交易日历查询失败: {rs.error_code} {rs.error_msg}")
         out: List[str] = []
+        n_raw = 0
         while rs.next():
             # ⚠️ 必须**只取一次** row —— 连写两次 rs.get_row_data() 会在第二次越界
             # （baostock 的 ResultData 在 next() 之后只保证一次有效读取）。
             row = rs.get_row_data()
+            n_raw += 1
             if str(row[1]).strip() == "1":
                 out.append(str(row[0]))
     finally:
         bs.logout()
+    # ⚠️ 日历被分页静默截断 → 会报出**假缺口**或漏报缺口。宁可失败。
+    assert_not_truncated(n_raw, f"baostock query_trade_dates({start}~{end})")
     return out
 
 

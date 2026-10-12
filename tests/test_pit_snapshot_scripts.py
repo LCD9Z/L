@@ -183,6 +183,73 @@ def test_ingest_log_distinguishes_write_from_skip():
 
 
 # ---------------------------------------------------------------------------
+# baostock 分页静默截断守卫（pit/baostock_guard.py）
+#
+# ⚠️ 机制（读 baostock/data/resultset.py 得出）：
+#   某页**恰好** 2000 行时，客户端会去取下一页；若该请求失败（空响应 / 非成功错误码）
+#   → `next()` **直接 return False 且不抛异常** → 调用方看到「干净地结束在 2000 行」。
+#   2026-10-12 实测同一接口同时段 0.9.3 / 0.9.4 均得 2,000，另一时刻得 8,992
+#   → **不是版本差异，是服务端返回规模时变 × 客户端静默停止**。
+# ---------------------------------------------------------------------------
+from pit.baostock_guard import (  # noqa: E402
+    BAOSTOCK_PER_PAGE_COUNT,
+    assert_not_truncated,
+    suspect_truncation,
+)
+
+
+def test_suspect_truncation_boundaries():
+    assert suspect_truncation(2000) is True
+    assert suspect_truncation(4000) is True
+    assert suspect_truncation(8000) is True
+    assert suspect_truncation(8992) is False
+    assert suspect_truncation(4291) is False
+    assert suspect_truncation(0) is False, "0 行不是截断（是空结果，另一类失效）"
+    assert suspect_truncation(1999) is False
+
+
+def test_assert_not_truncated_raises_on_multiple_of_page():
+    """整数倍 ⇒ 抛错（**宁可失败，不可静默写入残缺快照**）。"""
+    for n in (2000, 4000, 6000):
+        with pytest.raises(RuntimeError, match="分页静默截断"):
+            assert_not_truncated(n, "test")
+
+
+def test_assert_not_truncated_passes_on_real_totals():
+    """实测过的真实总数（8,992 / 4,291 / 5,561）不得被误拦。"""
+    for n in (8992, 4291, 5561, 1, 0):
+        assert_not_truncated(n, "test")
+
+
+def test_page_count_constant_matches_baostock():
+    """⚠️ 2000 是 baostock 的**私有实现细节** —— 上游改了本模块须同步。
+
+    装了 baostock 才校验（未装则跳过，不误报）。
+    """
+    try:
+        from baostock.common import contants
+    except ImportError:
+        pytest.skip("未安装 baostock（可选依赖）")
+    assert BAOSTOCK_PER_PAGE_COUNT == contants.BAOSTOCK_PER_PAGE_COUNT, (
+        "baostock 的 PER_PAGE_COUNT 已变 —— pit/baostock_guard.py 的常量须同步"
+    )
+
+
+def test_l1_fetch_is_guarded_against_silent_truncation():
+    """防回归：`_fetch_l1` 必须调用截断守卫。"""
+    src = (ROOT / "scripts" / "run_pit_snapshot_ingest.py").read_text(encoding="utf-8")
+    assert "assert_not_truncated(len(api_rows)" in src, (
+        "L1 采集未接截断守卫 —— 残缺快照会被静默写入 raw/ 与 normalized/"
+    )
+
+
+def test_gap_check_calendar_is_guarded_against_silent_truncation():
+    """防回归：交易日历被截断会报出**假缺口**，必须守卫。"""
+    src = (ROOT / "scripts" / "run_pit_gap_check.py").read_text(encoding="utf-8")
+    assert "assert_not_truncated(n_raw" in src, "断更检测的日历未接截断守卫"
+
+
+# ---------------------------------------------------------------------------
 # 退市类型拆分（本项目实测：不拆分会把 98 高估成 6 的 16 倍）
 # ---------------------------------------------------------------------------
 def _store_with_l1(tmp_path: Path, rows: List[Dict[str, str]]) -> PitSnapshotStore:

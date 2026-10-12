@@ -9,7 +9,7 @@
 | 指标 | 值 |
 |------|----|
 | 子包数 | **20** |
-| 已入包模块 | **89**（约 11,835 行） |
+| 已入包模块 | **90**（约 11,909 行） |
 | 根目录 `.py` | **57**（约 6,218 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
@@ -305,7 +305,7 @@ PHASE62 系列 —— TDX 指数 / 序列接入（v4.9 选择性移植）。
 | `phase62/phase62_series.py` | 19 |
 | `phase62/phase62_tdx_index.py` | 70 |
 
-### `pit/`　（9 模块，约 1,574 行）
+### `pit/`　（10 模块，约 1,648 行）
 
 **职责**：Point-in-time (PIT) 研究数据子集。
 
@@ -346,6 +346,7 @@ Point-in-time (PIT) 研究数据子集。
 
 | 模块 | 行数 |
 |------|-----:|
+| `pit/baostock_guard.py` | 74 |
 | `pit/pit_event_master.py` | 87 |
 | `pit/pit_fundamentals.py` | 378 |
 | `pit/pit_integrity.py` | 88 |

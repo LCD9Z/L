@@ -32,6 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from pit.baostock_guard import assert_not_truncated  # noqa: E402
 from pit.pit_snapshot_store import (  # noqa: E402
     DATASET_REGISTRY,
     OverwriteRefusedError,
@@ -86,6 +87,11 @@ def _fetch_l1() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
             api_rows.append(dict(zip(rs.fields, rs.get_row_data(), strict=False)))
     finally:
         bs.logout()
+
+    # ⚠️ 防 baostock 客户端**分页静默截断**：某页恰好 2000 行时客户端会去取下一页，
+    # 若该请求失败则 `next()` 直接返回 False 且不抛异常 → 调用方看到「干净地结束在 2000 行」。
+    # 宁可失败，也不可把残缺快照写进 raw/ 与 normalized/。详见 `pit/baostock_guard.py`。
+    assert_not_truncated(len(api_rows), "baostock query_stock_basic()")
 
     return _split_l1(api_rows)
 
