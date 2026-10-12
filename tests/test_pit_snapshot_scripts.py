@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from typing import Dict, List
@@ -491,3 +492,155 @@ def test_gap_script_exposes_expected_exit_codes():
     """退出码约定：0 = 无超限缺口；3 = 有缺口（供调度器/告警读）。"""
     src = (ROOT / "scripts" / "run_pit_gap_check.py").read_text(encoding="utf-8")
     assert "rc = 3" in src, "缺口超限必须返回 3（非零），否则会静默通过"
+
+
+# ---------------------------------------------------------------------------
+# L3 抓取韧性与层间一致性（2026-10-12 全市场回填崩溃事故的守卫）
+#
+# 事故回放：5,667 只的回填跑到第 456 只时，一只 sz.001206 命中
+# ``10002007 网络接收错误`` → RuntimeError → **整轮 6 小时任务终止**，
+# 已抓的 456 只全部锁在 raw 里、规范化一步未做。
+# → 单只失败必须「重试 → 仍败则跳过并记账」，绝不中止整轮；
+# → raw/norm 的层间缺口必须显式化（--rebuild-norm 幂等补齐）。
+# ---------------------------------------------------------------------------
+def test_query_with_retry_recovers_from_transient_network_errors():
+    """前两次失败、第三次成功 → 返回结果；每次失败后、下次尝试前重新登录。"""
+    calls = {"query": 0, "relogin": 0}
+
+    def query():
+        calls["query"] += 1
+        if calls["query"] < 3:
+            return False, None, "10002007 网络接收错误"
+        return True, [{"date": "2024-01-02"}], ""
+
+    def relogin():
+        calls["relogin"] += 1
+
+    rows = ing._query_with_retry(query, relogin, 3, (0, 0))
+    assert rows == [{"date": "2024-01-02"}]
+    assert calls == {"query": 3, "relogin": 2}, "失败两次 ⇒ 两次重试前各登录一次"
+
+
+def test_query_with_retry_raises_after_all_attempts_fail():
+    """持续失败必须抛错（由 _fetch_l3 跳过该只），不得返回空结果冒充成功。"""
+    with pytest.raises(RuntimeError, match="重试 3 次仍失败"):
+        ing._query_with_retry(lambda: (False, None, "10002007 boom"), lambda: None, 3, (0,))
+
+
+def test_query_with_retry_treats_query_exception_as_one_failure():
+    """query_fn 自身抛异常（WinError 10054 类：先抛、后报 error_code）按一次失败处理。"""
+    state = {"n": 0}
+
+    def query():
+        state["n"] += 1
+        if state["n"] == 1:
+            raise ConnectionError("远程主机强迫关闭了一个现有的连接")
+        return True, [{"date": "x"}], ""
+
+    assert ing._query_with_retry(query, lambda: None, 2, (0,)) == [{"date": "x"}]
+
+
+def _fake_baostock(monkeypatch):
+    """把惰性导入的 baostock 换成不连网的假模块（login 恒成功）。"""
+    import types
+
+    fake = types.SimpleNamespace(
+        login=lambda: types.SimpleNamespace(error_code="0", error_msg=""),
+        logout=lambda: None,
+        query_history_k_data_plus=lambda *a, **k: None,
+    )
+    monkeypatch.setitem(sys.modules, "baostock", fake)
+    return fake
+
+
+def test_fetch_l3_skips_code_that_fails_after_retry(monkeypatch):
+    """⚠️ 核心守卫：单只持续失败 → 跳过该只、其余照常、记入 failed（不静默、不中止）。"""
+    _fake_baostock(monkeypatch)
+
+    def fake_one(sym, start, end):
+        if sym == "sz.001206":
+            raise RuntimeError("sz.001206: 10002007 网络接收错误")
+        return [{"code": sym, "date": "2024-01-02", "close": "1"}]
+
+    monkeypatch.setattr(ing, "_fetch_one_l3", fake_one)
+    raw, _n, suspect, real_trunc, failed = ing._fetch_l3(
+        ["600519", "001206", "000001"], "2016-01-01", "2026-10-12",
+        progress_every=0, flush_path=None, flush_every=0,
+    )
+    assert [r["code"] for r in raw] == ["sh.600519", "sz.000001"], "失败标的被跳过、其余照常"
+    assert failed == ["001206: sz.001206: 10002007 网络接收错误"]
+    assert suspect == [] and real_trunc == []
+
+
+def test_fetch_l3_refetches_page_multiple_and_marks_suspect(monkeypatch):
+    """行数恰为 2000（一页）→ 必须重取一次对比；两次一致 ⇒ suspect_stable（人工确认）。"""
+    _fake_baostock(monkeypatch)
+    rows_2000 = [{"code": "sh.600519", "date": "d", "close": "1"}] * 2000
+    calls = {"n": 0}
+
+    def fake_one(sym, start, end):
+        calls["n"] += 1
+        return rows_2000
+
+    monkeypatch.setattr(ing, "_fetch_one_l3", fake_one)
+    _raw, _n, suspect, real_trunc, _failed = ing._fetch_l3(
+        ["600519"], "2016-01-01", "2026-10-12",
+        progress_every=0, flush_path=None, flush_every=0,
+    )
+    assert calls["n"] == 2, "2000 整数倍必须重取一次对比（防分页静默截断）"
+    assert suspect == ["600519:2000"] and real_trunc == []
+
+
+def test_rebuild_norm_appends_only_codes_missing_from_norm(tmp_path: Path):
+    """--rebuild-norm：只补 norm 缺失的 code；已有 code 不动；二次运行幂等。"""
+    store = PitSnapshotStore(tmp_path)
+    ingest = "2026-10-13"
+    raw = store.raw_path("baostock", "query_history_k_data_plus", ingest, ".jsonl")
+    raw.parent.mkdir(parents=True, exist_ok=True)
+    rows_a = [{"code": "sh.600519", "date": "2024-01-02", "close": "1"}]
+    rows_b = [{"code": "sz.000001", "date": "2024-01-02", "close": "2"}]
+    with raw.open("w", encoding="utf-8", newline="\n") as fh:
+        for r in rows_a + rows_b:
+            fh.write(json.dumps(r) + "\n")
+    store.write_normalized(
+        "l3_valuation", ingest, ing._normalize_l3(rows_a, "run-x", "2026-10-13T00:00:00+08:00"))
+
+    info = ing._rebuild_norm_l3(store, "baostock", "query_history_k_data_plus",
+                                ingest, "run-y", "2026-10-13T01:00:00+08:00")
+    assert info["appended_codes"] == 1 and info["appended_rows"] == 1
+    assert {r["code"] for r in store.read_normalized("l3_valuation")} == {"600519", "000001"}
+
+    info2 = ing._rebuild_norm_l3(store, "baostock", "query_history_k_data_plus",
+                                 ingest, "run-z", "2026-10-13T02:00:00+08:00")
+    assert info2["appended_codes"] == 0, "第二次运行必须幂等（一只都不补）"
+    assert len(store.read_normalized("l3_valuation")) == 2
+
+
+def test_layer_gap_detects_codes_present_only_in_raw(tmp_path: Path):
+    """⚠️ 核心守卫：raw 有、norm 无 ⇒ in_raw_not_norm 必须点名（事故缺口显式化）。"""
+    store = PitSnapshotStore(tmp_path)
+    ingest = "2026-10-13"
+    raw = store.raw_path("baostock", "query_history_k_data_plus", ingest, ".jsonl")
+    raw.parent.mkdir(parents=True, exist_ok=True)
+    with raw.open("w", encoding="utf-8", newline="\n") as fh:
+        fh.write(json.dumps({"code": "sh.600519", "date": "2024-01-02"}) + "\n")
+    gap = ing._layer_gap(store, "baostock", "query_history_k_data_plus",
+                         ingest, "l3_valuation")
+    assert gap["raw_codes"] == 1 and gap["norm_codes"] == 0
+    assert gap["in_raw_not_norm"] == ["600519"]
+
+
+def test_rebuild_norm_then_gap_closes(tmp_path: Path):
+    """闭环：补建后层间缺口必须归零（revision guard 的最终判据）。"""
+    store = PitSnapshotStore(tmp_path)
+    ingest = "2026-10-13"
+    raw = store.raw_path("baostock", "query_history_k_data_plus", ingest, ".jsonl")
+    raw.parent.mkdir(parents=True, exist_ok=True)
+    with raw.open("w", encoding="utf-8", newline="\n") as fh:
+        for code in ("sh.600519", "sz.000001"):
+            fh.write(json.dumps({"code": code, "date": "2024-01-02", "close": "1"}) + "\n")
+    ing._rebuild_norm_l3(store, "baostock", "query_history_k_data_plus",
+                         ingest, "run-y", "2026-10-13T01:00:00+08:00")
+    gap = ing._layer_gap(store, "baostock", "query_history_k_data_plus",
+                         ingest, "l3_valuation")
+    assert gap["in_raw_not_norm"] == [], "补建后缺口必须闭合"

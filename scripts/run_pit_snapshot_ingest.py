@@ -23,9 +23,11 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import sys
+import time
 import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -318,6 +320,14 @@ def _reconcile_l2(store: PitSnapshotStore, dataset_dir: str, ingest_date: str) -
 # ===========================================================================
 L3_FIELDS = "date,code,close,peTTM,pbMRQ,psTTM,pcfNcfTTM,turn,tradestatus,isST"
 
+#: 单只标的抓取的重试参数。**瞬时网络错误必会命中** —— 2026-10-12 的全市场回填中，
+#: 一只 sz.001206 的 ``10002007 网络接收错误`` 直接终止了整轮 6 小时任务，
+#: 前 31 分钟抓到的 456 只全部锁死在 raw 里、到不了规范化步骤。
+#: 重试是**幂等只读**查询，无副作用；退避 2/5/10 秒，重试前重新登录
+#: （WinError 10054 之后会话可能已死）。
+_L3_FETCH_ATTEMPTS: int = 3
+_L3_FETCH_BACKOFF: Tuple[float, ...] = (2.0, 5.0, 10.0)
+
 #: 6 位代码 → baostock 市场前缀。**不认识的号段直接抛错，不猜**
 #: （猜错会静默取到别的标的 —— 与本项目反复出现的「对象标识」问题同类）。
 _PREFIX_BY_FIRST = {"6": "sh", "5": "sh", "9": "sh",
@@ -343,37 +353,86 @@ def _universe_codes(dataset_dir: str, limit: int = 0) -> List[str]:
     return codes[:limit] if limit > 0 else codes
 
 
+def _query_with_retry(query_fn, relogin_fn, attempts: int, backoff: Tuple[float, ...]):
+    """对**只读**查询做有限重试。**纯逻辑、无 I/O**，便于不连网单测。
+
+    约定 ``query_fn()`` 返回 ``(ok, payload, err_text)``；``relogin_fn()``
+    在两次尝试之间调用（会话可能已死）。query_fn 自身抛异常也按「失败一次」处理
+    （网络层异常不会都变成 baostock 的 error_code，WinError 10054 就是先抛后报）。
+
+    全部失败抛 :class:`RuntimeError` —— **由调用方决定跳过哪一只标的**，
+    不让一只标的的失败杀死整轮回填。
+    """
+    last = ""
+    for i in range(attempts):
+        try:
+            ok, payload, err = query_fn()
+        except Exception as exc:  # noqa: BLE001 - 网络层异常一律折算成一次失败
+            ok, payload, err = False, None, f"{type(exc).__name__}: {exc}"
+        if ok:
+            return payload
+        last = err
+        if i + 1 < attempts:
+            if backoff:
+                time.sleep(backoff[min(i, len(backoff) - 1)])
+            relogin_fn()
+    raise RuntimeError(f"重试 {attempts} 次仍失败: {last}")
+
+
 def _fetch_one_l3(symbol: str, start: str, end: str) -> List[Dict[str, Any]]:
     """单只标的的日频估值原始行（**调用方须已登录**）。
 
     ``adjustflag='3'`` = **不复权** —— 与 ``peTTM``/``pbMRQ`` 的口径一致
     （估值比率的分母是**未复权**的收盘价；用复权价会引入系统性偏差）。
+
+    瞬时网络错误**重试**（默认 3 次，退避 2/5/10s，重试前重新登录）；
+    持续失败才抛 :class:`RuntimeError`，由 :func:`_fetch_l3` 跳过该只并续跑。
     """
     import baostock as bs  # 惰性导入：可选依赖
 
-    rs = bs.query_history_k_data_plus(
-        symbol, L3_FIELDS, start_date=start, end_date=end,
-        frequency="d", adjustflag="3",
-    )
-    if rs.error_code != "0":
-        raise RuntimeError(f"{symbol}: {rs.error_code} {rs.error_msg}")
-    out: List[Dict[str, Any]] = []
-    while rs.next():
-        out.append(dict(zip(rs.fields, rs.get_row_data(), strict=False)))
-    return out
+    def _query():
+        rs = bs.query_history_k_data_plus(
+            symbol, L3_FIELDS, start_date=start, end_date=end,
+            frequency="d", adjustflag="3",
+        )
+        if rs.error_code != "0":
+            return False, None, f"{rs.error_code} {rs.error_msg}"
+        out: List[Dict[str, Any]] = []
+        while rs.next():
+            out.append(dict(zip(rs.fields, rs.get_row_data(), strict=False)))
+        return True, out, ""
+
+    def _relogin() -> None:
+        # 重登录失败**不抛** —— 交给下一次 query 的 error_code 呈现，
+        # 保持「一次尝试 = 一次 query」的简单语义。
+        try:
+            bs.logout()
+        except Exception:  # noqa: BLE001 - 会话已死时 logout 自身会抛
+            pass
+        try:
+            bs.login()
+        except Exception:  # noqa: BLE001 - 登录异常由下一次 query 暴露
+            pass
+
+    return _query_with_retry(_query, _relogin, _L3_FETCH_ATTEMPTS, _L3_FETCH_BACKOFF)
 
 
 def _fetch_l3(codes: List[str], start: str, end: str,
               progress_every: int = 200,
               flush_path: Optional[Path] = None,
-              flush_every: int = 100) -> Tuple[List[Dict[str, Any]], int, List[str], List[str]]:
+              flush_every: int = 100) -> Tuple[List[Dict[str, Any]], int, List[str], List[str], List[str]]:
     """批量取日频估值。
 
-    返回 ``(原始行, 原始行数, 疑似截断且重取一致, 重取发现真截断)``。
+    返回 ``(原始行, 原始行数, 疑似截断且重取一致, 重取发现真截断, 抓取失败已跳过)``。
 
     ⚠️ **增量落盘（``flush_path``）**：全市场回填需 1~3 小时，若只在**全部完成后**
     才写盘，一次崩溃就**全部白费**，``--resume`` 也无从续起（它读的就是那个文件）。
     → 每 ``flush_every`` 只**追加**一次到 ``flush_path``，使进程可被中断并续跑。
+
+    ⚠️ **单只失败不中止整轮**：重试后仍失败的标的记入返回的 ``failed`` 并**跳过**
+    （2026-10-12 实测教训：一只 sz.001206 的瞬时网络错误让 31 分钟的 456 只成果
+    全部锁死在 raw 里、整轮到不了规范化步骤）。跳过的标的由 ``--resume`` 续跑补采，
+    并在自检里以 WARN 显式呈现（**绝不静默**）。
 
     ⚠️ **分页截断的处理**：``query_history_k_data_plus`` 的页长 = 2000
     （见 :mod:`pit.baostock_guard`）。**单只标的**行数恰为 2000 整数倍时，
@@ -392,6 +451,7 @@ def _fetch_l3(codes: List[str], start: str, end: str,
     pending: List[Dict[str, Any]] = []          # 待增量落盘的行
     suspect_stable: List[str] = []
     real_truncated: List[str] = []
+    failed: List[str] = []
 
     def _flush() -> None:
         if flush_path is None or not pending:
@@ -405,7 +465,13 @@ def _fetch_l3(codes: List[str], start: str, end: str,
     try:
         for i, code in enumerate(codes, 1):
             sym = bs_symbol(code)
-            rows = _fetch_one_l3(sym, start, end)
+            try:
+                rows = _fetch_one_l3(sym, start, end)
+            except RuntimeError as exc:
+                failed.append(f"{code}: {exc}")
+                print(f"      !! 跳过 {sym}（重试 {_L3_FETCH_ATTEMPTS} 次仍失败，不影响本轮其余标的）: {exc}",
+                      flush=True)
+                continue
             if suspect_truncation(len(rows)):
                 again = _fetch_one_l3(sym, start, end)
                 if len(again) != len(rows):
@@ -423,7 +489,7 @@ def _fetch_l3(codes: List[str], start: str, end: str,
     finally:
         _flush()
         bs.logout()
-    return raw, len(raw), suspect_stable, real_truncated
+    return raw, len(raw), suspect_stable, real_truncated, failed
 
 
 def _num_or_blank(v: Any) -> str:
@@ -455,6 +521,108 @@ def _normalize_l3(recs: List[Dict[str, Any]], run_id: str, as_of: str) -> List[D
             "ingest_run_id": run_id,
         })
     return out
+
+
+# ===========================================================================
+# 层间一致性：原始层 ↔ 规范层（2026-10-12 崩溃事故的后续补丁）
+#
+# 事故：整轮回填崩在**采集阶段**，raw 落了 456 只、norm 一只未写
+# （规范化只在整轮采集结束后才做）。若此后只按 --resume 续跑，
+# 这 456 只**永远不会**进入规范层 —— 消费方读 norm 即**静默缺 8% 的股票**。
+# → 三个函数把该缺口显式化并可幂等补齐。
+# ===========================================================================
+def _norm_codes(norm_path: Path) -> set:
+    """规范层 CSV 中已出现的 code 集合（**流式**读：全市场约 1,400 万行也不吃内存）。"""
+    if not norm_path.exists():
+        return set()
+    out: set = set()
+    with norm_path.open("r", encoding="utf-8", newline="") as fh:
+        reader = csv.reader(fh)
+        next(reader, None)  # 表头
+        for row in reader:
+            if row:
+                out.add(row[0])
+    return out
+
+
+def _layer_gap(store: PitSnapshotStore, source: str, endpoint: str,
+               ingest_date: str, dataset: str) -> Dict[str, Any]:
+    """原始层 vs 规范层的**代码覆盖差**（``in_raw_not_norm`` = 只在 raw 有的代码）。"""
+    raw_codes = store.read_raw_keys(source, endpoint, ingest_date)
+    norm_codes = _norm_codes(store.norm_path(dataset, ingest_date))
+    return {
+        "raw_codes": len(raw_codes),
+        "norm_codes": len(norm_codes),
+        "in_raw_not_norm": sorted(raw_codes - norm_codes),
+    }
+
+
+def _rebuild_norm_l3(store: PitSnapshotStore, source: str, endpoint: str,
+                     ingest_date: str, run_id: str, as_of: str) -> Dict[str, Any]:
+    """从**原始层**补建规范层缺失的标的（**幂等**，按 code 粒度；不重新抓取）。
+
+    ⚠️ **按 code 粒度**的隐含前提：一个 code 在 norm 里出现 ⇒ 其**全窗口**已在。
+    该前提成立是因为 raw 的 flush 只在**完整 code** 边界发生（``_fetch_l3``）。
+    若历史上曾有「半个 code」落进 norm（如 2026-10-12 混入的 5 只短窗口冒烟数据），
+    本函数**不会**发现 —— 那种残留须先清除，不能留着让补建「看起来完成了」。
+    """
+    raw_path = store.raw_path(source, endpoint, ingest_date, ".jsonl")
+    if not raw_path.exists():
+        raise SystemExit(f"原始层不存在，无从补建: {raw_path}")
+    norm_path = store.norm_path(L3_DATASET, ingest_date)
+    have = _norm_codes(norm_path)
+
+    appended_codes: List[str] = []
+    appended_rows = 0
+    pending: List[Dict[str, str]] = []
+
+    def _flush_norm() -> None:
+        nonlocal appended_rows
+        if not pending:
+            return
+        if norm_path.exists():
+            store.append_normalized(L3_DATASET, ingest_date, pending)
+        else:
+            store.write_normalized(L3_DATASET, ingest_date, pending)
+        appended_rows += len(pending)
+        pending.clear()
+
+    cur_code: Optional[str] = None
+    cur_rows: List[Dict[str, Any]] = []
+    n_raw_rows = 0
+    with raw_path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue  # 坏行跳过（与 read_raw_keys 同约定）
+            n_raw_rows += 1
+            code = str(rec.get("code", "")).split(".")[-1]
+            if code != cur_code:
+                if cur_code is not None and cur_code not in have:
+                    pending.extend(_normalize_l3(cur_rows, run_id, as_of))
+                    appended_codes.append(cur_code)
+                    if len(appended_codes) % 50 == 0:
+                        _flush_norm()
+                cur_code, cur_rows = code, []
+            cur_rows.append(rec)
+    if cur_code is not None and cur_code not in have:
+        pending.extend(_normalize_l3(cur_rows, run_id, as_of))
+        appended_codes.append(cur_code)
+    _flush_norm()
+
+    return {
+        "raw_path": str(raw_path),
+        "norm_path": str(norm_path),
+        "raw_rows": n_raw_rows,
+        "norm_codes_before": len(have),
+        "appended_codes": len(appended_codes),
+        "appended_rows": appended_rows,
+        "appended_code_list_head": appended_codes[:20],
+    }
 
 
 # ===========================================================================
@@ -548,6 +716,36 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
         print(f"      记录 {len(rows)} 行 · 股票 {len({r['code'] for r in rows})} 只", flush=True)
     elif dataset == L3_DATASET:
         source, endpoint, suffix = "baostock", "query_history_k_data_plus", ".jsonl"
+        if args.rebuild_norm:
+            # 从原始层补建规范层缺失的标的（**幂等**）—— 不重新抓取。
+            # 场景：整轮回填崩在采集阶段（raw 已落 N 只、norm 未写），
+            # 此后只按 --resume 续跑会让这 N 只**永远**进不了规范层。
+            print("[1/5] 跳过采集（--rebuild-norm：仅从 raw 补建 norm）...", flush=True)
+            info = _rebuild_norm_l3(store, source, endpoint, ingest_date, run_id, as_of)
+            print(f"      raw {info['raw_rows']:,} 行 · 补建前 norm {info['norm_codes_before']} 只"
+                  f" → 补建 {info['appended_codes']} 只 / {info['appended_rows']:,} 行", flush=True)
+            gap = _layer_gap(store, source, endpoint, ingest_date, L3_DATASET)
+            print(f"      层间缺口: raw {gap['raw_codes']} 只 vs norm {gap['norm_codes']} 只"
+                  f" → 仍缺 {len(gap['in_raw_not_norm'])} 只", flush=True)
+            store.log_ingest({
+                "ts": as_of,
+                "ingest_run_id": run_id,
+                "dataset": dataset,
+                "source": source,
+                "endpoint": endpoint,
+                "ingest_date": ingest_date,
+                "pit_mode": meta["pit_mode"],
+                "action": "rebuild-norm",
+                "status": "OK" if not gap["in_raw_not_norm"] else "WARN",
+                "problems": ([] if not gap["in_raw_not_norm"] else
+                             [f"WARN 层间缺口仍存 {len(gap['in_raw_not_norm'])} 只"]),
+                "metrics": info,
+            })
+            if gap["in_raw_not_norm"]:
+                print("      ❌ 层间缺口未闭合 → 非零退出（须人工排查半个 code 残留）", flush=True)
+                return 2
+            print("      ✅ 层间缺口闭合", flush=True)
+            return 0
         if not args.universe:
             raise SystemExit("L3 需要 --universe <数据集目录>（如 D:/tdx_dataset_v3）")
         if not (args.start and args.end):
@@ -569,11 +767,17 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
                 return 0
         print(f"[1/5] 采集 baostock:query_history_k_data_plus"
               f"（{len(codes)} 只 · {args.start}~{args.end} · 不复权）...", flush=True)
-        raw_rows, n_raw, suspect_stable, real_trunc = _fetch_l3(
+        raw_rows, n_raw, suspect_stable, real_trunc, failed = _fetch_l3(
             codes, args.start, args.end, flush_path=raw_target, flush_every=args.flush_every
         )
         raw_flushed = True        # 原始层已由 `_fetch_l3` **增量**写入
         print(f"      原始 {n_raw:,} 行", flush=True)
+        if failed:
+            print(f"      ⚠️ 抓取失败 {len(failed)} 只（已跳过；--resume 续跑可补采）:", flush=True)
+            for f_ in failed[:20]:
+                print(f"        - {f_}", flush=True)
+            if len(failed) > 20:
+                print(f"        ... 另 {len(failed) - 20} 只（全量见 metrics.failed_codes）", flush=True)
         print("[2/5] 规范化（双时间轴）...", flush=True)
         rows = _normalize_l3(raw_rows, run_id, as_of)
         print(f"      规范 {len(rows):,} 行 · 标的 {len({r['code'] for r in rows}):,} 只", flush=True)
@@ -594,6 +798,12 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
             problems.append(
                 f"WARN 行数恰为 2000 整数倍且重取一致 {len(suspect_stable)} 只"
                 f"（合法但**须人工确认**）: {suspect_stable[:5]}"
+            )
+        if failed:
+            metrics["n_failed_codes"] = len(failed)
+            metrics["failed_codes"] = failed
+            problems.append(
+                f"WARN 抓取失败 {len(failed)} 只已跳过（--resume 续跑可补采）: {failed[:5]}"
             )
     for p in problems:
         print(f"      {p}", flush=True)
@@ -629,6 +839,20 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
         print(f"      SKIP {exc}（用 --force 覆盖）", flush=True)
         raw_path = store.raw_path(source, endpoint, ingest_date, suffix)
         norm_p = store.norm_path(dataset, ingest_date)
+
+    if dataset == L3_DATASET and raw_flushed:
+        # 层间一致性（**必须在 norm 落盘后检查**）：崩溃续跑会让「raw 有、norm 无」的
+        # code 静默存在（2026-10-12 事故：raw 456 只 / norm 0 只）。
+        # 缺口用 --rebuild-norm 从 raw 幂等补齐；此处只负责**显式化**，绝不静默。
+        gap = _layer_gap(store, source, endpoint, ingest_date, L3_DATASET)
+        metrics["layer_gap_raw_codes"] = gap["raw_codes"]
+        metrics["layer_gap_norm_codes"] = gap["norm_codes"]
+        metrics["layer_gap_in_raw_not_norm"] = len(gap["in_raw_not_norm"])
+        if gap["in_raw_not_norm"]:
+            problems.append(
+                f"WARN 规范层落后于原始层 {len(gap['in_raw_not_norm'])} 只"
+                f"（崩溃续跑的后遗症；用 --rebuild-norm 从 raw 补齐）: {gap['in_raw_not_norm'][:5]}"
+            )
 
     entry: Dict[str, Any] = {
         "ts": as_of,
@@ -699,6 +923,8 @@ def main(argv: Optional[List[str]] = None) -> int:
                     help="L3：只取前 N 只（0=全部；小样本试跑用）")
     ap.add_argument("--resume", action="store_true",
                     help="L3：跳过已落盘标的并**追加**（长期回填的断点续传）")
+    ap.add_argument("--rebuild-norm", action="store_true", dest="rebuild_norm",
+                    help="L3：不抓取，仅从原始层补建规范层缺失的标的（幂等，按 code 粒度）")
     ap.add_argument("--flush-every", type=int, default=100, dest="flush_every",
                     help="L3：每 N 只增量落盘一次（0=只在结束时写；长期回填务必保持 >0）")
     args = ap.parse_args(argv)
