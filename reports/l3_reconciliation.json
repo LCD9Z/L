@@ -1,38 +1,118 @@
 {
-  "sample_codes": 24,
+  "sample_codes": 100,
   "failed_codes": [],
   "window": [
     "2023-01-01",
     "2025-12-31"
   ],
   "bps_relative_diff": {
-    "n": 15890,
+    "n": 67918,
     "median": 0.0,
-    "p90": 0.004994,
-    "max": 0.334482,
-    "share_le_1pct": 0.9498
+    "p90": 0.005262,
+    "max": 0.498896,
+    "share_le_1pct": 0.921
   },
   "eps_relative_diff": {
-    "n": 13135,
-    "median": 0.016132,
-    "p90": 0.173193,
-    "max": 3.632802,
-    "share_le_1pct": 0.4253
+    "n": 50820,
+    "median": 0.014859,
+    "p90": 0.249541,
+    "max": 4.12048,
+    "share_le_1pct": 0.4296
   },
-  "eps_signed_diff_median": -0.000495,
+  "eps_signed_diff_median": -0.000735,
   "pit_alignment": {
-    "aligned": 175,
-    "early": 0,
-    "late": 0,
-    "no_event": 1,
-    "no_data": 4
+    "impossible": 0,
+    "earlier_than_a_share": 8,
+    "aligned": 310,
+    "late": 3,
+    "no_our_event": 11,
+    "no_match": 440,
+    "no_data": 0
   },
-  "pit_early_share": 0.0,
-  "pit_aligned_share": 0.9943,
-  "early_examples": [],
+  "pit_total": 772,
+  "pit_impossible": 0,
+  "pit_earlier_than_a_share": 8,
+  "pit_earlier_ah_hits": 0,
+  "ah_codes_used": 159,
+  "flags": [
+    {
+      "code": "002557",
+      "period": "2023-12-31",
+      "kind": "earlier_than_a_share",
+      "switch": "2024-02-28",
+      "disclose": "2024-04-26",
+      "gap_days": 58,
+      "ah": false
+    },
+    {
+      "code": "600422",
+      "period": "2024-12-31",
+      "kind": "earlier_than_a_share",
+      "switch": "2025-02-11",
+      "disclose": "2025-03-12",
+      "gap_days": 29,
+      "ah": false
+    },
+    {
+      "code": "601901",
+      "period": "2024-12-31",
+      "kind": "earlier_than_a_share",
+      "switch": "2025-03-17",
+      "disclose": "2025-03-29",
+      "gap_days": 12,
+      "ah": false
+    },
+    {
+      "code": "603090",
+      "period": "2023-06-30",
+      "kind": "earlier_than_a_share",
+      "switch": "2023-08-04",
+      "disclose": "2023-08-30",
+      "gap_days": 26,
+      "ah": false
+    },
+    {
+      "code": "603730",
+      "period": "2025-09-30",
+      "kind": "earlier_than_a_share",
+      "switch": "2025-09-01",
+      "disclose": "2025-10-31",
+      "gap_days": 60,
+      "ah": false
+    },
+    {
+      "code": "688351",
+      "period": "2024-12-31",
+      "kind": "earlier_than_a_share",
+      "switch": "2025-02-25",
+      "disclose": "2025-03-28",
+      "gap_days": 31,
+      "ah": false
+    },
+    {
+      "code": "688601",
+      "period": "2023-12-31",
+      "kind": "earlier_than_a_share",
+      "switch": "2024-02-26",
+      "disclose": "2024-04-16",
+      "gap_days": 50,
+      "ah": false
+    },
+    {
+      "code": "688601",
+      "period": "2024-12-31",
+      "kind": "earlier_than_a_share",
+      "switch": "2025-02-28",
+      "disclose": "2025-04-12",
+      "gap_days": 43,
+      "ah": false
+    }
+  ],
   "caveats": [
-    "PIT 检验仅覆盖有巨潮披露日的 (code, period) 对；样本为抽样而非全市场",
-    "early 只是嫌疑，须人工核对具体披露事件后才能定性",
+    "PIT 检验仅覆盖有披露日数据的 (code, period) 对；样本为抽样而非全市场",
+    "impossible = 切换日早于报告期末 → 确凿前视，无需披露日数据即可判定",
+    "earlier_than_a_share = 早于 A 股披露日但晚于报告期末 → 中性，可能来自港股公告/业绩快报/预告，不等于前视",
+    "A+H 名单用名字匹配，是近似；只用于解释，不用于判定",
     "baostock 用不复权价、本项目 v3 用 qfq —— 故只比隐含分母，不比比率本身"
   ]
 }

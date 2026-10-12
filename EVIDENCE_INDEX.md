@@ -20,7 +20,7 @@
    文件名不出现在代码里。此时以**引用它的报告**中的命令行为准。
 3. **同一份证据可能被多份报告引用** —— 这属正常（如 `five_factor_ab_v2.json` 被 4 份引用）。
 
-**当前跟踪 55 份证据。**
+**当前跟踪 56 份证据。**
 
 ---
 
@@ -30,6 +30,7 @@
 | `adx_attr_w2.json` | 597 | `0eb1abd6cf69` | （暂无报告直接引用） | — |
 | `adx_attr_w3.json` | 595 | `094810537084` | （暂无报告直接引用） | — |
 | `adx_attr_w4.json` | 593 | `297351b722ae` | （暂无报告直接引用） | — |
+| `ah_codes.json` | 2,569 | `4e543e108146` | （暂无报告直接引用） | `run_l3_valuation_reconciliation.py` |
 | `astock_reconciliation.json` | 1,779 | `98f8ea83515c` | ASTOCK_DATA_ASSESSMENT.md | — |
 | `combo_study_h20.json` | 6,923 | `1fcfb4b6164d` | BENCHMARK_ALIGNMENT.md<br>COMBO_STUDY_REPORT.md<br>WORKLOG.md | — |
 | `combo_study_h20_fixed.json` | 6,896 | `a59bd8921f48` | BENCHMARK_ALIGNMENT.md<br>COMBO_STUDY_REPORT.md | — |
@@ -58,7 +59,7 @@
 | `impact_cost.json` | 6,444 | `bb88751fe5da` | IMPACT_AND_CAPACITY_REPORT.md<br>IMPACT_COST_PREREG.md | — |
 | `industry_ic_attribution.json` | 58,556 | `318ab564785f` | BENCHMARK_ALIGNMENT.md | `run_industry_ic_attribution.py` |
 | `industry_ic_attribution_sw.json` | 69,367 | `9b6fec09ca0b` | （暂无报告直接引用） | `run_industry_ic_attribution.py` |
-| `l3_reconciliation.json` | 909 | `2b73609df254` | PIT_SNAPSHOT_P2_REPORT.md | — |
+| `l3_reconciliation.json` | 2,944 | `4f58e9e01b9b` | PIT_SNAPSHOT_P2_REPORT.md | — |
 | `multiple_testing_audit.json` | 9,523 | `7b1c929483c4` | P0_P1_EXECUTION_REPORT.md | `run_multiple_testing_audit.py` |
 | `pit_gaps.json` | 1,620 | `051603363874` | （暂无报告直接引用） | — |
 | `pit_l1_reconciliation.json` | 841 | `b674dabad7fe` | PIT_SNAPSHOT_P0_REPORT.md | — |
@@ -93,6 +94,7 @@
 - `adx_attr_w2.json`
 - `adx_attr_w3.json`
 - `adx_attr_w4.json`
+- `ah_codes.json`
 - `decay_h10.json`
 - `decay_h20.json`
 - `decay_h40.json`

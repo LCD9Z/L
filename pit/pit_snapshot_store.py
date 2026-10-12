@@ -276,6 +276,69 @@ class PitSnapshotStore:
         path.write_bytes(data)
         return path
 
+    def append_raw_lines(
+        self,
+        source: str,
+        endpoint: str,
+        ingest_date: str,
+        records: Sequence[Dict[str, Any]],
+        *,
+        suffix: str = ".jsonl",
+    ) -> Path:
+        """向**已存在**的原始层**追加**行（用于**可续跑**的多轮采集）。
+
+        ⚠️ 与 :meth:`append_raw` 的区别：后者是**单次采集**语义（文件已存在即拒绝），
+        本方法**明确用于**「分多轮、每轮追加」的长期回填 —— **只追加、从不改写已有行**，
+        与「只追加」纪律一致。调用方须自行保证不重复采集（见 :meth:`read_raw_keys`）。
+        """
+        path = self.raw_path(source, endpoint, ingest_date, suffix)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8", newline="\n") as fh:
+            for r in records:
+                fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+        return path
+
+    def read_raw_keys(
+        self, source: str, endpoint: str, ingest_date: str,
+        *, suffix: str = ".jsonl", field: str = "code",
+    ) -> set:
+        """读原始层里已采集的 ``field`` 取值集合（**去市场前缀**），供 ``--resume`` 跳过。
+
+        ``sh.600519`` → ``600519``。坏行跳过（不因一行损坏而整体失败）。
+        """
+        path = self.raw_path(source, endpoint, ingest_date, suffix)
+        if not path.exists():
+            return set()
+        out: set = set()
+        with path.open("r", encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    v = json.loads(line).get(field)
+                except json.JSONDecodeError:
+                    continue
+                if v:
+                    out.add(str(v).split(".")[-1])
+        return out
+
+    def append_normalized(
+        self, dataset: str, ingest_date: str, rows: Sequence[Dict[str, Any]]
+    ) -> Path:
+        """向**已存在**的规范层 CSV **追加**行（沿用已有表头）；不存在则等同 ``write_normalized``。"""
+        dataset_meta(dataset)  # 未登记即抛错
+        path = self.norm_path(dataset, ingest_date)
+        if not path.exists():
+            return self.write_normalized(dataset, ingest_date, rows)
+        with path.open("r", encoding="utf-8", newline="") as fh:
+            header = next(csv.reader(fh), [])
+        with path.open("a", encoding="utf-8", newline="\n") as fh:
+            w = csv.writer(fh, lineterminator="\n")
+            for r in rows:
+                w.writerow([str(r.get(c, "")) for c in header])
+        return path
+
     def log_ingest(self, entry: Dict[str, Any]) -> None:
         """追加一条采集日志（``meta/ingest_log.jsonl``）。"""
         self.meta_dir.mkdir(parents=True, exist_ok=True)

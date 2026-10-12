@@ -364,10 +364,16 @@ def _fetch_one_l3(symbol: str, start: str, end: str) -> List[Dict[str, Any]]:
 
 
 def _fetch_l3(codes: List[str], start: str, end: str,
-              progress_every: int = 200) -> Tuple[List[Dict[str, Any]], int, List[str], List[str]]:
+              progress_every: int = 200,
+              flush_path: Optional[Path] = None,
+              flush_every: int = 100) -> Tuple[List[Dict[str, Any]], int, List[str], List[str]]:
     """批量取日频估值。
 
     返回 ``(原始行, 原始行数, 疑似截断且重取一致, 重取发现真截断)``。
+
+    ⚠️ **增量落盘（``flush_path``）**：全市场回填需 1~3 小时，若只在**全部完成后**
+    才写盘，一次崩溃就**全部白费**，``--resume`` 也无从续起（它读的就是那个文件）。
+    → 每 ``flush_every`` 只**追加**一次到 ``flush_path``，使进程可被中断并续跑。
 
     ⚠️ **分页截断的处理**：``query_history_k_data_plus`` 的页长 = 2000
     （见 :mod:`pit.baostock_guard`）。**单只标的**行数恰为 2000 整数倍时，
@@ -383,8 +389,19 @@ def _fetch_l3(codes: List[str], start: str, end: str,
         raise RuntimeError(f"baostock 登录失败: {lg.error_code} {lg.error_msg}")
 
     raw: List[Dict[str, Any]] = []
+    pending: List[Dict[str, Any]] = []          # 待增量落盘的行
     suspect_stable: List[str] = []
     real_truncated: List[str] = []
+
+    def _flush() -> None:
+        if flush_path is None or not pending:
+            return
+        flush_path.parent.mkdir(parents=True, exist_ok=True)
+        with flush_path.open("a", encoding="utf-8", newline="\n") as fh:
+            for r in pending:
+                fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+        pending.clear()
+
     try:
         for i, code in enumerate(codes, 1):
             sym = bs_symbol(code)
@@ -397,9 +414,14 @@ def _fetch_l3(codes: List[str], start: str, end: str,
                 else:
                     suspect_stable.append(f"{code}:{len(rows)}")
             raw.extend(rows)
+            pending.extend(rows)
             if progress_every and i % progress_every == 0:
                 print(f"      ... {i}/{len(codes)} 只（累计 {len(raw):,} 行）", flush=True)
+            if flush_every and i % flush_every == 0:
+                _flush()
+        _flush()
     finally:
+        _flush()
         bs.logout()
     return raw, len(raw), suspect_stable, real_truncated
 
@@ -505,6 +527,8 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
     blob: Optional[bytes] = None
     suspect_stable: List[str] = []
     real_trunc: List[str] = []
+    done: set = set()
+    raw_flushed = False       # L3 专用：原始层是否已由 `_fetch_l3` 增量写入
     if dataset == L1_DATASET:
         source, endpoint, suffix = "baostock", "query_stock_basic", ".jsonl"
         print("[1/5] 采集 baostock:query_stock_basic ...", flush=True)
@@ -529,9 +553,26 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
         if not (args.start and args.end):
             raise SystemExit("L3 需要 --start 与 --end（YYYY-MM-DD）")
         codes = _universe_codes(args.universe, args.limit)
+        raw_target = store.raw_path(source, endpoint, ingest_date, suffix)
+        if raw_target.exists() and not args.resume:
+            raise OverwriteRefusedError(
+                f"原始层已存在（拒绝覆盖，L3 请用 --resume 续跑）: {raw_target}"
+            )
+        if args.resume:
+            # ⚠️ 长期回填必须能**断点续传**（baostock 时变/挂起，一轮跑不完）
+            done = store.read_raw_keys(source, endpoint, ingest_date)
+            before = len(codes)
+            codes = [c for c in codes if c not in done]
+            print(f"      --resume：已完成 {len(done)} 只 → 待采 {len(codes)}/{before} 只", flush=True)
+            if not codes:
+                print("      全部已完成，无新任务", flush=True)
+                return 0
         print(f"[1/5] 采集 baostock:query_history_k_data_plus"
               f"（{len(codes)} 只 · {args.start}~{args.end} · 不复权）...", flush=True)
-        raw_rows, n_raw, suspect_stable, real_trunc = _fetch_l3(codes, args.start, args.end)
+        raw_rows, n_raw, suspect_stable, real_trunc = _fetch_l3(
+            codes, args.start, args.end, flush_path=raw_target, flush_every=args.flush_every
+        )
+        raw_flushed = True        # 原始层已由 `_fetch_l3` **增量**写入
         print(f"      原始 {n_raw:,} 行", flush=True)
         print("[2/5] 规范化（双时间轴）...", flush=True)
         rows = _normalize_l3(raw_rows, run_id, as_of)
@@ -564,13 +605,23 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
     # 无法分辨哪条真写了（2026-10-11 的 22:44 / 22:45 两条即为此情形）。
     action = "write"
     try:
-        if blob is not None:
+        if raw_flushed:
+            # L3：原始层已由 `_fetch_l3` **增量**写入（可中断续跑）→ 只处理规范层
+            raw_path = raw_target
+            norm_p = (store.append_normalized(dataset, ingest_date, rows)
+                      if done else store.write_normalized(dataset, ingest_date, rows))
+        elif args.resume and done:
+            # 续跑：向已存在的 raw / norm **追加**（只追加、不覆盖）
+            raw_path = store.append_raw_lines(source, endpoint, ingest_date, raw_rows, suffix=suffix)
+            norm_p = store.append_normalized(dataset, ingest_date, rows)
+        elif blob is not None:
             raw_path = store.append_raw_bytes(
                 source, endpoint, ingest_date, blob, suffix=suffix, force=args.force
             )
+            norm_p = store.write_normalized(dataset, ingest_date, rows, force=args.force)
         else:
             raw_path = store.append_raw(source, endpoint, ingest_date, raw_rows, force=args.force)
-        norm_p = store.write_normalized(dataset, ingest_date, rows, force=args.force)
+            norm_p = store.write_normalized(dataset, ingest_date, rows, force=args.force)
         print(f"      raw  : {raw_path}", flush=True)
         print(f"      norm : {norm_p}", flush=True)
     except OverwriteRefusedError as exc:
@@ -646,6 +697,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--end", default=None, help="L3：结束日 YYYY-MM-DD")
     ap.add_argument("--limit", type=int, default=0,
                     help="L3：只取前 N 只（0=全部；小样本试跑用）")
+    ap.add_argument("--resume", action="store_true",
+                    help="L3：跳过已落盘标的并**追加**（长期回填的断点续传）")
+    ap.add_argument("--flush-every", type=int, default=100, dest="flush_every",
+                    help="L3：每 N 只增量落盘一次（0=只在结束时写；长期回填务必保持 >0）")
     args = ap.parse_args(argv)
 
     targets = sorted(DATASET_REGISTRY) if args.all else [args.dataset]

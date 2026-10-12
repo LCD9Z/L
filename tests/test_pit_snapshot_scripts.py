@@ -315,6 +315,62 @@ def test_universe_codes_reads_sorted_digits_only(tmp_path: Path):
 
 
 # ---------------------------------------------------------------------------
+# L3 对账脚本的 PIT 判据（scripts/run_l3_valuation_reconciliation.py）
+#
+# ⚠️ 背景：旧判据把「A 股披露日」当「首次公开日」，会把 **A+H 公司**
+# （港股业绩公告早于 A 股年报 4~8 周）的「baostock 正确、我方偏晚」
+# 误判成 `early`（疑似前视）。新判据用「切换日 vs 报告期起始 / 披露日」。
+# ---------------------------------------------------------------------------
+import run_l3_valuation_reconciliation as rec  # noqa: E402
+
+
+def test_period_start_maps_quarters():
+    """报告期 → 起始日（`impossible` 判定的锚点）。"""
+    assert rec.period_start("2025-03-31") == "2025-01-01"
+    assert rec.period_start("2025-06-30") == "2025-04-01"
+    assert rec.period_start("2025-09-30") == "2025-07-01"
+    assert rec.period_start("2025-12-31") == "2025-10-01"
+
+
+def test_implied_eps_rejects_non_positive_pe():
+    assert rec.implied_eps(10.0, 5.0) == pytest.approx(2.0)
+    assert rec.implied_eps(10.0, 0.0) is None, "peTTM=0 无经济含义"
+    assert rec.implied_eps(10.0, -3.0) is None, "负 PE 不硬算"
+    assert rec.implied_eps(None, 5.0) is None
+
+
+def test_switch_dates_ignores_small_drift():
+    """⚠️ 核心：baostock 的隐含 EPS 有 0.03%~0.31% 的**数值漂移**（非报表变化）。
+
+    若阈值过小（如 1e-4），漂移会被当成切换 → **伪造出「早于披露日/报告期」的切换**。
+    """
+    rows: List[rec.Row] = [("2025-01-02", 100.0, 10.0, None),    # eps = 10.0
+                           ("2025-01-03", 100.2, 10.0, None),    # eps = 10.02  ← 0.2% 漂移
+                           ("2025-02-10", 120.0, 10.0, None)]    # eps = 12.0   ← 真实变化 20%
+    sw = rec.switch_dates(rows)
+    assert [d for d, _ in sw] == ["2025-01-02", "2025-02-10"], "0.2% 漂移不得记为切换"
+
+
+def test_switch_dates_keeps_material_change():
+    rows: List[rec.Row] = [("2025-01-02", 100.0, 10.0, None),
+                           ("2025-01-03", 100.0, 8.0, None)]     # eps 10 → 12.5
+    assert len(rec.switch_dates(rows)) == 2
+
+
+def test_last_and_first_switch_helpers():
+    sws = [("2025-01-02", 1.0), ("2025-03-05", 2.0), ("2025-06-10", 3.0)]
+    assert rec._last_switch_le(sws, "2025-04-01") == ("2025-03-05", 2.0)
+    assert rec._first_switch_gt(sws, "2025-04-01") == ("2025-06-10", 3.0)
+    assert rec._last_switch_le(sws, "2024-12-31") is None
+    assert rec._first_switch_gt(sws, "2026-01-01") is None
+
+
+def test_shift_moves_days():
+    assert rec._shift("2025-03-28", 3) == "2025-03-31"
+    assert rec._shift("2025-12-30", 3) == "2026-01-02"
+
+
+# ---------------------------------------------------------------------------
 # 退市类型拆分（本项目实测：不拆分会把 98 高估成 6 的 16 倍）
 # ---------------------------------------------------------------------------
 def _store_with_l1(tmp_path: Path, rows: List[Dict[str, str]]) -> PitSnapshotStore:
