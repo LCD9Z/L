@@ -340,14 +340,32 @@ _L3_SOCKET_TIMEOUT_S: float = 120.0
 
 #: 6 位代码 → baostock 市场前缀。**不认识的号段直接抛错，不猜**
 #: （猜错会静默取到别的标的 —— 与本项目反复出现的「对象标识」问题同类）。
+#:
+#: ⚠️ 2026-10-13 实测（baostock 0.9.3 · query_history_k_data_plus）：
+#: 该端点**只接受 sh./sz. 前缀** —— ``bj.830799`` / ``bj.920000`` 均报
+#: ``10004011 股票代码未标识sh或sz``；北交所号段（4xx/8xx/920xxx）以 sh./sz.
+#: 前缀查询均为 ``error_code=0`` 的**空响应**（源无该段数据）。
+#: → 北交所代码**不可猜前缀**：4/8 段显式抛错（由 ``_fetch_l3`` 记入零数据清单）；
+#:   920 段走 sh. 前缀（合法符号）收空响应，同样记零数据 —— 两者都不静默。
 _PREFIX_BY_FIRST = {"6": "sh", "5": "sh", "9": "sh",
-                    "0": "sz", "2": "sz", "3": "sz",
-                    "4": "bj", "8": "bj"}
+                    "0": "sz", "2": "sz", "3": "sz"}
+#: 北交所号段（源不覆盖，显式拒绝而非猜前缀）
+_BJ_SEGMENTS = ("4", "8")
 
 
 def bs_symbol(code: str) -> str:
-    """``600519`` → ``sh.600519``。未知号段抛错。"""
+    """``600519`` → ``sh.600519``。未知/北交所号段抛错。
+
+    北交所 4xx/8xx 显式抛错的原因见 ``_PREFIX_BY_FIRST`` 注释：baostock 本端点
+    拒绝 ``bj.`` 前缀（10004011），猜 sh./sz. 前缀只会得到空响应 —— 抛错让
+    调用方把它记入**零数据清单**（显式）而非混入抓取失败（每次 resume 重试）。
+    """
     c = str(code).zfill(6)
+    if c[0] in _BJ_SEGMENTS:
+        raise ValueError(
+            f"北交所号段 {code!r}：baostock query_history_k_data_plus 无覆盖"
+            "（bj. 前缀实测拒绝 10004011；sh./sz. 前缀为 success 空响应）—— 记入零数据清单，不猜前缀"
+        )
     pref = _PREFIX_BY_FIRST.get(c[0])
     if pref is None:
         raise ValueError(f"未知号段，无法确定市场前缀: {code!r}")
@@ -361,6 +379,46 @@ def _universe_codes(dataset_dir: str, limit: int = 0) -> List[str]:
         raise RuntimeError(f"数据集目录不存在: {d}")
     codes = sorted(p.stem for p in d.glob("*.csv") if p.stem.isdigit())
     return codes[:limit] if limit > 0 else codes
+
+
+# ===========================================================================
+# L3 · 零数据代码边车清单（2026-10-13 收官审计引入）
+# ===========================================================================
+def zero_data_sidecar_path(meta_dir: Path, ingest_date: str) -> Path:
+    """零数据代码边车清单路径：``meta/l3_zero_data_codes_<ingest_date>.txt``。
+
+    **语义**：清单内的代码 = **已由人工核实的「查询成功但 0 行」**代码
+    （baostock success 空响应，如北交所 920 段源不覆盖），**不是失败**
+    （失败在 ``metrics.failed_codes``，两回事，绝不混淆）。
+    """
+    return meta_dir / f"l3_zero_data_codes_{ingest_date}.txt"
+
+
+def read_zero_data_codes(path: Path) -> set:
+    """读边车清单（``#`` 注释行与空行跳过）。文件不存在 ⇒ 空集。"""
+    if not path.exists():
+        return set()
+    out: set = set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            out.add(line)
+    return out
+
+
+def filter_resume_codes(
+    codes: List[str], done: set, zero_known: set
+) -> tuple[List[str], List[str]]:
+    """``--resume`` 代码筛选（**纯函数**）：保留未采且未记零数据的，
+    返回 ``(待采, 被边车排除的零数据代码)``。
+
+    ⚠️ 边车排除**不是静默跳过**：调用方必须显式打印被排除的数量
+    （2026-10-13 教训：281 只零数据代码永不落 raw，不排除则每次
+    ``--resume`` 都重试它们，且只剩它们时 ``min_rows`` 会假性 FAIL）。
+    """
+    excluded = [c for c in codes if c in zero_known]
+    kept = [c for c in codes if c not in done and c not in zero_known]
+    return kept, excluded
 
 
 def _query_with_retry(query_fn, relogin_fn, attempts: int, backoff: Tuple[float, ...]):
@@ -430,10 +488,11 @@ def _fetch_one_l3(symbol: str, start: str, end: str) -> List[Dict[str, Any]]:
 def _fetch_l3(codes: List[str], start: str, end: str,
               progress_every: int = 200,
               flush_path: Optional[Path] = None,
-              flush_every: int = 100) -> Tuple[List[Dict[str, Any]], int, List[str], List[str], List[str]]:
+              flush_every: int = 100
+              ) -> Tuple[List[Dict[str, Any]], int, List[str], List[str], List[str], List[str]]:
     """批量取日频估值。
 
-    返回 ``(原始行, 原始行数, 疑似截断且重取一致, 重取发现真截断, 抓取失败已跳过)``。
+    返回 ``(原始行, 原始行数, 疑似截断且重取一致, 重取发现真截断, 抓取失败已跳过, 查询成功但 0 行)``。
 
     ⚠️ **增量落盘（``flush_path``）**：全市场回填需 1~3 小时，若只在**全部完成后**
     才写盘，一次崩溃就**全部白费**，``--resume`` 也无从续起（它读的就是那个文件）。
@@ -466,6 +525,7 @@ def _fetch_l3(codes: List[str], start: str, end: str,
     suspect_stable: List[str] = []
     real_truncated: List[str] = []
     failed: List[str] = []
+    zero_data: List[str] = []                   # 查询成功但 0 行（源无覆盖，非失败）
 
     def _flush() -> None:
         if flush_path is None or not pending:
@@ -478,13 +538,27 @@ def _fetch_l3(codes: List[str], start: str, end: str,
 
     try:
         for i, code in enumerate(codes, 1):
-            sym = bs_symbol(code)
+            try:
+                sym = bs_symbol(code)
+            except ValueError as exc:
+                # 号段本端点无覆盖（北交所 4/8 段）→ 记零数据（显式），
+                # **不混入 failed**（failed 语义是网络失败，会被 --resume 无限重试）
+                zero_data.append(code)
+                print(f"      ⓘ 跳过 {code}（号段无覆盖，非失败）: {exc}", flush=True)
+                continue
             try:
                 rows = _fetch_one_l3(sym, start, end)
             except RuntimeError as exc:
                 failed.append(f"{code}: {exc}")
                 print(f"      !! 跳过 {sym}（重试 {_L3_FETCH_ATTEMPTS} 次仍失败，不影响本轮其余标的）: {exc}",
                       flush=True)
+                continue
+            if not rows:
+                # ⚠️ 成功但 0 行 ≠ 失败：baostock 对源不覆盖的代码（如北交所 920 段）
+                # 返回 error_code=0 空响应该。**记账但不当失败** —— 混入 failed 会让
+                # 运维反复重试注定为空的代码；不记账则它们永远不进 raw、
+                # 每次 --resume 重试、只剩它们时 min_rows 假 FAIL（2026-10-13 实测）。
+                zero_data.append(code)
                 continue
             if suspect_truncation(len(rows)):
                 again = _fetch_one_l3(sym, start, end)
@@ -503,7 +577,7 @@ def _fetch_l3(codes: List[str], start: str, end: str,
     finally:
         _flush()
         bs.logout()
-    return raw, len(raw), suspect_stable, real_truncated, failed
+    return raw, len(raw), suspect_stable, real_truncated, failed, zero_data
 
 
 def _num_or_blank(v: Any) -> str:
@@ -709,6 +783,7 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
     blob: Optional[bytes] = None
     suspect_stable: List[str] = []
     real_trunc: List[str] = []
+    zero_data: List[str] = []      # L3：查询成功但 0 行（源无覆盖，非失败）
     done: set = set()
     raw_flushed = False       # L3 专用：原始层是否已由 `_fetch_l3` 增量写入
     if dataset == L1_DATASET:
@@ -773,19 +848,44 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
         if args.resume:
             # ⚠️ 长期回填必须能**断点续传**（baostock 时变/挂起，一轮跑不完）
             done = store.read_raw_keys(source, endpoint, ingest_date)
+            # 零数据边车：已核实的「查询成功但 0 行」代码排除重试
+            # （否则每次 --resume 都重试它们；只剩它们时 min_rows 假 FAIL）
+            zero_known = read_zero_data_codes(
+                zero_data_sidecar_path(store.meta_dir, ingest_date))
             before = len(codes)
-            codes = [c for c in codes if c not in done]
+            codes, excluded_zero = filter_resume_codes(codes, done, zero_known)
             print(f"      --resume：已完成 {len(done)} 只 → 待采 {len(codes)}/{before} 只", flush=True)
+            if excluded_zero:
+                print(f"      ⓘ 排除边车清单内已知零数据代码 {len(excluded_zero)} 只"
+                      f"（查询成功但源无覆盖，非失败；清单 {zero_data_sidecar_path(store.meta_dir, ingest_date)}）: "
+                      f"{excluded_zero[:10]}{'…' if len(excluded_zero) > 10 else ''}", flush=True)
             if not codes:
                 print("      全部已完成，无新任务", flush=True)
                 return 0
         print(f"[1/5] 采集 baostock:query_history_k_data_plus"
               f"（{len(codes)} 只 · {args.start}~{args.end} · 不复权）...", flush=True)
-        raw_rows, n_raw, suspect_stable, real_trunc, failed = _fetch_l3(
+        raw_rows, n_raw, suspect_stable, real_trunc, failed, zero_data = _fetch_l3(
             codes, args.start, args.end, flush_path=raw_target, flush_every=args.flush_every
         )
         raw_flushed = True        # 原始层已由 `_fetch_l3` **增量**写入
         print(f"      原始 {n_raw:,} 行", flush=True)
+        if zero_data:
+            print(f"      ⓘ 查询成功但 0 行的代码 {len(zero_data)} 只（源无覆盖，**非失败**）: "
+                  f"{zero_data[:10]}{'…' if len(zero_data) > 10 else ''}", flush=True)
+            if args.record_zero_data:
+                # 显式 opt-in：经人工核实后把零数据代码记入边车清单（默认关闭 ——
+                # 防止把一次瞬时空响应误永久记为「无数据」，那是静默缺口）。
+                zpath = zero_data_sidecar_path(store.meta_dir, ingest_date)
+                zpath.parent.mkdir(parents=True, exist_ok=True)
+                known = read_zero_data_codes(zpath)
+                fresh = [c for c in zero_data if c not in known]
+                if fresh:
+                    with zpath.open("a", encoding="utf-8") as fh:
+                        fh.write("# 追加于 " + as_of + "（--record-zero-data，经人工核实）\n")
+                        for c in fresh:
+                            fh.write(c + "\n")
+                print(f"      ⓘ --record-zero-data：{len(fresh)} 只新零数据代码已记入 {zpath}"
+                      f"（原有 {len(known)} 只；移除清单条目即恢复对该代码的重试）", flush=True)
         if failed:
             print(f"      ⚠️ 抓取失败 {len(failed)} 只（已跳过；--resume 续跑可补采）:", flush=True)
             for f_ in failed[:20]:
@@ -803,6 +903,9 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
     if dataset == L3_DATASET:
         metrics["n_suspect_stable"] = len(suspect_stable)
         metrics["n_real_truncated"] = len(real_trunc)
+        metrics["n_zero_data_codes"] = len(zero_data)
+        if zero_data:
+            metrics["zero_data_codes"] = zero_data
         if real_trunc:
             problems.append(
                 f"FAIL 重取发现**真截断** {len(real_trunc)} 只（两次行数不同），"
@@ -937,6 +1040,10 @@ def main(argv: Optional[List[str]] = None) -> int:
                     help="L3：只取前 N 只（0=全部；小样本试跑用）")
     ap.add_argument("--resume", action="store_true",
                     help="L3：跳过已落盘标的并**追加**（长期回填的断点续传）")
+    ap.add_argument("--record-zero-data", action="store_true", dest="record_zero_data",
+                    help="L3：把本轮「查询成功但 0 行」的代码追加进零数据边车清单"
+                         "（meta/l3_zero_data_codes_<date>.txt；须经人工核实后再用 —— "
+                         "默认关闭，防止把瞬时空响应误永久记为无数据；--resume 会排除清单内代码）")
     ap.add_argument("--rebuild-norm", action="store_true", dest="rebuild_norm",
                     help="L3：不抓取，仅从原始层补建规范层缺失的标的（幂等，按 code 粒度）")
     ap.add_argument("--flush-every", type=int, default=100, dest="flush_every",

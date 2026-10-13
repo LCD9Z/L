@@ -255,12 +255,18 @@ def test_gap_check_calendar_is_guarded_against_silent_truncation():
 # L3 日频估值历史（脚本纯函数）
 # ---------------------------------------------------------------------------
 def test_bs_symbol_prefix_mapping():
-    """号段 → 市场前缀。"""
+    """号段 → 市场前缀。
+
+    ⚠️ 2026-10-13 实测（baostock 0.9.3 · query_history_k_data_plus）：
+    该端点**只接受 sh./sz.** —— ``bj.830799`` 报 ``10004011 股票代码未标识sh或sz``；
+    北交所号段（4xx/8xx/920xxx）无任何覆盖 → 4/8 段显式抛错（见下一测试），
+    920 段走 sh. 前缀收空响应（记零数据清单，见 test_fetch_l3_records_zero_data_as_not_failed）。
+    """
     assert ing.bs_symbol("600519") == "sh.600519"
     assert ing.bs_symbol("000001") == "sz.000001"
     assert ing.bs_symbol("300750") == "sz.300750"
     assert ing.bs_symbol("688981") == "sh.688981"
-    assert ing.bs_symbol("830799") == "bj.830799"
+    assert ing.bs_symbol("920000") == "sh.920000", "920 段走 sh. 前缀（baostock 只认 sh/sz）"
     assert ing.bs_symbol("519") == "sz.000519", "不足 6 位须补零后再判号段"
 
 
@@ -268,6 +274,17 @@ def test_bs_symbol_rejects_unknown_prefix():
     """⚠️ 未知号段必须**抛错**，不得猜 —— 猜错会静默取到别的标的。"""
     with pytest.raises(ValueError, match="未知号段"):
         ing.bs_symbol("700001")
+
+
+def test_bs_symbol_rejects_beijing_segment_with_coverage_note():
+    """⚠️ 北交所 4/8 段显式抛错：baostock 本端点拒绝 bj. 前缀（10004011），
+    sh./sz. 前缀对该段为 success 空响应 —— 猜前缀只会把「源无覆盖」伪装成
+    「取到了但为空」。抛错让调用方记入零数据清单（显式），不混入抓取失败。
+    """
+    with pytest.raises(ValueError, match="北交所号段"):
+        ing.bs_symbol("830799")
+    with pytest.raises(ValueError, match="10004011"):
+        ing.bs_symbol("430047")
 
 
 def test_normalize_l3_maps_fields_and_keeps_effective_date():
@@ -564,13 +581,13 @@ def test_fetch_l3_skips_code_that_fails_after_retry(monkeypatch):
         return [{"code": sym, "date": "2024-01-02", "close": "1"}]
 
     monkeypatch.setattr(ing, "_fetch_one_l3", fake_one)
-    raw, _n, suspect, real_trunc, failed = ing._fetch_l3(
+    raw, _n, suspect, real_trunc, failed, _zero = ing._fetch_l3(
         ["600519", "001206", "000001"], "2016-01-01", "2026-10-12",
         progress_every=0, flush_path=None, flush_every=0,
     )
     assert [r["code"] for r in raw] == ["sh.600519", "sz.000001"], "失败标的被跳过、其余照常"
     assert failed == ["001206: sz.001206: 10002007 网络接收错误"]
-    assert suspect == [] and real_trunc == []
+    assert suspect == [] and real_trunc == [] and _zero == []
 
 
 def test_fetch_l3_refetches_page_multiple_and_marks_suspect(monkeypatch):
@@ -584,12 +601,80 @@ def test_fetch_l3_refetches_page_multiple_and_marks_suspect(monkeypatch):
         return rows_2000
 
     monkeypatch.setattr(ing, "_fetch_one_l3", fake_one)
-    _raw, _n, suspect, real_trunc, _failed = ing._fetch_l3(
+    _raw, _n, suspect, real_trunc, _failed, _zero = ing._fetch_l3(
         ["600519"], "2016-01-01", "2026-10-12",
         progress_every=0, flush_path=None, flush_every=0,
     )
     assert calls["n"] == 2, "2000 整数倍必须重取一次对比（防分页静默截断）"
     assert suspect == ["600519:2000"] and real_trunc == []
+
+
+def test_fetch_l3_records_zero_data_as_not_failed(monkeypatch):
+    """⚠️ 查询成功但 0 行 = 源无覆盖（如北交所 920 段 success 空响应），
+    **记入 zero_data 而非 failed** —— 混入 failed 会让运维反复重试注定为空的代码，
+    不记账则它们永不进 raw、每次 --resume 重试、只剩它们时 min_rows 假 FAIL
+    （2026-10-13 收官实测：281 只 920 段代码正是此形态）。
+
+    注意：920xxx 由 bs_symbol 映射为 **sh.** 前缀（baostock 只接受 sh/sz，
+    bj. 前缀实测报 10004011）——空响应经该合法符号返回。
+    """
+    _fake_baostock(monkeypatch)
+
+    def fake_one(sym, start, end):
+        if sym in ("sh.920000", "sh.920030"):
+            return []
+        return [{"code": sym, "date": "2024-01-02", "close": "1"}]
+
+    monkeypatch.setattr(ing, "_fetch_one_l3", fake_one)
+    raw, _n, _suspect, _real_trunc, failed, zero_data = ing._fetch_l3(
+        ["600519", "920000", "920030"], "2016-01-01", "2026-10-12",
+        progress_every=0, flush_path=None, flush_every=0,
+    )
+    assert [r["code"] for r in raw] == ["sh.600519"], "零数据代码不进 raw"
+    assert failed == [], "零数据 ≠ 失败"
+    assert sorted(zero_data) == ["920000", "920030"]
+
+
+def test_fetch_l3_records_prefix_rejected_codes_as_zero_data(monkeypatch):
+    """⚠️ 号段被 bs_symbol 显式拒绝（北交所 4/8 段）→ 同样记 zero_data，
+    不得混入 failed（failed 会被 --resume 无限重试），更不得中止整轮。"""
+    _fake_baostock(monkeypatch)
+    called = {"n": 0}
+
+    def fake_one(sym, start, end):
+        called["n"] += 1
+        return [{"code": sym, "date": "2024-01-02", "close": "1"}]
+
+    monkeypatch.setattr(ing, "_fetch_one_l3", fake_one)
+    raw, _n, _suspect, _real_trunc, failed, zero_data = ing._fetch_l3(
+        ["600519", "830799"], "2016-01-01", "2026-10-12",
+        progress_every=0, flush_path=None, flush_every=0,
+    )
+    assert [r["code"] for r in raw] == ["sh.600519"], "被拒号段不进 raw、不影响其余标的"
+    assert called["n"] == 1, "920/北交所号段不应发起查询"
+    assert failed == [] and zero_data == ["830799"]
+
+
+def test_zero_data_sidecar_reader_and_resume_filter(tmp_path: Path):
+    """边车清单：注释/空行跳过、缺文件空集；resume 筛选排除边车与已采码。"""
+    p = tmp_path / "l3_zero_data_codes_2026-10-13.txt"
+    p.write_text("# 2026-10-13 审计产物\n920000\n\n 920030 \n# 尾注\n", encoding="utf-8")
+    got = ing.read_zero_data_codes(p)
+    assert got == {"920000", "920030"}, "注释与空行跳过、空白裁剪"
+    assert ing.read_zero_data_codes(tmp_path / "nope.txt") == set(), "缺文件 ⇒ 空集"
+
+    kept, excluded = ing.filter_resume_codes(
+        ["600519", "000001", "920000", "920030", "920098"],
+        done={"600519"}, zero_known={"920000", "920030"},
+    )
+    assert kept == ["000001", "920098"], "未采且未记零数据才保留"
+    assert excluded == ["920000", "920030"], "边车代码被排除（显式返回供打印，不静默）"
+
+
+def test_zero_data_sidecar_path_is_meta_scoped():
+    """边车路径必须落在 meta/ 并含 ingest_date（与 ingest_log 同域，便于对账）。"""
+    p = ing.zero_data_sidecar_path(Path("/x/meta"), "2026-10-13")
+    assert p == Path("/x/meta/l3_zero_data_codes_2026-10-13.txt")
 
 
 def test_l3_socket_timeout_constant_is_sane():
