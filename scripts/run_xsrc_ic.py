@@ -143,6 +143,9 @@ def load_series(path: str) -> Optional[Dict]:
 def main() -> int:
     ap = argparse.ArgumentParser(description="H-XSRC 跨源 IC 计算")
     ap.add_argument("--src", required=True, help="腾讯 CSV 目录")
+    ap.add_argument("--codes", default="",
+                    help="名单文件（JSON 或纯文本）。给定时**只算名单内的股票**，"
+                         "并在输出里报告名单覆盖率 —— 防「目录混批」")
     ap.add_argument("--step", type=int, default=5)
     ap.add_argument("--horizon", type=int, default=5)
     ap.add_argument("--min-cross-section", type=int, default=200)
@@ -153,6 +156,36 @@ def main() -> int:
     if not files:
         print(f"{args.src} 下无 CSV")
         return 2
+
+    # ⚠️ 2026-10-13 补：样本身份核对（对象标识核对）。
+    # 曾经目录里混了「300 名单」与「更早 1000 名单」两批，IC 按目录全算，
+    # 得出 297 只 —— 与预注册的「seed=42 抽 300」不符，事后才发现。
+    # 现在给 --codes 时只算名单内股票，并显式报告覆盖率。
+    allowed = None
+    codes_rel = ""
+    if args.codes and os.path.exists(args.codes):
+        try:
+            with open(args.codes, encoding="utf-8") as fh:
+                raw = fh.read()
+            try:
+                allowed = {d["code"] for d in json.loads(raw)
+                           if isinstance(d, dict) and "code" in d}
+            except json.JSONDecodeError:
+                allowed = {ln.strip() for ln in raw.splitlines() if ln.strip()}
+            codes_rel = os.path.abspath(args.codes)
+        except OSError:
+            allowed = None
+    if allowed is not None:
+        before = len(files)
+        files = [f for f in files
+                 if os.path.basename(f)[:-4] in allowed]
+        print(f"[0/3] 名单核对：{before} 个 CSV → 名单内 {len(files)} 个"
+              f"（名单要求 {len(allowed)}，覆盖率 "
+              f"{len(files)/max(1,len(allowed))*100:.1f}%）")
+        if len(files) < len(allowed):
+            miss = len(allowed) - len(files)
+            print(f"      ⚠️ 名单内有 {miss} 只尚未拉到（结论会标注覆盖率）")
+
     print(f"[1/3] 载入 {len(files)} 只 ...", flush=True)
 
     series: Dict[str, Dict] = {}
@@ -187,6 +220,10 @@ def main() -> int:
 
     print("[2/3] 逐期算 IC ...", flush=True)
     out: Dict = {"windows": {}, "n_stocks": len(series),
+                 # 样本身份核对（对象标识核对）
+                 "codes_file": codes_rel,
+                 "codes_required": len(allowed) if allowed else None,
+                 "codes_covered": len(files) if allowed else None,
                  # ⚠️ 数据集标识（整改清单 P0-2）—— 缺了会被
                  # test_data_asset_registry 抓住（2026-10-13 确实被抓住过一次）。
                  "source": str(Path(args.src).resolve()),

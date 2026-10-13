@@ -51,7 +51,33 @@ def probe() -> bool:
 
 
 def count_csv(out: str) -> int:
+    """目录内 CSV 总数（**仅作参考显示**，不作完成判据）。
+
+    ⚠️ 2026-10-13 修：初版**用目录总数当完成判据**，导致
+    「目标 250 只 + 目录已有 297 个旧 CSV」→ 立即判定完成并退出
+    （实际名单只完成 14/250）。**目录里可能混有别的批次的文件**，
+    总数与「本批完成数」是两回事 —— 又一次「对象标识」问题。
+    """
     return len(list(Path(out).glob("*.csv")))
+
+
+def count_done(codes_file: str, out: str) -> int:
+    """**本批名单**里已完成的只数（这是唯一正确的完成判据）。"""
+    try:
+        with open(codes_file, encoding="utf-8") as fh:
+            raw = fh.read()
+    except OSError:
+        return 0
+    codes = []
+    # 支持 JSON（[{"code":...}]）与纯文本（每行一个）两种名单格式
+    try:
+        data = json.loads(raw)
+        codes = [d["code"] for d in data if isinstance(d, dict) and "code" in d]
+    except json.JSONDecodeError:
+        codes = [ln.strip() for ln in raw.splitlines() if ln.strip()]
+    return sum(1 for c in codes
+               if (Path(out) / f"{c}.csv").is_file()
+               and (Path(out) / f"{c}.csv").stat().st_size > 64)
 
 
 def main() -> int:
@@ -66,8 +92,9 @@ def main() -> int:
 
     print(f"H-XSRC 拉取守护启动：目标 {args.target} 只，"
           f"最多 {args.rounds} 轮，间隔 {args.interval:.0f}s", flush=True)
-    best = count_csv(args.out)
-    print(f"  初始已有 {best} 个 CSV", flush=True)
+    best = count_done(args.codes, args.out)
+    print(f"  本批已完成 {best}/{args.target}（目录内共 {count_csv(args.out)} 个 CSV）",
+          flush=True)
 
     for rd in range(1, args.rounds + 1):
         if best >= args.target:
@@ -86,15 +113,17 @@ def main() -> int:
             subprocess.run(cmd, timeout=args.interval * 2, check=False)
         except subprocess.TimeoutExpired:
             print(f"[轮 {rd}] 本轮超时（已拉取的会保留，幂等续传）", flush=True)
-        now = count_csv(args.out)
-        print(f"[轮 {rd}] 结束：{best} → {now}（+{now-best}）", flush=True)
+        now = count_done(args.codes, args.out)
+        print(f"[轮 {rd}] 结束：本批 {best} → {now}（+{now-best}）；"
+              f"目录共 {count_csv(args.out)} 个 CSV", flush=True)
         if now == best:
             # 无进展：可能是限流又来了，等更久
             print(f"[轮 {rd}] 无进展 → 等 {args.interval:.0f}s", flush=True)
             time.sleep(args.interval)
         best = now
 
-    print(f"\n守护结束：最终 {best}/{args.target} 个 CSV", flush=True)
+    print(f"\n守护结束：本批完成 {best}/{args.target}"
+          f"（目录内共 {count_csv(args.out)} 个 CSV）", flush=True)
     return 0 if best >= args.target else 3
 
 
