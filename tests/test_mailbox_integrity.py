@@ -90,6 +90,8 @@ def test_receipt_dir_count_is_consistent():
     files = {p.name for p in rd.glob("*.md")}
     text = _ledger_text()
     unrecorded = sorted(f for f in files if f not in text)
-    assert len(unrecorded) <= 3, (
-        f"回执目录有 {len(unrecorded)} 个文件未被台账登记（登记习惯可能已失控）: "
-        f"{unrecorded[:5]}")
+    # ⚠️ 2026-10-13 改为零容忍：原允许 ≤3 个未登记，
+    # 而副本侧同口径反查出 1 个「提到过但未正式登记」的。
+    # 「留 3 个余量」本身就是在给静默失效留口子。
+    assert unrecorded == [], (
+        f"回执目录有 {len(unrecorded)} 个文件未被台账登记: {unrecorded}")
