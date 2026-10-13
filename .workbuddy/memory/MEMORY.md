@@ -28,3 +28,24 @@ for code, mkt, p in day_reader.scan_paths('D:/new_tdx/vipdoc'):   # ✅
 | baostock volume | 与通达信**逐位相同**（都是股） | 不需换算 |
 | JSON 落盘 | `open(p,'w')` 在 Windows 会转 **CRLF** → `test_line_endings_are_lf` 失败 | 必须 `newline='\n'` |
 | baostock 2000 | 是「**一页**」不是上限；`next()` 失败会**静默返回 False** | 判据 `n % 2000 == 0` ⇒ 须复核 |
+
+## 本项目的「静默失效」坑
+
+### `reports/` 是**白名单制**：新建子目录不补白名单 → 文件**永远不入库**
+
+`.gitignore` 结构是 `reports/*` + 逐条 `!reports/<子目录>/` 白名单。
+**新建 `reports/<新子目录>/` 时，若不补
+`!reports/<新子目录>/` 与 `!reports/<新子目录>/*`，
+该目录下所有 JSON/MD 会被静默忽略 —— 从未 `git add`、也不在 `EVIDENCE_INDEX.md`。**
+
+**⚠️ 2026-10-13 踩到**：`reports/xsource/XSRC.json`（**P0-1 正式结论**）
+因此**从未入库**；而 `tests/test_data_asset_registry.py` 只从**磁盘**读该文件
+→ **测试全部通过**，完全发现不了「文件根本没进版本库」。
+`EVIDENCE_INDEX.md` 由 `git ls-files` 生成，校验用例又比对「索引 vs git」——
+两者**一致地缺失**，反而无告警。**这就是静默失效的典型形态。**
+
+**教训**：
+- 新建 `reports/` 子目录后，**必须**补两条白名单，
+  并跑 `gen_evidence_index.py` 确认**证据份数增加**
+- **「读磁盘能通过」≠「文件入库」**：判定类产物的守卫必须查 `git ls-files`
+  （已加 `test_official_verdict_artifacts_are_git_tracked`）
