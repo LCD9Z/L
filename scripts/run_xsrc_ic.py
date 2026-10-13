@@ -148,6 +148,13 @@ def main() -> int:
                          "并在输出里报告名单覆盖率 —— 防「目录混批」")
     ap.add_argument("--step", type=int, default=5)
     ap.add_argument("--horizon", type=int, default=5)
+    ap.add_argument("--sample-mode", choices=["calendar", "per-stock"],
+                    default="calendar",
+                    help="采样栅格：calendar=统一交易日历（与主干一致，默认）；"
+                         "per-stock=各自上市首日起算（本项目旧行为）")
+    ap.add_argument("--main-ic", default="reports/cross_decade/ORTH.json",
+                    help="主干**实测** IC（plain/不设门槛口径）用于直接跨源比对；"
+                         "缺省读 ORTH.json 的 windows[W].plain[factor].ic_mean")
     ap.add_argument("--min-cross-section", type=int, default=200)
     ap.add_argument("--out", default="")
     args = ap.parse_args()
@@ -196,12 +203,30 @@ def main() -> int:
     print(f"      有效 {len(series)} 只", flush=True)
 
     # 逐日收集横截面
+    #
+    # ⚠️ 2026-10-13 发现（口径核对）：本项目**主干**（run_tdx_universe_ic）
+    # 用**统一交易日历**（`sh000001.day` 作主日历 → 每 step 个交易日一个调仓日），
+    # 故同一调仓日的截面 = **当日全部在交易的样本股**；
+    # 而本脚本初版用 `range(0, len(dates), step)`，**每只股票从自己的上市首日
+    # 起算** —— 各股相位不同 → 同一日期上只有「栅格恰好命中该日」的子集。
+    # **两者 step=5 的口径并不相同**，会让「跨源一致」比较两个略不同的估计量。
+    # 现以 `--sample-mode` 显式区分，**默认 calendar（与主干对齐）**。
     buckets: Dict[str, Dict[str, Dict]] = {t: {} for t, _s, _e in WINDOWS}
+    rebal: Optional[List[str]] = None
+    if args.sample_mode == "calendar":
+        master = sorted({d for s in series.values() for d in s["dates"]})
+        rebal = [master[k] for k in range(0, len(master), args.step)]
+        print(f"[1.5/3] 统一日历 {len(master)} 天 → 调仓日 {len(rebal)} 个"
+              f"（每 {args.step} 个交易日一期）")
     for s in series.values():
         dates, closes, amounts = s["dates"], s["closes"], s["amounts"]
+        didx = {d: k for k, d in enumerate(dates)} if rebal is not None else None
         for tag, ws, we in WINDOWS:
-            for i in range(0, len(dates), args.step):
-                d = dates[i]
+            if rebal is not None:
+                pairs = [(didx[d], d) for d in rebal if d in didx]
+            else:
+                pairs = [(i, dates[i]) for i in range(0, len(dates), args.step)]
+            for i, d in pairs:
                 if not (ws <= d <= we):
                     continue
                 if i < 21 or i + args.horizon >= len(dates):
@@ -228,7 +253,9 @@ def main() -> int:
                  # test_data_asset_registry 抓住（2026-10-13 确实被抓住过一次）。
                  "source": str(Path(args.src).resolve()),
                  "source_dataset_id": "D5",
-                "amount_is_estimated": True,
+                 # 采样栅格口径（与主干对齐与否，直接影响可比性）
+                 "sample_mode": args.sample_mode,
+                 "amount_is_estimated": True,
                 "note": "amount 为 volume×(H+L+C)/3 估算值；"
                         "amihud20/loga20 结论应视为较弱证据。"
                         "样本=--src 目录内全部 CSV（300/1000/早年 三名单并集），"
@@ -259,6 +286,26 @@ def main() -> int:
     mv_path = os.path.join(_here, "reports", "cross_decade", "VERDICT.json")
     out["main_verdict_ref"] = os.path.relpath(mv_path, _here) \
         if os.path.exists(mv_path) else "(不存在)"
+
+    # --- 与主干**实测** IC 直接比对（预注册 §三 定义的比较基准）---
+    # ⚠️ 2026-10-13 修：原实现只与**冻结假设方向**（DIRECTIONS）比，
+    # 而预注册 §三 要求「比较跨源侧 vs **主干侧**的 IC 符号」。
+    # 二者对 amihud20 **不等价**：主干主口径 P2（median 门槛）下 amihud20
+    # 六窗口全为负，而冻结方向是 +1 —— 只比冻结方向，会把
+    # 「与主干实测相反」显示成 ✓（**静默掩盖**）。故此处显式加载主干实测 IC，
+    # 并**并列**报告两种比对；两者不一致时必须人工裁决口径。
+    main_ic: Dict[str, Dict[str, Optional[float]]] = {}
+    mp = args.main_ic if os.path.isabs(args.main_ic) \
+        else os.path.join(_here, args.main_ic)
+    if os.path.exists(mp):
+        try:
+            md = json.loads(Path(mp).read_text(encoding="utf-8"))
+            for tag, _s, _e in WINDOWS:
+                plain = ((md.get("windows") or {}).get(tag) or {}).get("plain") or {}
+                main_ic[tag] = {k: (plain.get(k) or {}).get("ic_mean")
+                                for k in FACTORS}
+        except (OSError, json.JSONDecodeError):
+            main_ic = {}
 
     print(f"\n  {'因子':<10}{'冻结':>5}", end="")
     for tag, _s, _e in WINDOWS:
@@ -292,6 +339,26 @@ def main() -> int:
                   end="")
         print()
     out["consistent_windows"] = consistent
+
+    # 与主干实测（plain 口径）的**直接**比对：按因子统计同号窗口数
+    vs_main: Dict[str, Dict[str, int]] = {}
+    if main_ic:
+        print("\n  与主干**实测**(plain/不设门槛) 直接比对：")
+        for k in FACTORS:
+            same = cmp_n = 0
+            for tag, _s, _e in WINDOWS:
+                m = (main_ic.get(tag) or {}).get(k)
+                w = out["windows"].get(tag)
+                x = w["ic"][k]["ic_mean"] if w else None
+                if m is None or x is None:
+                    continue
+                cmp_n += 1
+                if (m > 0) == (x > 0):
+                    same += 1
+            vs_main[k] = {"same": same, "compared": cmp_n}
+            print(f"    {k:<10} 同号 {same}/{cmp_n}")
+        out["vs_main"] = {"ref": os.path.relpath(mp, _here),
+                          "gate": "plain(不设门槛)", "by_factor": vs_main}
 
     # 覆盖率（防「无数据被悄悄当成一致」或「当成不一致」）
     usable = [t for t, _s, _e in WINDOWS if out["windows"].get(t)]

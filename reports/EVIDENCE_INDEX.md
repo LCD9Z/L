@@ -48,7 +48,7 @@
 | `adx_attr_w4.json` | 593 | `297351b722ae` | BENCHMARK_ALIGNMENT.md | — |
 | `cost_model_check.json` | 1,452 | `c844f528f28a` | BENCHMARK_ALIGNMENT.md<br>STEP1_3_EXECUTION_REPORT.md | — |
 | `cross_decade/CORR.json` | 2,833 | `f43f68059e9e` | AGENTS.md<br>CROSS_DECADE_REVIEW_RESPONSE.md<br>CROSS_DECADE_VERDICT.md<br>DATA_ASSET_REGISTRY.md<br>FACTOR_ORTHOGONALITY_PREREG.md<br>FACTOR_SUBSET_PREREG.md | `factor_corr_by_window.py` |
-| `cross_decade/ORTH.json` | 8,997 | `b1fddcf0b6b1` | DATA_ASSET_REGISTRY.md<br>FACTOR_ORTHOGONALITY_PREREG.md<br>FACTOR_ORTHOGONALITY_VERDICT.md<br>REVIEW_ROUND2_PACKAGE.md | `run_factor_orthogonality.py` |
+| `cross_decade/ORTH.json` | 8,997 | `b1fddcf0b6b1` | DATA_ASSET_REGISTRY.md<br>FACTOR_ORTHOGONALITY_PREREG.md<br>FACTOR_ORTHOGONALITY_VERDICT.md<br>REVIEW_ROUND2_PACKAGE.md | `run_factor_orthogonality.py`<br>`run_xsrc_ic.py` |
 | `cross_decade/R.json` | 9,924 | `bde915cfd519` | AGENTS.md<br>CROSS_DECADE_REVIEW_RESPONSE.md<br>CROSS_DECADE_VERDICT.md<br>DATA_ASSET_REGISTRY.md<br>FACTOR_ORTHOGONALITY_PREREG.md<br>FACTOR_SUBSET_PREREG.md | `factor_corr_by_window.py` |
 | `cross_decade/VERDICT.json` | 806 | `4a6e2f30d934` | DATA_ASSET_REGISTRY.md | `run_xsrc_ic.py`<br>`summarize_cross_decade.py` |
 | `cross_decade/W1.json` | 9,677 | `9a8113be0468` | （暂无报告直接引用） | `gen_evidence_index.py` |
@@ -119,7 +119,7 @@
 | `v2_p2.json` | 2,464 | `07150dada9db` | BENCHMARK_ALIGNMENT.md | — |
 | `v2_p3.json` | 1,504 | `4c8635c7e17f` | BENCHMARK_ALIGNMENT.md | — |
 | `v2_rolling_eval_w6.json` | 798 | `3554bec67bc1` | BENCHMARK_ALIGNMENT.md<br>STEP1_3_EXECUTION_REPORT.md | — |
-| `xsource/XSRC.json` | 3,688 | `c30b93cab6f9` | XSOURCE_VALIDATION_PREREG.md | `run_xsrc_ic.py` |
+| `xsource/XSRC.json` | 4,109 | `96a75c3749e7` | XSOURCE_VALIDATION_PREREG.md | `run_xsrc_ic.py` |
 
 ---
 
