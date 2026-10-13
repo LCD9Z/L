@@ -53,7 +53,7 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence
 
 # 北京时间（采集时刻一律以此记录，避免跨时区歧义）
 CST = timezone(timedelta(hours=8))
@@ -348,17 +348,38 @@ class PitSnapshotStore:
     # ------------------------------------------------------------------
     # 读
     # ------------------------------------------------------------------
-    def read_normalized(self, dataset: str) -> List[Dict[str, str]]:
-        """读全部已落盘的规范层记录（跨所有日期）。"""
+    def iter_normalized(
+        self, dataset: str, ingest_date: Optional[str] = None
+    ) -> Iterator[Dict[str, str]]:
+        """**流式**读规范层（逐行 yield，不全装载入内存）。
+
+        * ``ingest_date`` 给值 ⇒ 只读该日期文件（``normalized/<dataset>/<date>.csv``）；
+        * 留空 ⇒ 跨全部已落盘日期（升序，``_archive/`` 不递归，与
+          :meth:`read_normalized` 同语义）。
+        * ⚠️ L3 单日即 ~1.3 GB / 1,100 万行 CSV —— **大文件消费者必须用本方法**，
+          不得 :meth:`read_normalized`（P3 §5 残留风险：全量入内存）。
+        """
         d = self.norm_dir / dataset
         if not d.is_dir():
-            return []
-        out: List[Dict[str, str]] = []
-        for p in sorted(d.glob("*.csv")):
+            return
+        if ingest_date:
+            paths: Iterable[Path] = [self.norm_path(dataset, ingest_date)]
+        else:
+            paths = sorted(d.glob("*.csv"))
+        for p in paths:
+            if not p.exists():
+                continue
             with p.open("r", encoding="utf-8", newline="") as fh:
                 for row in csv.DictReader(fh):
-                    out.append({k: (v if v is not None else "") for k, v in row.items()})
-        return out
+                    yield {k: (v if v is not None else "") for k, v in row.items()}
+
+    def read_normalized(self, dataset: str) -> List[Dict[str, str]]:
+        """读全部已落盘的规范层记录（跨所有日期）。
+
+        ⚠️ **全量入内存** —— L3 单日 ~1.3 GB CSV 会把内存打爆。
+        新消费者请用 :meth:`iter_normalized`（流式）；本方法仅为兼容保留。
+        """
+        return list(self.iter_normalized(dataset))
 
     def ingest_log(self) -> List[Dict[str, Any]]:
         """读全部采集日志。"""

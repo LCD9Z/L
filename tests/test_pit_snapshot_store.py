@@ -274,6 +274,59 @@ def test_make_run_id_format():
 
 
 # ---------------------------------------------------------------------------
+# 流式读取（iter_normalized）—— L3 全量 ~1.3 GB CSV 的唯一可行消费方式
+#
+# ⚠️ 背景（P3 §5 残留风险）：read_normalized 全量入内存，L3 单日即 ~1.3 GB /
+# 1,100 万行 → 首个 L3 消费者出现前必须先有流式通道。read_normalized 现为
+# iter_normalized 的薄封装（语义不变），新代码必须用流式版。
+# ---------------------------------------------------------------------------
+def test_iter_normalized_matches_read_normalized(store: PitSnapshotStore):
+    """流式与全量读必须**逐行一致**（薄封装不得漂移语义）。"""
+    store.write_normalized("l1_stock_basic", "2026-10-11", _rows(
+        ("600000", "1999-11-10", "2026-10-11T21:00:00+08:00", "a"),
+        ("600001", "2000-01-04", "2026-10-11T21:00:00+08:00", "b"),
+    ))
+    got_stream = list(store.iter_normalized("l1_stock_basic"))
+    got_full = store.read_normalized("l1_stock_basic")
+    assert got_stream == got_full, "流式与全量读漂移"
+
+
+def test_iter_normalized_is_lazy_generator(store: PitSnapshotStore):
+    """必须是**惰性**生成器（读第一行不载入全文件）——大文件消费的前提。"""
+    import types
+    store.write_normalized("l1_stock_basic", "2026-10-11", _rows(
+        ("600000", "1999-11-10", "2026-10-11T21:00:00+08:00", "a"),
+        ("600001", "2000-01-04", "2026-10-11T21:00:00+08:00", "b"),
+    ))
+    it = store.iter_normalized("l1_stock_basic")
+    assert isinstance(it, types.GeneratorType), "必须返回生成器而非 list"
+    first = next(it)
+    assert first["code"] == "600000"
+
+
+def test_iter_normalized_scoped_to_ingest_date(store: PitSnapshotStore):
+    """给 ingest_date 只读该日文件（不混入其他日期）。"""
+    store.write_normalized("l1_stock_basic", "2026-10-11", _rows(
+        ("600000", "1999-11-10", "2026-10-11T21:00:00+08:00", "a"),
+    ))
+    store.append_normalized("l1_stock_basic", "2026-10-11", _rows(
+        ("600001", "2000-01-04", "2026-10-12T09:00:00+08:00", "b"),
+    ))
+    store.write_normalized("l1_stock_basic", "2026-10-12", _rows(
+        ("600002", "2000-01-05", "2026-10-12T09:00:00+08:00", "c"),
+    ))
+    got = list(store.iter_normalized("l1_stock_basic", "2026-10-12"))
+    assert [r["code"] for r in got] == ["600002"], "只含指定 ingest_date 的行"
+    assert [r["code"] for r in store.iter_normalized("l1_stock_basic")] == [
+        "600000", "600001", "600002"], "跨日期按文件名（=日期）升序"
+
+
+def test_iter_normalized_missing_dataset_yields_nothing(store: PitSnapshotStore):
+    assert list(store.iter_normalized("l1_stock_basic")) == [], "未落盘 ⇒ 空"
+    assert list(store.iter_normalized("l1_stock_basic", "2026-10-11")) == [], "缺文件 ⇒ 空"
+
+
+# ---------------------------------------------------------------------------
 # 真实产物守卫（若已落盘则校验；未落盘则跳过，不误报失败）
 # ---------------------------------------------------------------------------
 def test_real_snapshot_if_present_is_wellformed():
