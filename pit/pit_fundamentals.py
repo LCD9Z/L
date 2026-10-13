@@ -60,6 +60,8 @@ from pathlib import Path
 import re
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+from data_contracts import to_float_or_none as _num  # noqa: F401 — 唯一标准实现（CODE_REDUNDANCY_AUDIT P1）
+
 # 严格的 ISO 日期格式。用于拒绝上游混入的非日期值（如 pandas 的 "NaT"）。
 _ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -366,13 +368,3 @@ class PitFundamentals:
             "covered": covered,
             "ratio": covered / len(codes),
         }
-
-
-def _num(value: Any) -> Optional[float]:
-    if value is None:
-        return None
-    try:
-        f = float(value)
-    except (TypeError, ValueError):
-        return None
-    return f if f == f else None

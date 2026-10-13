@@ -9,17 +9,8 @@ Stage-1, rather than merely making the score more complicated?
 from __future__ import annotations
 from typing import Any, Dict, Iterable, List, Sequence
 
+from data_contracts import to_float_or_none as _num  # noqa: F401 — 唯一标准实现（CODE_REDUNDANCY_AUDIT P1）
 from factors.factor_validation import validate_factor
-
-
-def _num(v):
-    try:
-        if v in (None, "", "-"):
-            return None
-        x = float(v)
-        return x if x == x else None
-    except (TypeError, ValueError):
-        return None
 
 
 def _cross_rank(values: Sequence[float | None]) -> List[float | None]:

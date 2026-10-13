@@ -10,15 +10,7 @@ from __future__ import annotations
 from statistics import mean, pstdev
 from typing import Any, Dict, Iterable, List, Sequence
 
-
-def _num(v):
-    try:
-        if v in (None, "", "-"):
-            return None
-        x = float(v)
-        return x if x == x else None
-    except (TypeError, ValueError):
-        return None
+from data_contracts import to_float_or_none as _num  # noqa: F401 — 唯一标准实现（CODE_REDUNDANCY_AUDIT P1）
 
 
 def _pearson(a: Sequence[float], b: Sequence[float]) -> float | None:
@@ -111,8 +103,9 @@ def validate_factor(rows: Iterable[Dict[str, Any]], factor: str, horizons=(1, 3,
             if ric is not None: ranks.append(ric)
             ordered = sorted(pairs, key=lambda p: p[0])
             q = max(1, len(ordered) // 5)
-            low = mean(y for _, y in ordered[:q])
-            high = mean(y for _, y in ordered[-q:])
+            # if y is not None 为**类型窄化**（pairs 上文已过滤，运行时 no-op）
+            low = mean(y for _, y in ordered[:q] if y is not None)
+            high = mean(y for _, y in ordered[-q:] if y is not None)
             spreads.append(high - low)
             wins += int(high > low)
             valid_dates += 1

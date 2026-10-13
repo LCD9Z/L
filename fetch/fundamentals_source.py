@@ -33,6 +33,8 @@ from __future__ import annotations
 import time
 from typing import Any, Dict, List, Optional
 
+from data_contracts import to_float_or_none as _num  # noqa: F401 — 唯一标准实现（CODE_REDUNDANCY_AUDIT P1）
+
 __all__ = [
     "DISCLOSURE_PERIOD_SUFFIX",
     "REPORT_PERIODS_QUARTER_ENDS",
@@ -80,23 +82,6 @@ def report_periods(start_year: int, end_year: int) -> List[str]:
         for suffix in ("0331", "0630", "0930", "1231"):
             out.append(f"{year}{suffix}")
     return out
-
-
-def _num(value: Any) -> Optional[float]:
-    """把东财的数值列解析为 float；``-`` / 空 / 非数值一律返回 None（不补造）。"""
-    if value is None:
-        return None
-    if isinstance(value, (int, float)):
-        f = float(value)
-        return f if f == f else None
-    s = str(value).strip().replace(",", "")
-    if s in ("", "-", "--", "None", "nan", "NaN"):
-        return None
-    try:
-        f = float(s)
-    except ValueError:
-        return None
-    return f if f == f else None
 
 
 def _text(value: Any) -> str:

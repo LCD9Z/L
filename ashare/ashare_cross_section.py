@@ -3,12 +3,7 @@
 from __future__ import annotations
 from typing import Any, Dict, List
 
-
-def _num(v):
-    try:
-        return float(v) if v is not None else None
-    except (TypeError, ValueError):
-        return None
+from data_contracts import to_float_or_none as _num  # noqa: F401 — 唯一标准实现（CODE_REDUNDANCY_AUDIT P1）
 
 
 def _rank(values, higher_better=True):

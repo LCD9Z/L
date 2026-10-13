@@ -42,6 +42,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+from data_contracts import to_float_or_none as _num  # noqa: F401 — 唯一标准实现（CODE_REDUNDANCY_AUDIT P1）
+
 # 单季字段映射：累计字段名 → 单季字段名
 _FLOW_FIELDS = ("net_profit", "revenue")
 _PER_SHARE_FIELDS = ("eps", "ocf_per_share")
@@ -55,13 +57,6 @@ _QUARTER_SEQ = {
     "09-30": (3, "06-30"),
     "12-31": (4, "09-30"),
 }
-
-
-def _num(v: Any) -> Optional[float]:
-    try:
-        return float(v)
-    except (TypeError, ValueError):
-        return None
 
 
 def _period_key(report_period: str) -> Optional[Tuple[int, str]]:

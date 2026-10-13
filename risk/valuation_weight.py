@@ -44,6 +44,8 @@ from __future__ import annotations
 import os
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
+from data_contracts import to_float_or_none as _num  # noqa: F401 — 唯一标准实现（CODE_REDUNDANCY_AUDIT P1）
+
 # ---- 事前固定的分档与权重 ----
 LOW_PCT = 0.33
 HIGH_PCT = 0.67
@@ -51,14 +53,6 @@ W_LOW = 1.5      # 估值下轨 → 高权重
 W_MID = 1.0
 W_HIGH = 0.5     # 估值上轨 → 低权重
 DEFAULT_METRIC = "pe_ttm"
-
-
-def _num(v: Any) -> Optional[float]:
-    try:
-        f = float(v)
-    except (TypeError, ValueError):
-        return None
-    return None if f != f else f
 
 
 def build_valuation_weight(

@@ -7,6 +7,8 @@
 from __future__ import annotations
 from typing import Any, Dict, Iterable, List, Optional
 
+from data_contracts import to_float_or_none as _num  # noqa: F401 — 唯一标准实现（CODE_REDUNDANCY_AUDIT P1）
+
 
 def _text(v: Any) -> str:
     return str(v).strip() if v not in (None, "") else ""
@@ -19,15 +21,6 @@ def _date(v: Any) -> Optional[str]:
     if len(s) == 8 and s.isdigit():
         return f"{s[:4]}-{s[4:6]}-{s[6:8]}"
     return s[:10] if len(s) >= 10 else s
-
-
-def _num(v: Any) -> Optional[float]:
-    try:
-        if v in (None, "", "-"):
-            return None
-        return float(v)
-    except (TypeError, ValueError):
-        return None
 
 
 def _asof_ok(published_at: Optional[str], cutoff: Optional[str]) -> bool:

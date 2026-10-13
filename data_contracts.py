@@ -9,6 +9,38 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 
+def to_float_or_none(v: Any) -> Optional[float]:
+    """数值列解析的**唯一标准实现**（CODE_REDUNDANCY_AUDIT P1）。
+
+    语义：``None`` / ``""`` / ``"-"`` / ``"--"`` / 非数值 / **NaN** 一律返回 ``None``
+    （缺失即缺失，**绝不补造**）；其余返回 ``float``。字符串先 strip 再去千分位逗号，
+    兼容东财/baostock 的 ``"1,234.5"`` 列。
+
+    ⚠️ **NaN 必须过滤**：东财/baostock 数值列几乎不给 NaN（空值给 ``""``），
+    NaN 主要来自上游计算（0/0、inf-inf）。本项目此前 5 个模块过滤 NaN、
+    5 个模块不过滤 —— 同一条 NaN 在因子引擎当缺失、在估值模块当数值，
+    **且不报错**（「静默失效」类别）。2026-10-13 统一为此标准，10 处全部替换。
+
+    ⚠️ ``inf`` **不过滤**（与原各处实现一致）：inf 是显式的计算结果，
+    由消费方按需处置；本函数只负责「解析」，不做值域政策。
+    """
+    if v is None:
+        return None
+    if isinstance(v, bool):
+        return float(v)
+    if isinstance(v, (int, float)):
+        f = float(v)
+        return f if f == f else None
+    s = str(v).strip().replace(",", "")
+    if s in ("", "-", "--", "None", "nan", "NaN"):
+        return None
+    try:
+        f = float(s)
+    except (TypeError, ValueError):
+        return None
+    return f if f == f else None
+
+
 @dataclass
 class DataProvenance:
     source: str

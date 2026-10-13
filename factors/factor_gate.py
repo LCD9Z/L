@@ -4,15 +4,7 @@ from __future__ import annotations
 from statistics import mean
 from typing import Any, Dict, Iterable, List, Sequence
 
-
-def _num(v):
-    try:
-        if v in (None, "", "-"):
-            return None
-        x = float(v)
-        return x if x == x else None
-    except (TypeError, ValueError):
-        return None
+from data_contracts import to_float_or_none as _num  # noqa: F401 — 唯一标准实现（CODE_REDUNDANCY_AUDIT P1）
 
 
 def _pearson(a: Sequence[float], b: Sequence[float]):
@@ -31,7 +23,11 @@ def correlation_matrix(rows: Iterable[Dict[str, Any]], factors: List[str]) -> Di
         for b in factors[i:]:
             pairs = [(_num(r.get(a)), _num(r.get(b))) for r in rows]
             pairs = [(x, y) for x, y in pairs if x is not None and y is not None]
-            c = _pearson([x for x, _ in pairs], [y for _, y in pairs]) if len(pairs) >= 2 else None
+            # 下一行的 if 是**类型窄化**（pairs 已过滤 None，运行时 no-op）——
+            # to_float_or_none 有返回类型标注后，mypy 不再把 _num 结果当 Any。
+            c = (_pearson([x for x, _ in pairs if x is not None],
+                          [y for _, y in pairs if y is not None])
+                 if len(pairs) >= 2 else None)
             out[a][b] = c; out[b][a] = c
     return out
 
@@ -50,7 +46,7 @@ def gate_factors(
     Thresholds are deliberately softer than production targets. The gate is a
     screening device; final acceptance still requires Walk-Forward + OOS + cost.
     """
-    scored = []
+    scored: List[Dict[str, Any]] = []
     for name, report in validation.items():
         h = (report.get("horizons") or {}).get(str(horizon), {})
         ric = _num(h.get("rank_ic_mean")); rir = _num(h.get("rank_icir")); pos = _num(h.get("rank_ic_positive_ratio"))

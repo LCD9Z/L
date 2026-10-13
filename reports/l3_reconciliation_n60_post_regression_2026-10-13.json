@@ -1,0 +1,82 @@
+{
+  "sample_codes": 60,
+  "failed_codes": [],
+  "window": [
+    "2023-01-01",
+    "2025-12-31"
+  ],
+  "bps_relative_diff": {
+    "n": 40649,
+    "median": 0.0,
+    "p90": 0.001743,
+    "max": 0.375,
+    "share_le_1pct": 0.9385
+  },
+  "eps_relative_diff": {
+    "n": 30509,
+    "median": 0.022699,
+    "p90": 0.220177,
+    "max": 4.864619,
+    "share_le_1pct": 0.3177
+  },
+  "eps_signed_diff_median": -0.001718,
+  "pit_alignment": {
+    "impossible": 0,
+    "earlier_than_a_share": 4,
+    "aligned": 160,
+    "late": 0,
+    "no_our_event": 8,
+    "no_match": 299,
+    "no_data": 0
+  },
+  "pit_total": 471,
+  "pit_impossible": 0,
+  "pit_earlier_than_a_share": 4,
+  "pit_earlier_ah_hits": 0,
+  "ah_codes_used": 159,
+  "flags": [
+    {
+      "code": "002093",
+      "period": "2024-12-31",
+      "kind": "earlier_than_a_share",
+      "switch": "2025-04-10",
+      "disclose": "2025-04-26",
+      "gap_days": 16,
+      "ah": false
+    },
+    {
+      "code": "300303",
+      "period": "2023-12-31",
+      "kind": "earlier_than_a_share",
+      "switch": "2024-03-07",
+      "disclose": "2024-03-30",
+      "gap_days": 23,
+      "ah": false
+    },
+    {
+      "code": "688601",
+      "period": "2023-12-31",
+      "kind": "earlier_than_a_share",
+      "switch": "2024-02-26",
+      "disclose": "2024-04-16",
+      "gap_days": 50,
+      "ah": false
+    },
+    {
+      "code": "688601",
+      "period": "2024-12-31",
+      "kind": "earlier_than_a_share",
+      "switch": "2025-02-28",
+      "disclose": "2025-04-12",
+      "gap_days": 43,
+      "ah": false
+    }
+  ],
+  "caveats": [
+    "PIT 检验仅覆盖有披露日数据的 (code, period) 对；样本为抽样而非全市场",
+    "impossible = 切换日早于报告期末 → 确凿前视，无需披露日数据即可判定",
+    "earlier_than_a_share = 早于 A 股披露日但晚于报告期末 → 中性，可能来自港股公告/业绩快报/预告，不等于前视",
+    "A+H 名单用名字匹配，是近似；只用于解释，不用于判定",
+    "baostock 用不复权价、本项目 v3 用 qfq —— 故只比隐含分母，不比比率本身"
+  ]
+}
