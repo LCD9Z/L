@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import json
+import socket
 import sys
 from pathlib import Path
 from typing import Dict, List
@@ -589,6 +590,69 @@ def test_fetch_l3_refetches_page_multiple_and_marks_suspect(monkeypatch):
     )
     assert calls["n"] == 2, "2000 整数倍必须重取一次对比（防分页静默截断）"
     assert suspect == ["600519:2000"] and real_trunc == []
+
+
+def test_l3_socket_timeout_constant_is_sane():
+    """超时常量必须为正且有上界（否则单只挂起仍可拖死整轮）。"""
+    assert 0 < ing._L3_SOCKET_TIMEOUT_S <= 300, (
+        f"_L3_SOCKET_TIMEOUT_S={ing._L3_SOCKET_TIMEOUT_S} 不在 (0, 300] 内")
+
+
+def test_fetch_l3_sets_socket_timeout_before_login(monkeypatch):
+    """⚠️ 挂起防护：进入抓取前必须先设 socket 默认超时（且早于 login）。
+
+    2026-10-13 实测事故：baostock 连接 Established 但服务端无响应，
+    进程卡死 2 小时 —— 挂起**不抛异常**，重试逻辑完全绕过。
+    """
+    _fake_baostock(monkeypatch)
+    events: List[object] = []
+
+    real_setdefaulttimeout = socket.setdefaulttimeout
+
+    def recording_setdefaulttimeout(value):
+        events.append(("setdefaulttimeout", value))
+        return real_setdefaulttimeout(value)
+
+    def recording_login():
+        events.append("login")
+        import types
+        return types.SimpleNamespace(error_code="0", error_msg="")
+
+    monkeypatch.setattr(socket, "setdefaulttimeout", recording_setdefaulttimeout)
+    monkeypatch.setattr(sys.modules["baostock"], "login", recording_login)
+    monkeypatch.setattr(ing, "_fetch_one_l3",
+                        lambda sym, s, e: [{"code": sym, "date": "d", "close": "1"}])
+
+    ing._fetch_l3(["600519"], "2016-01-01", "2026-10-12",
+                  progress_every=0, flush_path=None, flush_every=0)
+
+    assert events == [
+        ("setdefaulttimeout", ing._L3_SOCKET_TIMEOUT_S), "login",
+    ], f"必须先设超时再登录，实际事件序列: {events}"
+
+
+def test_query_with_retry_treats_socket_timeout_as_one_failure():
+    """socket.timeout（挂起的表现）按「失败一次」处理，成功后照常返回。
+
+    挂起与 10002007 这类**会抛错**的瞬时错误不同：它连异常都没有。
+    设了默认超时后它才落入本通道 —— 本测试锁住这条通路。
+    """
+    calls = {"n": 0}
+
+    def hang_then_ok():
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise TimeoutError("timed out")
+        return True, ["payload"], ""
+
+    out = ing._query_with_retry(hang_then_ok, lambda: None, 3, (0.0,))
+    assert out == ["payload"] and calls["n"] == 2
+
+    def always_hang():
+        raise TimeoutError("timed out")
+
+    with pytest.raises(RuntimeError, match="重试 3 次仍失败"):
+        ing._query_with_retry(always_hang, lambda: None, 3, (0.0,))
 
 
 def test_rebuild_norm_appends_only_codes_missing_from_norm(tmp_path: Path):

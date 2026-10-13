@@ -26,6 +26,7 @@ import argparse
 import csv
 import json
 import os
+import socket
 import sys
 import time
 import urllib.request
@@ -328,6 +329,15 @@ L3_FIELDS = "date,code,close,peTTM,pbMRQ,psTTM,pcfNcfTTM,turn,tradestatus,isST"
 _L3_FETCH_ATTEMPTS: int = 3
 _L3_FETCH_BACKOFF: Tuple[float, ...] = (2.0, 5.0, 10.0)
 
+#: baostock socket 默认超时（秒）。**挂起不抛异常，重试拦不住** ——
+#: 2026-10-13 实测：回填进程对 baostock（114.94.20.42:10030）的连接
+#: Established 但服务端无响应，进程卡死 2 小时（CPU 6%），既无 error_code
+#: 也无异常 → 重试逻辑完全绕过，只能人工杀进程。
+#: 设默认超时后，挂起会抛 ``socket.timeout`` → 落入
+#: :func:`_query_with_retry` 的既有「异常折算一次失败」通道 → 重试/重登/跳过。
+#: 120s 对 2,533 行的正常查询（实测数秒）留足余量。
+_L3_SOCKET_TIMEOUT_S: float = 120.0
+
 #: 6 位代码 → baostock 市场前缀。**不认识的号段直接抛错，不猜**
 #: （猜错会静默取到别的标的 —— 与本项目反复出现的「对象标识」问题同类）。
 _PREFIX_BY_FIRST = {"6": "sh", "5": "sh", "9": "sh",
@@ -442,6 +452,10 @@ def _fetch_l3(codes: List[str], start: str, end: str,
       * 两次**相同**   ⇒ 记为「疑似但稳定」（合法，但须人工确认，在自检里报出）
     """
     import baostock as bs  # 惰性导入：可选依赖
+
+    # 挂起防护必须在**任何网络调用之前**设置（见 _L3_SOCKET_TIMEOUT_S 注释）。
+    # 默认超时对进程内后续新建 socket 全局生效；baostock 每次查询新建连接。
+    socket.setdefaulttimeout(_L3_SOCKET_TIMEOUT_S)
 
     lg = bs.login()
     if lg.error_code != "0":
