@@ -32,7 +32,7 @@
    文件名不出现在代码里。此时以**引用它的报告**中的命令行为准。
 3. **同一份证据可能被多份报告引用** —— 这属正常（如 `five_factor_ab_v2.json` 被 4 份引用）。
 
-**当前跟踪 81 份证据。**
+**当前跟踪 82 份证据。**
 
 ---
 
@@ -47,10 +47,10 @@
 | `adx_attr_w3.json` | 595 | `094810537084` | BENCHMARK_ALIGNMENT.md | — |
 | `adx_attr_w4.json` | 593 | `297351b722ae` | BENCHMARK_ALIGNMENT.md | — |
 | `cost_model_check.json` | 1,452 | `c844f528f28a` | BENCHMARK_ALIGNMENT.md<br>STEP1_3_EXECUTION_REPORT.md | — |
-| `cross_decade/CORR.json` | 2,801 | `8c942915065c` | AGENTS.md<br>CROSS_DECADE_REVIEW_RESPONSE.md<br>CROSS_DECADE_VERDICT.md<br>FACTOR_ORTHOGONALITY_PREREG.md<br>FACTOR_SUBSET_PREREG.md | `factor_corr_by_window.py` |
-| `cross_decade/ORTH.json` | 8,965 | `fcddbab613fc` | FACTOR_ORTHOGONALITY_PREREG.md<br>FACTOR_ORTHOGONALITY_VERDICT.md<br>REVIEW_ROUND2_PACKAGE.md | `run_factor_orthogonality.py` |
-| `cross_decade/R.json` | 9,924 | `bde915cfd519` | AGENTS.md<br>CROSS_DECADE_REVIEW_RESPONSE.md<br>CROSS_DECADE_VERDICT.md<br>FACTOR_ORTHOGONALITY_PREREG.md<br>FACTOR_SUBSET_PREREG.md | `factor_corr_by_window.py` |
-| `cross_decade/VERDICT.json` | 774 | `253bb5f2793c` | （暂无报告直接引用） | `summarize_cross_decade.py` |
+| `cross_decade/CORR.json` | 2,833 | `f43f68059e9e` | AGENTS.md<br>CROSS_DECADE_REVIEW_RESPONSE.md<br>CROSS_DECADE_VERDICT.md<br>DATA_ASSET_REGISTRY.md<br>FACTOR_ORTHOGONALITY_PREREG.md<br>FACTOR_SUBSET_PREREG.md | `factor_corr_by_window.py` |
+| `cross_decade/ORTH.json` | 8,997 | `b1fddcf0b6b1` | DATA_ASSET_REGISTRY.md<br>FACTOR_ORTHOGONALITY_PREREG.md<br>FACTOR_ORTHOGONALITY_VERDICT.md<br>REVIEW_ROUND2_PACKAGE.md | `run_factor_orthogonality.py` |
+| `cross_decade/R.json` | 9,924 | `bde915cfd519` | AGENTS.md<br>CROSS_DECADE_REVIEW_RESPONSE.md<br>CROSS_DECADE_VERDICT.md<br>DATA_ASSET_REGISTRY.md<br>FACTOR_ORTHOGONALITY_PREREG.md<br>FACTOR_SUBSET_PREREG.md | `factor_corr_by_window.py` |
+| `cross_decade/VERDICT.json` | 806 | `4a6e2f30d934` | DATA_ASSET_REGISTRY.md | `run_xsrc_ic.py`<br>`summarize_cross_decade.py` |
 | `cross_decade/W1.json` | 9,677 | `9a8113be0468` | （暂无报告直接引用） | `gen_evidence_index.py` |
 | `cross_decade/W1a.json` | 9,448 | `c2432d7ffef5` | W1_SPLIT_PREREG.md<br>W1_SPLIT_VERDICT.md | — |
 | `cross_decade/W1b.json` | 9,622 | `e01b3b5b325a` | W1_SPLIT_PREREG.md<br>W1_SPLIT_VERDICT.md | — |
@@ -60,7 +60,7 @@
 | `cross_decade/W5.json` | 9,925 | `ca3815c012af` | （暂无报告直接引用） | — |
 | `cross_decade/_intermediate/VERDICT_partial.json` | 1,050 | `58d027ec2283` | CROSS_DECADE_REVIEW_RESPONSE.md<br>CROSS_DECADE_VERDICT.md | `gen_evidence_index.py` |
 | `cross_decade/_intermediate/verify_after_800.json` | 5,058 | `94a2233a47ac` | CROSS_DECADE_REVIEW_RESPONSE.md | — |
-| `cross_decade/sample_sizes.json` | 362 | `3ae642843c25` | CROSS_DECADE_PREREG.md | — |
+| `cross_decade/sample_sizes.json` | 436 | `3a641dc38218` | CROSS_DECADE_PREREG.md<br>DATA_ASSET_REGISTRY.md | — |
 | `daily_screen_2026-09-19.json` | 4,746 | `798f50c6f931` | BENCHMARK_ALIGNMENT.md<br>HANDOVER.md<br>STEP1_3_EXECUTION_REPORT.md | — |
 | `decay_h1.json` | 2,372 | `9ec2095d4a36` | BENCHMARK_ALIGNMENT.md<br>HANDOVER.md | — |
 | `decay_h10.json` | 2,330 | `6961ab958edb` | BENCHMARK_ALIGNMENT.md<br>HANDOVER.md | — |
@@ -119,6 +119,7 @@
 | `v2_p2.json` | 2,464 | `07150dada9db` | BENCHMARK_ALIGNMENT.md | — |
 | `v2_p3.json` | 1,504 | `4c8635c7e17f` | BENCHMARK_ALIGNMENT.md | — |
 | `v2_rolling_eval_w6.json` | 798 | `3554bec67bc1` | BENCHMARK_ALIGNMENT.md<br>STEP1_3_EXECUTION_REPORT.md | — |
+| `xsource/XSRC.json` | 3,688 | `c30b93cab6f9` | XSOURCE_VALIDATION_PREREG.md | `run_xsrc_ic.py` |
 
 ---
 
@@ -127,7 +128,6 @@
 以下文件已跟踪但暂无报告直接引用 —— 可能是**中间产物**或**脚本内部消费**。
 保留它们是为可复现性；若确认无用，应移出 `reports/` 或加 `_` 前缀使其被忽略。
 
-- `cross_decade/VERDICT.json`
 - `cross_decade/W1.json`
 - `cross_decade/W2.json`
 - `cross_decade/W3.json`

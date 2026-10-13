@@ -1,0 +1,218 @@
+{
+ "windows": {
+  "W1": {
+   "cross_sections": 130,
+   "ic": {
+    "ret20": {
+     "ic_mean": -0.059506,
+     "t": -3.0,
+     "n": 130
+    },
+    "vol20": {
+     "ic_mean": -0.040479,
+     "t": -1.94,
+     "n": 130
+    },
+    "amihud20": {
+     "ic_mean": 0.017769,
+     "t": 0.88,
+     "n": 130
+    },
+    "loga20": {
+     "ic_mean": -0.045934,
+     "t": -2.39,
+     "n": 130
+    },
+    "maxret20": {
+     "ic_mean": -0.049609,
+     "t": -2.87,
+     "n": 130
+    }
+   }
+  },
+  "W2": {
+   "cross_sections": 41,
+   "ic": {
+    "ret20": {
+     "ic_mean": -0.039447,
+     "t": -1.16,
+     "n": 41
+    },
+    "vol20": {
+     "ic_mean": -0.071149,
+     "t": -2.74,
+     "n": 41
+    },
+    "amihud20": {
+     "ic_mean": 0.010189,
+     "t": 0.34,
+     "n": 41
+    },
+    "loga20": {
+     "ic_mean": -0.036156,
+     "t": -1.13,
+     "n": 41
+    },
+    "maxret20": {
+     "ic_mean": -0.063732,
+     "t": -2.58,
+     "n": 41
+    }
+   }
+  },
+  "W3": {
+   "cross_sections": 363,
+   "ic": {
+    "ret20": {
+     "ic_mean": -0.061147,
+     "t": -6.29,
+     "n": 363
+    },
+    "vol20": {
+     "ic_mean": -0.05907,
+     "t": -5.67,
+     "n": 363
+    },
+    "amihud20": {
+     "ic_mean": 0.036738,
+     "t": 3.8,
+     "n": 363
+    },
+    "loga20": {
+     "ic_mean": -0.068014,
+     "t": -7.43,
+     "n": 363
+    },
+    "maxret20": {
+     "ic_mean": -0.068356,
+     "t": -7.97,
+     "n": 363
+    }
+   }
+  },
+  "W4": {
+   "cross_sections": 590,
+   "ic": {
+    "ret20": {
+     "ic_mean": -0.049741,
+     "t": -6.39,
+     "n": 590
+    },
+    "vol20": {
+     "ic_mean": -0.061293,
+     "t": -8.14,
+     "n": 590
+    },
+    "amihud20": {
+     "ic_mean": 0.028201,
+     "t": 3.62,
+     "n": 590
+    },
+    "loga20": {
+     "ic_mean": -0.054572,
+     "t": -7.13,
+     "n": 590
+    },
+    "maxret20": {
+     "ic_mean": -0.06724,
+     "t": -10.27,
+     "n": 590
+    }
+   }
+  },
+  "W5": {
+   "cross_sections": 364,
+   "ic": {
+    "ret20": {
+     "ic_mean": -0.061307,
+     "t": -6.05,
+     "n": 364
+    },
+    "vol20": {
+     "ic_mean": -0.06047,
+     "t": -5.12,
+     "n": 364
+    },
+    "amihud20": {
+     "ic_mean": 0.051207,
+     "t": 4.26,
+     "n": 364
+    },
+    "loga20": {
+     "ic_mean": -0.083984,
+     "t": -8.06,
+     "n": 364
+    },
+    "maxret20": {
+     "ic_mean": -0.063659,
+     "t": -6.46,
+     "n": 364
+    }
+   }
+  },
+  "R": {
+   "cross_sections": 502,
+   "ic": {
+    "ret20": {
+     "ic_mean": -0.055332,
+     "t": -6.43,
+     "n": 502
+    },
+    "vol20": {
+     "ic_mean": -0.067072,
+     "t": -7.04,
+     "n": 502
+    },
+    "amihud20": {
+     "ic_mean": 0.055412,
+     "t": 5.75,
+     "n": 502
+    },
+    "loga20": {
+     "ic_mean": -0.086626,
+     "t": -9.99,
+     "n": 502
+    },
+    "maxret20": {
+     "ic_mean": -0.068502,
+     "t": -8.6,
+     "n": 502
+    }
+   }
+  }
+ },
+ "n_stocks": 368,
+ "codes_file": "",
+ "codes_required": null,
+ "codes_covered": null,
+ "source": "D:\\xs_tencent\\klines",
+ "source_dataset_id": "D5",
+ "amount_is_estimated": true,
+ "note": "amount 为 volume×(H+L+C)/3 估算值；amihud20/loga20 结论应视为较弱证据。样本=--src 目录内全部 CSV（300/1000/早年 三名单并集），**非**预注册的 seed=42 单次抽样；仅用于**方向一致性**判定，不得用于「跨源 IC 数值可比」声称",
+ "main_verdict_ref": "reports\\cross_decade\\VERDICT.json",
+ "consistent_windows": {
+  "ret20": 5,
+  "vol20": 5,
+  "amihud20": 5,
+  "loga20": 5,
+  "maxret20": 5
+ },
+ "coverage": {
+  "usable_windows": [
+   "W1",
+   "W2",
+   "W3",
+   "W4",
+   "W5",
+   "R"
+  ],
+  "missing_windows": [],
+  "n_stocks": 368
+ },
+ "verdict": {
+  "factors_consistent_ge4": 5,
+  "n_regular_windows_usable": 5,
+  "flipped": {},
+  "conclusion": "跨源一致"
+ }
+}

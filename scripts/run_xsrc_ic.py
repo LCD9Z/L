@@ -228,9 +228,12 @@ def main() -> int:
                  # test_data_asset_registry 抓住（2026-10-13 确实被抓住过一次）。
                  "source": str(Path(args.src).resolve()),
                  "source_dataset_id": "D5",
-                 "amount_is_estimated": True,
-                 "note": "amount 为 volume×(H+L+C)/3 估算值；"
-                         "amihud20/loga20 结论应视为较弱证据"}
+                "amount_is_estimated": True,
+                "note": "amount 为 volume×(H+L+C)/3 估算值；"
+                        "amihud20/loga20 结论应视为较弱证据。"
+                        "样本=--src 目录内全部 CSV（300/1000/早年 三名单并集），"
+                        "**非**预注册的 seed=42 单次抽样；仅用于**方向一致性**"
+                        "判定，不得用于「跨源 IC 数值可比」声称"}
     for tag, _s, _e in WINDOWS:
         # ⚠️ 不能用 dict.fromkeys(FACTORS, []) —— 那会让 5 个因子**共享同一个
         # list 对象**，append 全进同一个列表，导致 5 个因子 IC 完全相同。

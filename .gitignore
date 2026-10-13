@@ -44,6 +44,12 @@ reports/*
 !reports/cross_decade/*
 !reports/delisted/
 !reports/delisted/*
+# ⚠️ 2026-10-13 补：`reports/xsource/`（H-XSRC 跨源验证的**正式结论**产物）
+# 此前**漏在白名单外** → `XSRC.json` 一直被静默忽略、从未入库，
+# 也不在 `EVIDENCE_INDEX.md` 里 —— 正是本项目反复防的「静默失效」。
+# 该 JSON 是 P0-1 判定的唯一凭据，必须入库。
+!reports/xsource/
+!reports/xsource/*
 
 # --- 凭据：绝不入库 ---
 # 飞书 Webhook 等同于该群发帖权限，谁拿到都能往群里发消息

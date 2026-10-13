@@ -26,6 +26,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -115,3 +116,36 @@ def test_registry_records_the_v3_vs_vipdoc_incident():
     text = REGISTRY.read_text(encoding="utf-8")
     assert "vipdoc" in text and "v3" in text, "登记册未记录 v3 vs 通达信事故"
     assert "否证" in text, "登记册未说明那次错误的具体形态"
+
+
+def _git_tracked_files() -> set:
+    out = subprocess.run(["git", "ls-files"], cwd=ROOT,
+                         capture_output=True, text=True)
+    return set(out.stdout.splitlines())
+
+
+def test_official_verdict_artifacts_are_git_tracked():
+    """正式判定产物必须**入库**（否则结论无法溯源、无法复核）。
+
+    ⚠️ 2026-10-13 实测缺口（本守卫生成的由来）：
+    `reports/xsource/XSRC.json`（H-XSRC 正式结论）因 `.gitignore`
+    白名单**漏了** `reports/xsource/`，**从未被 Git 跟踪** ——
+    本文件其它用例只从**磁盘**读该 JSON，于是**全部通过**、
+    完全发现不了「文件根本没进版本库」。
+
+    这是典型的**静默失效**：`EVIDENCE_INDEX.md` 由 `git ls-files` 生成，
+    而校验用例比对「索引 vs git」—— 两者**一致地缺失**，反而无告警。
+
+    → 故断言改为：这类产物**必须在 `git ls-files` 里**。
+    """
+    required = [
+        "reports/xsource/XSRC.json",
+        "reports/cross_decade/VERDICT.json",
+    ]
+    tracked = _git_tracked_files()
+    missing = [r for r in required
+               if (ROOT / r).exists() and r not in tracked]
+    assert missing == [], (
+        f"正式判定产物未被 Git 跟踪（结论不可溯源）: {missing}；"
+        f"检查 .gitignore 是否遗漏了其所在目录的白名单"
+    )
