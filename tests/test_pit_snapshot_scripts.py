@@ -343,6 +343,18 @@ def test_universe_codes_reads_sorted_digits_only(tmp_path: Path):
 import run_l3_valuation_reconciliation as rec  # noqa: E402
 
 
+def test_reconciliation_docstring_labels_logical_not_statistical():
+    """⚠️ P010 Q3.1：n=60 对账是**逻辑一致性检查**，不是**统计代表性检查**。
+
+    docstring 必须显式标注强度边界 —— 否则引用方会把「逻辑判据未证伪」
+    高估成「统计代表性验证」（n=60 对 1% 错误率检出概率仅 ~45%）。
+    源码断言模式与 test_ingest_log_entry_includes_raw_rows 一致。
+    """
+    src = (ROOT / "scripts" / "run_l3_valuation_reconciliation.py").read_text(encoding="utf-8")
+    for needle in ("逻辑一致性检查", "统计代表性检查", "强度边界"):
+        assert needle in src, f"对账脚本 docstring 缺强度边界标注: {needle!r}"
+
+
 def test_period_start_maps_quarters():
     """报告期 → 起始日（`impossible` 判定的锚点）。"""
     assert rec.period_start("2025-03-31") == "2025-01-01"
@@ -581,7 +593,7 @@ def test_fetch_l3_skips_code_that_fails_after_retry(monkeypatch):
         return [{"code": sym, "date": "2024-01-02", "close": "1"}]
 
     monkeypatch.setattr(ing, "_fetch_one_l3", fake_one)
-    raw, _n, suspect, real_trunc, failed, _zero = ing._fetch_l3(
+    raw, _n, suspect, real_trunc, failed, _zero, _zero_pref = ing._fetch_l3(
         ["600519", "001206", "000001"], "2016-01-01", "2026-10-12",
         progress_every=0, flush_path=None, flush_every=0,
     )
@@ -601,7 +613,7 @@ def test_fetch_l3_refetches_page_multiple_and_marks_suspect(monkeypatch):
         return rows_2000
 
     monkeypatch.setattr(ing, "_fetch_one_l3", fake_one)
-    _raw, _n, suspect, real_trunc, _failed, _zero = ing._fetch_l3(
+    _raw, _n, suspect, real_trunc, _failed, _zero, _zero_pref = ing._fetch_l3(
         ["600519"], "2016-01-01", "2026-10-12",
         progress_every=0, flush_path=None, flush_every=0,
     )
@@ -626,18 +638,23 @@ def test_fetch_l3_records_zero_data_as_not_failed(monkeypatch):
         return [{"code": sym, "date": "2024-01-02", "close": "1"}]
 
     monkeypatch.setattr(ing, "_fetch_one_l3", fake_one)
-    raw, _n, _suspect, _real_trunc, failed, zero_data = ing._fetch_l3(
+    raw, _n, _suspect, _real_trunc, failed, zero_data, zero_pref = ing._fetch_l3(
         ["600519", "920000", "920030"], "2016-01-01", "2026-10-12",
         progress_every=0, flush_path=None, flush_every=0,
     )
     assert [r["code"] for r in raw] == ["sh.600519"], "零数据代码不进 raw"
     assert failed == [], "零数据 ≠ 失败"
     assert sorted(zero_data) == ["920000", "920030"]
+    assert zero_pref == [], "success+0 行属「源无数据」形态，非 10004011 形态"
 
 
 def test_fetch_l3_records_prefix_rejected_codes_as_zero_data(monkeypatch):
     """⚠️ 号段被 bs_symbol 显式拒绝（北交所 4/8 段）→ 同样记 zero_data，
-    不得混入 failed（failed 会被 --resume 无限重试），更不得中止整轮。"""
+    不得混入 failed（failed 会被 --resume 无限重试），更不得中止整轮。
+
+    形态分离（P010 Q1.3）：10004011「源不接受符号格式」与 success+0 行「源无数据」
+    是两种失败形态，metrics 必须分列 —— 混记会把格式错误误当成覆盖差。
+    """
     _fake_baostock(monkeypatch)
     called = {"n": 0}
 
@@ -646,13 +663,14 @@ def test_fetch_l3_records_prefix_rejected_codes_as_zero_data(monkeypatch):
         return [{"code": sym, "date": "2024-01-02", "close": "1"}]
 
     monkeypatch.setattr(ing, "_fetch_one_l3", fake_one)
-    raw, _n, _suspect, _real_trunc, failed, zero_data = ing._fetch_l3(
+    raw, _n, _suspect, _real_trunc, failed, zero_data, zero_pref = ing._fetch_l3(
         ["600519", "830799"], "2016-01-01", "2026-10-12",
         progress_every=0, flush_path=None, flush_every=0,
     )
     assert [r["code"] for r in raw] == ["sh.600519"], "被拒号段不进 raw、不影响其余标的"
     assert called["n"] == 1, "920/北交所号段不应发起查询"
     assert failed == [] and zero_data == ["830799"]
+    assert zero_pref == ["830799"], "10004011 形态须单独记账（P010 Q1.3）"
 
 
 def test_zero_data_sidecar_reader_and_resume_filter(tmp_path: Path):
@@ -777,6 +795,25 @@ def test_layer_gap_detects_codes_present_only_in_raw(tmp_path: Path):
                          ingest, "l3_valuation")
     assert gap["raw_codes"] == 1 and gap["norm_codes"] == 0
     assert gap["in_raw_not_norm"] == ["600519"]
+    assert gap["in_norm_not_raw"] == []
+
+
+def test_layer_gap_detects_orphan_codes_present_only_in_norm(tmp_path: Path):
+    """⚠️ P010 Q3.2：反向缺口（norm 有、raw 无 = orphan / 「半个 code」残留）
+    同样必须点名 —— 行数相等而 code 集合不等是可能的失败形态，只查一个方向会漏掉。"""
+    store = PitSnapshotStore(tmp_path)
+    ingest = "2026-10-13"
+    norm = store.norm_path("l3_valuation", ingest)
+    norm.parent.mkdir(parents=True, exist_ok=True)
+    store.write_normalized("l3_valuation", ingest, [
+        {"code": "600519", "effective_date": "2024-01-02", "as_of": "2026-10-13T00:00:00+08:00",
+         "ingest_run_id": "run-x", "close": "1"},
+    ])
+    gap = ing._layer_gap(store, "baostock", "query_history_k_data_plus",
+                         ingest, "l3_valuation")
+    assert gap["raw_codes"] == 0 and gap["norm_codes"] == 1
+    assert gap["in_raw_not_norm"] == []
+    assert gap["in_norm_not_raw"] == ["600519"]
 
 
 def test_rebuild_norm_then_gap_closes(tmp_path: Path):

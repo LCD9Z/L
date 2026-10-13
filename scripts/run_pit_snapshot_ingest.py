@@ -489,10 +489,11 @@ def _fetch_l3(codes: List[str], start: str, end: str,
               progress_every: int = 200,
               flush_path: Optional[Path] = None,
               flush_every: int = 100
-              ) -> Tuple[List[Dict[str, Any]], int, List[str], List[str], List[str], List[str]]:
+              ) -> Tuple[List[Dict[str, Any]], int, List[str], List[str], List[str], List[str], List[str]]:
     """批量取日频估值。
 
-    返回 ``(原始行, 原始行数, 疑似截断且重取一致, 重取发现真截断, 抓取失败已跳过, 查询成功但 0 行)``。
+    返回 ``(原始行, 原始行数, 疑似截断且重取一致, 重取发现真截断, 抓取失败已跳过,
+    查询成功但 0 行, 其中号段不被源接受的 10004011 形态)``。
 
     ⚠️ **增量落盘（``flush_path``）**：全市场回填需 1~3 小时，若只在**全部完成后**
     才写盘，一次崩溃就**全部白费**，``--resume`` 也无从续起（它读的就是那个文件）。
@@ -525,7 +526,13 @@ def _fetch_l3(codes: List[str], start: str, end: str,
     suspect_stable: List[str] = []
     real_truncated: List[str] = []
     failed: List[str] = []
-    zero_data: List[str] = []                   # 查询成功但 0 行（源无覆盖，非失败）
+    # 零数据两种形态（P010 评审 Q1.3：**分开记账**）：
+    #   empty_response      —— 源接受查询但无数据（sh./sz.920xxx → err=0, 0 行）；
+    #   prefix_rejected     —— 源根本不接受该符号格式（bj. 前缀 → 10004011）。
+    # 两者混记会把「格式错误」误当成「覆盖差」。两者都记入 zero_data（边车清单
+    # 按 code 粒度服务 resume，不分辨形态），但 metrics 分列。
+    zero_data: List[str] = []
+    zero_data_prefix_rejected: List[str] = []
 
     def _flush() -> None:
         if flush_path is None or not pending:
@@ -541,10 +548,12 @@ def _fetch_l3(codes: List[str], start: str, end: str,
             try:
                 sym = bs_symbol(code)
             except ValueError as exc:
-                # 号段本端点无覆盖（北交所 4/8 段）→ 记零数据（显式），
+                # 号段本端点无覆盖（北交所 4/8 段；baostock 只认 sh./sz. 前缀，
+                # bj. 前缀报 10004011「股票代码未标识sh或sz」）→ 记零数据（显式），
                 # **不混入 failed**（failed 语义是网络失败，会被 --resume 无限重试）
                 zero_data.append(code)
-                print(f"      ⓘ 跳过 {code}（号段无覆盖，非失败）: {exc}", flush=True)
+                zero_data_prefix_rejected.append(code)
+                print(f"      ⓘ 跳过 {code}（号段不被源接受 10004011 形态，非失败）: {exc}", flush=True)
                 continue
             try:
                 rows = _fetch_one_l3(sym, start, end)
@@ -577,7 +586,7 @@ def _fetch_l3(codes: List[str], start: str, end: str,
     finally:
         _flush()
         bs.logout()
-    return raw, len(raw), suspect_stable, real_truncated, failed, zero_data
+    return raw, len(raw), suspect_stable, real_truncated, failed, zero_data, zero_data_prefix_rejected
 
 
 def _num_or_blank(v: Any) -> str:
@@ -635,13 +644,22 @@ def _norm_codes(norm_path: Path) -> set:
 
 def _layer_gap(store: PitSnapshotStore, source: str, endpoint: str,
                ingest_date: str, dataset: str) -> Dict[str, Any]:
-    """原始层 vs 规范层的**代码覆盖差**（``in_raw_not_norm`` = 只在 raw 有的代码）。"""
+    """原始层 vs 规范层的**代码覆盖差**（双向）。
+
+    * ``in_raw_not_norm``：只在 raw 有（崩溃续跑的后遗症：raw 有、norm 无）；
+    * ``in_norm_not_raw``：只在 norm 有（** orphan 残留** —— 「半个 code」失败形态：
+      某 code 一半行在旧 norm、一半待补建时，行数可能相等而 code 集合不等）。
+
+    ⚠️ 2026-10-13 主干 P010 评审 Q3.2 建议：补建后须断言**两个方向**的 code 集合
+    一致，只查一个方向会漏掉 orphan（P010：『行数相等但 code 集合不等是可能的失败形态』）。
+    """
     raw_codes = store.read_raw_keys(source, endpoint, ingest_date)
     norm_codes = _norm_codes(store.norm_path(dataset, ingest_date))
     return {
         "raw_codes": len(raw_codes),
         "norm_codes": len(norm_codes),
         "in_raw_not_norm": sorted(raw_codes - norm_codes),
+        "in_norm_not_raw": sorted(norm_codes - raw_codes),
     }
 
 
@@ -784,6 +802,7 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
     suspect_stable: List[str] = []
     real_trunc: List[str] = []
     zero_data: List[str] = []      # L3：查询成功但 0 行（源无覆盖，非失败）
+    zero_data_prefix_rejected: List[str] = []  # L3：其中 10004011 形态（号段不被源接受）
     done: set = set()
     raw_flushed = False       # L3 专用：原始层是否已由 `_fetch_l3` 增量写入
     if dataset == L1_DATASET:
@@ -814,8 +833,11 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
             print(f"      raw {info['raw_rows']:,} 行 · 补建前 norm {info['norm_codes_before']} 只"
                   f" → 补建 {info['appended_codes']} 只 / {info['appended_rows']:,} 行", flush=True)
             gap = _layer_gap(store, source, endpoint, ingest_date, L3_DATASET)
+            # P010 Q3.2：双向断言 —— norm 多出 raw 的 code（orphan 残留）同样不闭合
+            gap_open = gap["in_raw_not_norm"] + gap["in_norm_not_raw"]
             print(f"      层间缺口: raw {gap['raw_codes']} 只 vs norm {gap['norm_codes']} 只"
-                  f" → 仍缺 {len(gap['in_raw_not_norm'])} 只", flush=True)
+                  f" → raw 缺 {len(gap['in_raw_not_norm'])} 只 · norm 多 {len(gap['in_norm_not_raw'])} 只",
+                  flush=True)
             store.log_ingest({
                 "ts": as_of,
                 "ingest_run_id": run_id,
@@ -825,15 +847,17 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
                 "ingest_date": ingest_date,
                 "pit_mode": meta["pit_mode"],
                 "action": "rebuild-norm",
-                "status": "OK" if not gap["in_raw_not_norm"] else "WARN",
-                "problems": ([] if not gap["in_raw_not_norm"] else
-                             [f"WARN 层间缺口仍存 {len(gap['in_raw_not_norm'])} 只"]),
-                "metrics": info,
+                "status": "OK" if not gap_open else "WARN",
+                "problems": ([] if not gap_open else
+                             [f"WARN 层间缺口仍存 {len(gap_open)} 只"]),
+                "metrics": {**info, "layer_gap_in_norm_not_raw": len(gap["in_norm_not_raw"])},
             })
-            if gap["in_raw_not_norm"]:
-                print("      ❌ 层间缺口未闭合 → 非零退出（须人工排查半个 code 残留）", flush=True)
+            if gap_open:
+                print(f"      ❌ 层间缺口未闭合（raw 缺 {len(gap['in_raw_not_norm'])} · "
+                      f"norm 多 {len(gap['in_norm_not_raw'])}）→ 非零退出"
+                      "（须人工排查半个 code / orphan 残留）", flush=True)
                 return 2
-            print("      ✅ 层间缺口闭合", flush=True)
+            print("      ✅ 层间缺口闭合（code 集合双向一致）", flush=True)
             return 0
         if not args.universe:
             raise SystemExit("L3 需要 --universe <数据集目录>（如 D:/tdx_dataset_v3）")
@@ -864,13 +888,14 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
                 return 0
         print(f"[1/5] 采集 baostock:query_history_k_data_plus"
               f"（{len(codes)} 只 · {args.start}~{args.end} · 不复权）...", flush=True)
-        raw_rows, n_raw, suspect_stable, real_trunc, failed, zero_data = _fetch_l3(
+        raw_rows, n_raw, suspect_stable, real_trunc, failed, zero_data, zero_data_prefix_rejected = _fetch_l3(
             codes, args.start, args.end, flush_path=raw_target, flush_every=args.flush_every
         )
         raw_flushed = True        # 原始层已由 `_fetch_l3` **增量**写入
         print(f"      原始 {n_raw:,} 行", flush=True)
         if zero_data:
-            print(f"      ⓘ 查询成功但 0 行的代码 {len(zero_data)} 只（源无覆盖，**非失败**）: "
+            print(f"      ⓘ 零数据代码 {len(zero_data)} 只（源无覆盖，**非失败**；其中"
+                  f"号段不被源接受的 10004011 形态 {len(zero_data_prefix_rejected)} 只）: "
                   f"{zero_data[:10]}{'…' if len(zero_data) > 10 else ''}", flush=True)
             if args.record_zero_data:
                 # 显式 opt-in：经人工核实后把零数据代码记入边车清单（默认关闭 ——
@@ -904,8 +929,11 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
         metrics["n_suspect_stable"] = len(suspect_stable)
         metrics["n_real_truncated"] = len(real_trunc)
         metrics["n_zero_data_codes"] = len(zero_data)
+        metrics["n_zero_data_prefix_rejected"] = len(zero_data_prefix_rejected)
         if zero_data:
             metrics["zero_data_codes"] = zero_data
+        if zero_data_prefix_rejected:
+            metrics["zero_data_prefix_rejected"] = zero_data_prefix_rejected
         if real_trunc:
             problems.append(
                 f"FAIL 重取发现**真截断** {len(real_trunc)} 只（两次行数不同），"
@@ -961,14 +989,22 @@ def _ingest_one(dataset: str, args: argparse.Namespace) -> int:
         # 层间一致性（**必须在 norm 落盘后检查**）：崩溃续跑会让「raw 有、norm 无」的
         # code 静默存在（2026-10-12 事故：raw 456 只 / norm 0 只）。
         # 缺口用 --rebuild-norm 从 raw 幂等补齐；此处只负责**显式化**，绝不静默。
+        # P010 Q3.2：反向（「norm 有、raw 无」的 orphan）同样要显式 —— 只查一个方向
+        # 会漏掉「半个 code」失败形态（行数相等而 code 集合不等）。
         gap = _layer_gap(store, source, endpoint, ingest_date, L3_DATASET)
         metrics["layer_gap_raw_codes"] = gap["raw_codes"]
         metrics["layer_gap_norm_codes"] = gap["norm_codes"]
         metrics["layer_gap_in_raw_not_norm"] = len(gap["in_raw_not_norm"])
+        metrics["layer_gap_in_norm_not_raw"] = len(gap["in_norm_not_raw"])
         if gap["in_raw_not_norm"]:
             problems.append(
                 f"WARN 规范层落后于原始层 {len(gap['in_raw_not_norm'])} 只"
                 f"（崩溃续跑的后遗症；用 --rebuild-norm 从 raw 补齐）: {gap['in_raw_not_norm'][:5]}"
+            )
+        if gap["in_norm_not_raw"]:
+            problems.append(
+                f"WARN 规范层多出原始层 {len(gap['in_norm_not_raw'])} 只"
+                f"(orphan 残留：「半个 code」失败形态，须人工排查后清除): {gap['in_norm_not_raw'][:5]}"
             )
 
     entry: Dict[str, Any] = {
