@@ -106,9 +106,14 @@ def main() -> int:
             time.sleep(wait)
             continue
         print(f"[轮 {rd}] 探测：腾讯已恢复 → 开始拉取", flush=True)
+        # ⚠️ 2026-10-13 修：`run_xsrc_fetch.py` 的参数是 **--codes**（有），
+        # 但它**没有 --end**（用今天作 end）。初版传了 --end 导致 argparse 报错、
+        # 每轮「跑完」却一只没拉（日志为空、产出不增）。
+        # ⚠️ 我一度误改成 --list —— 那是 `fetch_delisted_full.py` 的参数，
+        # 两个脚本的参数名不同，别互抄。
         cmd = [PY, str(ROOT / "scripts" / "run_xsrc_fetch.py"),
                "--codes", args.codes, "--out", args.out, "--shards", "2",
-               "--start", "2003-01-01", "--end", "2026-10-09"]
+               "--start", "2003-01-01"]
         try:
             subprocess.run(cmd, timeout=args.interval * 2, check=False)
         except subprocess.TimeoutExpired:
