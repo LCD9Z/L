@@ -66,7 +66,20 @@
   2 小时（baostock 连接 Established 但无响应，CPU 6%），**挂起不抛异常 → 重试绕过**。
   已修复（commit `d228865`：`_fetch_l3` 抓取前 `socket.setdefaulttimeout(120s)`，
   挂起改抛 `TimeoutError` 落入既有重试通道 + 3 项守卫测试）。
-  **残留**：若 120s 超时后 3 次尝试全败，该只被跳过（WARN 记账），需 `--resume` 补采。
+  **2026-10-13 12:0x 机制验证**：独立探针进程实测 `setdefaulttimeout(120)` + 登录后
+  `default_socket.gettimeout() == 120.0`（baostock 0.9.3 为纯 Python 包、走 stdlib socket，
+  超时对其有效）；挂起最坏耗时 ≈ 120s×3 次尝试 + relogin 二次等待 ≈ **~12.5 min/只**
+  后被跳过（WARN 记账，`--resume` 补采）。
+  **14:16 生产检验**：全量回填途中 3 次 `timed out` + 3 次 WinError 10054 + 2 次 utf-8
+  解码错均自动恢复，无一码跳过 —— 韧性三层修补（重试/跳过/缺口显式化）有效。
+  **残留**：若 120s 超时后 3 次尝试全败，该只被跳过（WARN 记账），需 `--resume` 补采；
+  relogin 中 `logout` 在死 socket 上提前返回不关连接，每次挂起泄漏 ≤3 个僵连（规模可接受）。
+* **北交所 920 段无源覆盖**：universe 5,667 中 281 只 920 段代码 baostock 全部
+  返回 success+0 行（12/12 抽样实测；L1 快照也无该段）→ L3 估值层对北交所新代码段
+  **永久缺 281 只**，除非后续接 tdx/pytdx 源补齐。清单：
+  `D:/pit_snapshots/meta/l3_zero_data_codes_2026-10-13.txt`。
+  连带效应：这 281 只永不落 raw → 任何后续 `--resume` 都会重试它们并在 `min_rows`
+  上**假性 FAIL**（0 < 1000）；修复建议见 §6「退出码说明」。
 
 ## 6. 执行记录（2026-10-13 06:4x，实际操作结果）
 
@@ -77,7 +90,18 @@
 | 3 | `meta/ingest_log.jsonl` 留痕 | 追加 2 条：`action=archived`（含 from/to/bytes/sha256/next）· `action=note, status=ANOMALY` |
 | 4 | **发现孤立日志缺口** | 条目 `20261012-2042`（ts 2026-10-12T20:42:48，3 只/174 行，raw/norm sha256 俱全）声称写入 `ingest_date=2026-10-13`，但两文件实测均不在（全盘搜索无其他快照根）；bash 历史不可用，去向无法重建 → 已显式留痕 **不静默跳过**。归档清点确认 2026-10-13 命名空间为空，不影响重采 |
 | 5 | 全市场回填重启 | `--dataset l3_valuation --root D:/pit_snapshots --date 2026-10-13 --universe D:/tdx_dataset_v3 --start 2016-01-01 --end 2026-10-13 --resume --flush-every 100`（5,667 只；实测约 6.5h；日志 `meta/l3_backfill_2026-10-13.log`） |
-| 6 | 回填后验收 | **待执行**：§4 五条标准（退出码 0 / n_stocks≈5,667 / 缺口 0 / 对账 impossible=0 / CI 6/6） |
+| 6 | **回填完成（14:16，历时 3h07m）** | 续采 2,367 只 → 落盘 2,086 只 / 3,999,734 行；raw 累计 **11,060,152 行 / 5,386 只**；**韧性修复生产检验**：`timed out`×3 + WinError 10054×3 + utf-8 解码错×2 全部经重试恢复，`n_failed_codes=0`（无一只跳过）；**自检 FAIL 退出码 2**：601718 真截断（2000→2614 行，按预案取全量 2,614 行落盘，raw 中恰为 2000 行的 code 现存 0 只） |
+| 7 | 层间缺口闭合（`--rebuild-norm`，14:26，退出码 0） | 从 raw 幂等补建 **3,300 只 / 7,060,418 行**（与 08:53 跑落盘数一致）→ 层间缺口 raw 5,386 vs norm 5,386 = **0**；ingest_log 记 `action=rebuild-norm, status=OK` |
+| 8 | **281 只缺口定性**（不静默） | universe 5,667 − raw 5,386 = 281，**全部为 920 段（北交所新代码段）**；12/12 抽样直查 baostock：`error_code=0` 且 0 行（success 空响应），本地 tdx 每只 431~1,523 行 → **baostock 匿名源不覆盖 920 段**（L1 快照 920/4/8 段同为 0 只），系源覆盖差而非采集失败；清单存 `meta/l3_zero_data_codes_2026-10-13.txt` |
+| 9 | 对账复跑（n=60，2023-2025） | `impossible = 0`（P2 为 n=24）；bps 中位相对差 0.0、≤1% 占 93.85%；结果 `reports/l3_reconciliation_n60_2026-10-13.json` |
+| 10 | 回填后验收 | §4 五条：① ❌ 见下「退出码说明」② ✅ 缺口 0（rebuild 退出码 0）③ ✅ FAIL/OK 均如实留痕 ④ ✅ impossible=0（n=60）⑤ 见 CI 运行结果 |
+
+**退出码说明（验收①的诚实偏差）**：采集主跑退出码为 2（非 0），唯一 FAIL = 601718 真截断——
+其数据影响已在跑内按预案消除（全量 2,614 行落盘），且 `n_failed_codes=0`。未做「收官
+resume 跑」的原因：剩余 281 只零数据代码永不落 raw，收官跑必然 `n=0 < min_rows=1000`
+触发**假性 FAIL**（阈值只为拦「整体抓取失败」），且每次 `--resume` 都会重试它们。
+→ 建议后续修：resume 侧读取零数据代码边车文件（本次已生成清单）或 universe 侧
+排除无覆盖代码段；在修复前，任何 L3 `--resume` 都会重复此假 FAIL。
 
 **环境备忘**：采集必须用**系统 Python 3.13.15**（`C:/Users/T430/AppData/Local/Programs/Python/Python313/python.exe`，
 baostock 0.9.3）；隔离 venv 无 baostock。**后台运行必须用受管后台任务**——
