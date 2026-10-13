@@ -36,6 +36,7 @@ from typing import Any, Dict, List, Sequence, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _study_common import make_filter as _make_filter  # noqa: E402 — P2 收敛（审计 §3.1 #13）
 from factors.factor_ic_lab import MIN_HISTORY, compute_factors  # noqa: E402
 from research_artifacts import write_final, write_partial  # noqa: E402
 from alpha.alpha_survival_lab import (  # noqa: E402
@@ -143,16 +144,6 @@ def build_exclusion_maps(
             cut = int(len(pairs) * (1 - top_frac))
             out[f][day] = {c for c, _ in pairs[cut:]}
     return out
-
-
-def _make_filter(excl: Dict[str, Dict[str, set]], factors: Sequence[str]):
-    if not factors:
-        return None
-
-    def flt(code: str, hist: List[Dict[str, Any]], day: str) -> bool:
-        return all(code not in excl.get(f, {}).get(day, ()) for f in factors)
-
-    return flt
 
 
 def _zero_cost_patch():

@@ -24,6 +24,10 @@ from typing import Any, Dict, List, Optional, Sequence
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _study_common import (  # noqa: E402 — P2 收敛（审计 §3.2 B 族 + §3.1 _pct_rank）
+    load_certified_stocks,
+    pct_rank as _pct_rank,
+)
 from factors.factor_ic_lab import (  # noqa: E402
     MIN_HISTORY,
     _t_pvalue,
@@ -53,35 +57,12 @@ SUBPERIODS = [
 
 
 def _load(dataset: str, max_stocks: int, min_rows: int = 200) -> Dict[str, Any]:
-    from real_alpha_pipeline import load_certified_csv
-
-    stock_dir = os.path.join(dataset, "stocks")
-    codes = sorted(f[:-4] for f in os.listdir(stock_dir) if f.endswith(".csv"))
-    if max_stocks > 0 and len(codes) > max_stocks:
-        step = len(codes) / max_stocks
-        codes = [codes[int(i * step)] for i in range(max_stocks)]
-    data: Dict[str, Any] = {}
-    for c in codes:
-        p = os.path.join(stock_dir, f"{c}.csv")
-        m = os.path.join(stock_dir, f"{c}.metadata.json")
-        if not (os.path.exists(p) and os.path.exists(m)):
-            continue
-        bars = load_certified_csv(p, m)
-        if len(bars) >= min_rows:
-            data[c] = bars
-    return data
-
-
-def _pct_rank(values: Sequence[float]) -> List[float]:
-    """截面秩标准化到 [0,1]（对离群值稳健，事前登记的方法）。"""
-    n = len(values)
-    if n <= 1:
-        return [0.5] * n
-    order = sorted(range(n), key=lambda i: values[i])
-    out = [0.0] * n
-    for pos, i in enumerate(order):
-        out[i] = pos / (n - 1)
-    return out
+    """B 族参数绑定（P2 收敛，审计 §3.2）：digits_only=False + skip_errors=False
+    + min_rows=200 —— 与原实现逐字节等价（等价测试见 tests/test_study_common.py）。"""
+    return load_certified_stocks(
+        dataset, max_stocks, min_rows=min_rows,
+        digits_only=False, skip_errors=False,
+    )
 
 
 def _ic_stats(ics: Sequence[float]) -> Optional[Dict[str, Any]]:

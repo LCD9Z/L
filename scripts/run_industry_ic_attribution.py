@@ -59,7 +59,7 @@ from typing import Any, Dict, List, Sequence, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from research_artifacts import write_final, write_partial  # noqa: E402
-from real_alpha_pipeline import load_certified_csv  # noqa: E402
+from _study_common import load_certified_stocks as _load  # noqa: E402 — P2 收敛（审计 3.1 #1，A 族默认参数）
 from factors.factor_ic_lab import MIN_HISTORY, compute_factors, spearman  # noqa: E402
 from pit.statistical_industry import (  # noqa: E402
     DEFAULT_LOOKBACK, DEFAULT_N_CLUSTERS, DEFAULT_RECLUSTER_EVERY,
@@ -117,26 +117,6 @@ def _build_sw_labels(
                 continue
             m[c] = label_ids.setdefault(lab, len(label_ids))
         out[d] = m
-    return out
-
-
-def _load(dataset: str, max_stocks: int) -> Dict[str, List[Dict[str, Any]]]:
-    stock_dir = os.path.join(dataset, "stocks")
-    codes = sorted(f[:-4] for f in os.listdir(stock_dir)
-                   if f.endswith(".csv") and f[:-4].isdigit())
-    if max_stocks > 0 and len(codes) > max_stocks:
-        step = len(codes) / max_stocks
-        codes = [codes[int(i * step)] for i in range(max_stocks)]
-    out: Dict[str, List[Dict[str, Any]]] = {}
-    for c in codes:
-        p = os.path.join(stock_dir, f"{c}.csv")
-        m = os.path.join(stock_dir, f"{c}.metadata.json")
-        if not (os.path.exists(p) and os.path.exists(m)):
-            continue
-        try:
-            out[c] = load_certified_csv(p, m)
-        except Exception:
-            continue
     return out
 
 

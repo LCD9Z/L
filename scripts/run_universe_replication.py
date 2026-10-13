@@ -35,6 +35,11 @@ from typing import Any, Dict, List, Sequence
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _study_common import (  # noqa: E402 — P2 收敛（审计 §3.1 #8/#10/#13）
+    load_codes as _load_codes,
+    make_filter as _make_filter,
+    pool_codes as _pool_codes,
+)
 from factors.factor_ic_lab import MIN_HISTORY, compute_factors  # noqa: E402
 from alpha.alpha_survival_lab import annualized_excess_arithmetic  # noqa: E402
 
@@ -42,30 +47,6 @@ VARIANTS: Dict[str, List[str]] = {
     "V0_baseline": [],
     "V1_excl_ret20_top20": ["ret_20"],
 }
-
-
-def _pool_codes(dataset: str) -> List[str]:
-    """完整 PIT 股票池中实际有文件的代码。"""
-    d = os.path.join(dataset, "stocks")
-    with open(os.path.join(dataset, "pit_universe.json"), encoding="utf-8") as f:
-        snaps = json.load(f)["snapshots"]
-    pool = set()
-    for v in snaps.values():
-        pool.update(v)
-    return sorted(c for c in pool
-                  if os.path.exists(os.path.join(d, f"{c}.csv"))
-                  and os.path.exists(os.path.join(d, f"{c}.metadata.json")))
-
-
-def _load_codes(dataset: str, codes: Sequence[str]) -> Dict[str, List[Dict[str, Any]]]:
-    from real_alpha_pipeline import load_certified_csv
-    d = os.path.join(dataset, "stocks")
-    out: Dict[str, List[Dict[str, Any]]] = {}
-    for c in codes:
-        p, m = os.path.join(d, f"{c}.csv"), os.path.join(d, f"{c}.metadata.json")
-        if os.path.exists(p) and os.path.exists(m):
-            out[c] = load_certified_csv(p, m)
-    return out
 
 
 def _exclusion_on_pool(data: Dict[str, List[Dict[str, Any]]],
@@ -97,16 +78,6 @@ def _exclusion_on_pool(data: Dict[str, List[Dict[str, Any]]],
             cut = int(len(pairs) * (1 - top_frac))
             out[f][day] = {c for c, _ in pairs[cut:]}
     return out
-
-
-def _make_filter(excl: Dict[str, Dict[str, set]], factors: Sequence[str]):
-    if not factors:
-        return None
-
-    def flt(code: str, hist: List[Dict[str, Any]], day: str) -> bool:
-        return all(code not in excl.get(f, {}).get(day, ()) for f in factors)
-
-    return flt
 
 
 def main() -> int:

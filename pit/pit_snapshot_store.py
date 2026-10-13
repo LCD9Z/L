@@ -137,10 +137,14 @@ def make_run_id(ts: Optional[datetime] = None) -> str:
     return (ts or now_cst()).strftime("%Y%m%d-%H%M")
 
 
-def sha256_of_file(path: Path) -> str:
-    """文件 SHA256（分块读，避免大文件吃内存）。"""
+def sha256_of_file(path: Path | str) -> str:
+    """文件 SHA256（分块读，避免大文件吃内存）。
+
+    ``path`` 接受 ``Path`` 或 ``str``——2026-10-13 收敛 P4 时加宽：
+    此前 6 处本地 ``_sha256`` 收 ``str``，调用点两种都传。
+    """
     h = hashlib.sha256()
-    with path.open("rb") as fh:
+    with Path(path).open("rb") as fh:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()

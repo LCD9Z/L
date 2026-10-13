@@ -266,6 +266,16 @@ def test_sha256_of_file(tmp_path: Path):
     )
 
 
+def test_sha256_of_file_accepts_str_and_path(tmp_path: Path):
+    """P4 收敛后调用点两种传参并存（旧本地 _sha256 收 str，部分点传 Path）——
+    库函数必须都收，且摘要一致（回归：2026-10-13 6 处本地实现收敛到此）。"""
+    p = tmp_path / "f.bin"
+    p.write_bytes(b"abc")
+    want = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    assert sha256_of_file(p) == want
+    assert sha256_of_file(str(p)) == want, "str 与 Path 必须等价"
+
+
 def test_make_run_id_format():
     from datetime import datetime, timezone, timedelta
 

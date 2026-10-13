@@ -47,7 +47,8 @@ from typing import Any, Dict, List
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from research_artifacts import write_final, write_partial  # noqa: E402
-from real_alpha_pipeline import _curve_returns, load_certified_csv  # noqa: E402
+from real_alpha_pipeline import _curve_returns  # noqa: E402
+from _study_common import load_certified_stocks as _load  # noqa: E402 — P2 收敛（审计 3.1 #1，A 族默认参数）
 from portfolio_backtest import portfolio_backtest  # noqa: E402
 from alpha.alpha_survival_lab import annualized_excess_arithmetic  # noqa: E402
 from risk.market_risk_gate import compute_market_risk  # noqa: E402
@@ -63,26 +64,6 @@ VARIANTS: List[tuple] = [
     ("combo_四专家组合", True, True, True, True),
 ]
 DEFAULT_WINDOWS = ["2024-01-02"]
-
-
-def _load(dataset: str, max_stocks: int) -> Dict[str, List[Dict[str, Any]]]:
-    stock_dir = os.path.join(dataset, "stocks")
-    codes = sorted(f[:-4] for f in os.listdir(stock_dir)
-                   if f.endswith(".csv") and f[:-4].isdigit())
-    if max_stocks > 0 and len(codes) > max_stocks:
-        step = len(codes) / max_stocks
-        codes = [codes[int(i * step)] for i in range(max_stocks)]
-    out: Dict[str, List[Dict[str, Any]]] = {}
-    for c in codes:
-        p = os.path.join(stock_dir, f"{c}.csv")
-        m = os.path.join(stock_dir, f"{c}.metadata.json")
-        if not (os.path.exists(p) and os.path.exists(m)):
-            continue
-        try:
-            out[c] = load_certified_csv(p, m)
-        except Exception:
-            continue
-    return out
 
 
 def main() -> int:

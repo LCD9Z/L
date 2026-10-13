@@ -35,7 +35,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import json
 import os
 import sys
@@ -44,16 +43,9 @@ from typing import Any, Dict, List, Set, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from tdx.tdx_csv_adapter import PIPELINE_COLUMNS, is_valid_ohlc  # noqa: E402
+from pit.pit_snapshot_store import sha256_of_file as _sha256  # noqa: E402,F401 — P4 收敛（审计 4.2）
 
 _I_DATE, _I_OPEN, _I_CLOSE, _I_HIGH, _I_LOW, _I_VOL = 0, 1, 2, 3, 4, 5
-
-
-def _sha256(path: str) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def klines_to_rows(rows: List[List[Any]]) -> List[Dict[str, Any]]:

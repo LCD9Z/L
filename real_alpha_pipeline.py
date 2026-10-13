@@ -12,7 +12,7 @@ This module intentionally refuses to manufacture a verdict.  It can:
 It does not download data itself; real_data_collector remains the acquisition layer.
 """
 from __future__ import annotations
-import csv, json, hashlib
+import csv, json
 from pathlib import Path
 from datetime import datetime, timezone
 from itertools import pairwise
@@ -22,12 +22,9 @@ from portfolio_backtest import portfolio_backtest
 from professional_audit import audit_research_evidence
 from alpha.alpha_survival_lab import analyse_alpha
 from pit.pit_integrity import audit_pit_rows
+from pit.pit_snapshot_store import sha256_of_file as _sha256  # P4 收敛（审计 4.2）：原 read_bytes 一次性读 → 分块读
 from historical_universe import point_in_time_universe
 from release_gate import build_survivorship_audit, gate_alpha_claim
-
-
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def load_certified_csv(path: str | Path, metadata_path: str | Path | None = None) -> List[dict]:

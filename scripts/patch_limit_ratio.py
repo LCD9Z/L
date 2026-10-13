@@ -33,7 +33,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import json
 import os
 import sys
@@ -44,10 +43,7 @@ from typing import Any, Dict, List, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from exchange_rules import derive_limit_ratio, is_st_flag  # noqa: E402
-
-
-def _sha256(path: str) -> str:
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+from pit.pit_snapshot_store import sha256_of_file as _sha256  # noqa: E402,F401 — P4 收敛（审计 4.2）
 
 
 def _fmt(value: float) -> str:

@@ -37,12 +37,13 @@ TDX `.day` 为原始成交价。实测存在 13,696 行单日 |涨跌| > 21% 的
 from __future__ import annotations
 
 import csv
-import hashlib
 import io
 import json
 import os
 import zipfile
 from typing import Any, Dict, Iterator, List, Optional, Set
+
+from pit.pit_snapshot_store import sha256_of_file as _sha256  # noqa: F401 — P4 收敛（审计 4.2）
 
 # 管线期望的列（load_certified_csv 用 csv.DictReader 读取）
 PIPELINE_COLUMNS = ("date", "open", "close", "high", "low", "volume", "amount")
@@ -215,14 +216,6 @@ def scan_inventory(path: str) -> Dict[str, Any]:
         "by_type": {k: [v, len(type_codes[k])] for k, v in by_type.most_common()},
         "stocks": stocks,
     }
-
-
-def _sha256(path: str) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def is_valid_ohlc(row: Dict[str, Any]) -> bool:
