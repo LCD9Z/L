@@ -1041,6 +1041,9 @@ CSV 中该列一直有值（认证字段，抽样 195,472 行全部非空）。
      既有测试 `test_stamp_duty_is_piecewise_by_trade_date` 传带横杠日期故未抓到。
      处置待决：① 现在修 + 重算受影响产物，或 ② 随 A2 融合取主干版（含 `_norm_date` +
      `tests/test_execution_stress.py`）。
+     **已定（双方 10-14 商定）= 方案③**：A2 合并取主干版代码 → 合并落定后统一重算。
+     **受影响产物清单见 [`COST_BASELINE_PENDING_RECOMPUTE.md`](COST_BASELINE_PENDING_RECOMPUTE.md)**
+     （Tier A 18 份待重算 / Tier B 1 份待核；重算完成前其超额数字不得作为有效结论引用）。
 
 ## 6. 踩坑记录与高风险模块
 
