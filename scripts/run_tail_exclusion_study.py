@@ -175,6 +175,9 @@ def main() -> int:
                     help="同时持仓上限（C20 分散实验取 20）")
     ap.add_argument("--position-pct", type=float, default=0.25,
                     help="单仓占初始资金上限（C20 分散实验取 0.05）")
+    ap.add_argument("--benchmark", default="",
+                    help="基准 CSV（默认 <dataset>/benchmark.csv；"
+                         "等权基准用 D:/tdx_dataset_v2/benchmark_ew.csv）")
     ap.add_argument("--horizon", type=int, default=5)
     ap.add_argument("--all-csv", action="store_true",
                     help="从目录全部 CSV 取码（含早前残留），仅用于稳健性交叉验证")
@@ -209,8 +212,10 @@ def main() -> int:
     with open(os.path.join(dataset, "pit_universe.json"), encoding="utf-8") as fh:
         universe = json.load(fh)["snapshots"]
     import csv as _csv
-    with open(os.path.join(dataset, "benchmark.csv"), encoding="utf-8") as fh:
+    bench_path = args.benchmark or os.path.join(dataset, "benchmark.csv")
+    with open(bench_path, encoding="utf-8") as fh:
         bench_all = list(_csv.DictReader(fh))
+    print(f"      基准: {os.path.basename(bench_path)}")
 
     print("[2/3] 逐变体 × 逐窗口回测（净收益）...")
     rows: List[Dict[str, Any]] = []
@@ -346,9 +351,15 @@ def main() -> int:
     print("      结果仅反映该改动在此数据集上的表现，不构成投资结论。")
 
     if args.out:
+        # 2026-10-14 A2 合并：主干侧原为裸 json.dump 结尾（含 10-06 增补的
+        # 「生效基准路径」benchmark 字段）；本侧纪律是 write_final（原子写）。
+        # 合并 = write_final 落盘 + 保留 benchmark 字段（基准口径留痕）。
         write_final(args.out, {"rows": rows, "summary": summary,
                                "cost_comparison": cost_rows,
-                               "variants": VARIANTS, "args": vars(args)})
+                               "variants": VARIANTS, "args": vars(args),
+                               # 生效基准路径（2026-10-06 增补）
+                               "benchmark": bench_path})
+        print(f"\n结果已写入: {args.out}")
     return 0
 
 

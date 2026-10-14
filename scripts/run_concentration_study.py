@@ -221,8 +221,18 @@ def main() -> int:
     print("      数据缺陷以数据集 evidence.json 为准"
           "（v3 已消除幸存者偏差与不复权两项），结果不构成投资结论。")
 
-    write_final(args.out, {"rows": rows, "summary": summary, "seeds": seeds,
-                           "windows": windows, "args": vars(args)})
+    print("      数据存在幸存者偏差与不复权两项缺陷，结果不构成投资结论。")
+
+    if args.out:
+        # 2026-10-14 A2 合并：主干侧原为裸 json.dump 结尾（含 10-06 增补的
+        # 「生效基准路径」benchmark 字段）；本侧纪律是 write_final（原子写）。
+        # 合并 = write_final 落盘 + 保留 benchmark 字段（基准口径留痕）。
+        write_final(args.out, {"rows": rows, "summary": summary, "seeds": seeds,
+                               "windows": windows, "args": vars(args),
+                               # 基准在本脚本中**硬编码**为 benchmark.csv 即沪深300
+                               # （2026-10-06 增补记录，否则事后无从判断口径）
+                               "benchmark": os.path.join(dataset, "benchmark.csv")})
+        print(f"\n结果已写入: {args.out}")
     print(f"总耗时 {time.time()-t0:.0f}s")
     return 0
 

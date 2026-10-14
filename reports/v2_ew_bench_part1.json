@@ -1,0 +1,52 @@
+{
+ "windows": [
+  {
+   "oos_start": "2023-07-03",
+   "aligned": 777,
+   "assets": 363,
+   "verdict": "ALPHA_NOT_ESTABLISHED",
+   "statistical_verdict": "ALPHA_NOT_ESTABLISHED",
+   "alpha_status": "RELEASABLE",
+   "annualized_excess": -0.27676434746440887,
+   "t_stat": -1.7824284956117693,
+   "p_value": 0.07467938206459235,
+   "ci_lower": -0.0022691485879506455,
+   "ci_upper": 8.613620499600779e-05,
+   "benchmark_return_pct": 34.73,
+   "trades": 737,
+   "win_rate_pct": 43.83,
+   "total_return_pct": -43.747,
+   "max_drawdown_pct": 50.377
+  },
+  {
+   "oos_start": "2024-01-02",
+   "aligned": 653,
+   "assets": 359,
+   "verdict": "ALPHA_NOT_ESTABLISHED",
+   "statistical_verdict": "ALPHA_NOT_ESTABLISHED",
+   "alpha_status": "RELEASABLE",
+   "annualized_excess": -0.2558714699420708,
+   "t_stat": -1.5268381070310886,
+   "p_value": 0.1268012731735828,
+   "ci_lower": -0.00224109187363861,
+   "ci_upper": 0.0002331858686311355,
+   "benchmark_return_pct": 33.99,
+   "trades": 622,
+   "win_rate_pct": 44.53,
+   "total_return_pct": -30.712,
+   "max_drawdown_pct": 35.364
+  }
+ ],
+ "args": {
+  "dataset": "D:/tdx_dataset_v2",
+  "max_stocks": 400,
+  "min_periods": 252,
+  "min_rows_asset": 504,
+  "windows": "2023-07-03,2024-01-02",
+  "out": "reports/v2_ew_bench_part1.json",
+  "survivorship_evidence": "D:/tdx_dataset_v2/evidence.json",
+  "benchmark": "D:/tdx_dataset_v2/benchmark_ew.csv",
+  "benchmark_meta": "",
+  "skip_audit": true
+ }
+}

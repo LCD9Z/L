@@ -1,6 +1,6 @@
 {
  "as_of": "20260130",
- "source": "C:\\Users\\T430\\Desktop\\1.0 - 副本\\tdx_native\\_smoke\\vipdoc",
+ "source": "C:\\Users\\T430\\Desktop\\1.0\\tdx_native\\_smoke\\vipdoc",
  "universe": {
   "stocks_found": 3,
   "scored": 3,
@@ -46,5 +46,5 @@
   }
  ],
  "runtime_sec": 0.0,
- "disclaimer": "五因子为统计特征，非收益承诺；TDX 原生价为不复权，ret20 含除权跳空污染，建议加 --events-cache；本输出仅供研究观察，不构成投资建议。"
+ "disclaimer": "五因子为统计特征，非收益承诺；TDX 原生价为不复权，ret20 含除权跳空污染；本输出仅供研究观察，不构成投资建议。"
 }

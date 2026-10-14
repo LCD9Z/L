@@ -65,6 +65,7 @@ def test_lookback_window_limits_samples():
     normal = calc.calculate_var(rets)
     bad = calc.calculate_var(recent_bad)
     assert normal is not None and bad is not None
+    assert normal is not None and bad is not None  # 样本充足，不应返回 None
     assert bad < normal  # 更深（更负）的 VaR
 
 
@@ -121,6 +122,8 @@ def test_var_negative_and_es_at_least_as_deep():
     rets = _normal_returns(seed=11)
     var, es = calc.calculate_var_and_es(rets, 0.99)
     assert var is not None and var < 0
+    assert var is not None
+    assert var < 0
     assert es is not None and es <= var  # ES（尾部均值）不浅于 VaR
 
 

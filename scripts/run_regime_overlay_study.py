@@ -258,7 +258,14 @@ def main() -> int:
     print("        状态源为 000300（KHunter 用全A指数）；")
     print("        数据存在幸存者偏差与不复权两项缺陷，结论仅反映本数据集。")
 
-    write_final(args.out, {"windows": rows, "args": vars(args)})
+    if args.out:
+        # 2026-10-14 A2 合并：主干侧原为裸 json.dump 结尾（含 10-06 增补的
+        # 「生效基准路径」benchmark 字段）；本侧纪律是 write_final（原子写）。
+        # 合并 = write_final 落盘 + 保留 benchmark 字段（基准口径留痕）。
+        write_final(args.out, {"windows": rows, "args": vars(args),
+                               # 生效基准路径（2026-10-06 增补）：默认为 benchmark.csv 即沪深300
+                               "benchmark": bench})
+        print(f"\n结果已写入: {args.out}")
     return 0
 
 

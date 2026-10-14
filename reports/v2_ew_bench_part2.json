@@ -1,0 +1,70 @@
+{
+ "windows": [
+  {
+   "oos_start": "2024-07-01",
+   "aligned": 536,
+   "assets": 353,
+   "verdict": "ALPHA_NOT_ESTABLISHED",
+   "statistical_verdict": "ALPHA_NOT_ESTABLISHED",
+   "alpha_status": "RELEASABLE",
+   "annualized_excess": -0.3708124615471195,
+   "t_stat": -2.2026318163307756,
+   "p_value": 0.027620709543418442,
+   "ci_lower": -0.0027318426473981875,
+   "ci_upper": -0.00030283930587856315,
+   "benchmark_return_pct": 75.15,
+   "trades": 513,
+   "win_rate_pct": 44.05,
+   "total_return_pct": -20.865,
+   "max_drawdown_pct": 38.669
+  },
+  {
+   "oos_start": "2025-01-02",
+   "aligned": 411,
+   "assets": 348,
+   "verdict": "ALPHA_NOT_ESTABLISHED",
+   "statistical_verdict": "ALPHA_NOT_ESTABLISHED",
+   "alpha_status": "RELEASABLE",
+   "annualized_excess": -0.27290554436882203,
+   "t_stat": -1.4442262829403734,
+   "p_value": 0.14867533398953325,
+   "ci_lower": -0.0025257944397154997,
+   "ci_upper": 0.0003365016716239322,
+   "benchmark_return_pct": 34.81,
+   "trades": 399,
+   "win_rate_pct": 44.61,
+   "total_return_pct": -14.661,
+   "max_drawdown_pct": 33.644
+  },
+  {
+   "oos_start": "2025-07-01",
+   "aligned": 294,
+   "assets": 343,
+   "verdict": "ALPHA_NOT_ESTABLISHED",
+   "statistical_verdict": "ALPHA_NOT_ESTABLISHED",
+   "alpha_status": "RELEASABLE",
+   "annualized_excess": -0.21140734173383186,
+   "t_stat": -0.9865363786659933,
+   "p_value": 0.32386997276724117,
+   "ci_lower": -0.002322804300296665,
+   "ci_upper": 0.0006914634925815925,
+   "benchmark_return_pct": 12.21,
+   "trades": 289,
+   "win_rate_pct": 43.6,
+   "total_return_pct": -14.544,
+   "max_drawdown_pct": 26.089
+  }
+ ],
+ "args": {
+  "dataset": "D:/tdx_dataset_v2",
+  "max_stocks": 400,
+  "min_periods": 252,
+  "min_rows_asset": 504,
+  "windows": "2024-07-01,2025-01-02,2025-07-01",
+  "out": "reports/v2_ew_bench_part2.json",
+  "survivorship_evidence": "D:/tdx_dataset_v2/evidence.json",
+  "benchmark": "D:/tdx_dataset_v2/benchmark_ew.csv",
+  "benchmark_meta": "",
+  "skip_audit": true
+ }
+}

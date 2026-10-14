@@ -214,6 +214,57 @@ def make_jump_filter(lookback: int = 21):
     return f
 
 
+def make_listing_filter(list_dates: Dict[str, str], min_days: int):
+    """H-N1 过滤：剔除上市不足 min_days 自然日的次新股。
+
+    list_dates 来自各股 metadata.json 的 `list_date`（akshare 权威字段）。
+    缺失上市日期的标的放行（不因数据缺失而剔除，避免引入新偏差）。
+    """
+    from datetime import date as _date
+
+    def _parse(s: str):
+        try:
+            y, m, d = str(s).split("-")
+            return _date(int(y), int(m), int(d))
+        except Exception:
+            return None
+
+    parsed: Dict[str, Any] = {}
+
+    def f(code, hist, day):
+        ld = list_dates.get(code)
+        if not ld:
+            return True
+        d0 = parsed.get(ld, "__miss__")
+        if d0 == "__miss__":
+            d0 = _parse(ld)
+            parsed[ld] = d0
+        d1 = _parse(day)
+        if d0 is None or d1 is None:
+            return True
+        return (d1 - d0).days >= min_days
+
+    return f
+
+
+def make_limitup_filter():
+    """H-N3 过滤：剔除信号日当日涨停（封板买不进）的候选。
+
+    只剔涨停、不剔跌停——跌停板封的是卖单，买单可成交，T+1 开盘建仓不受阻。
+    """
+    def f(code, hist, day):
+        if len(hist) < 2:
+            return True
+        p0 = float(hist[-2].get("close") or 0)
+        p1 = float(hist[-1].get("close") or 0)
+        if p0 <= 0 or p1 <= 0:
+            return True
+        lim = _limit_for_bar(code, hist[-1]) - 0.002
+        return (p1 / p0 - 1) < lim
+
+    return f
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="H-F5 五因子组合 A/B 实验")
     ap.add_argument("--dataset", default="D:/tdx_dataset_v2")
@@ -244,6 +295,13 @@ def main() -> int:
                          "（同时输出 S5_all 与子集两臂），见 FACTOR_SUBSET_PREREG.md")
     ap.add_argument("--exclude-jump", action="store_true",
                     help="H-V2：在 V1 基础上再剔除信号日前 21 根内含超涨跌停跳空的候选")
+    ap.add_argument("--min-listing-days", type=int, default=0,
+                    help="H-N1：剔除上市不足该自然日的次新股（0=关闭；推荐 365）")
+    ap.add_argument("--exclude-limitup", action="store_true",
+                    help="H-N3：剔除信号日当日涨停（封板买不进）的候选")
+    ap.add_argument("--skip-legacy-arms", action="store_true",
+                    help="跳过 A_baseline / A_plus_V1 两个历史参照臂（当判定基准"
+                         "已固定为 A_plus_V1_V2 时可省约 1/3 运行时间）")
     ap.add_argument("--out", default="")
     args = ap.parse_args()
 
@@ -265,6 +323,7 @@ def main() -> int:
         step = len(codes) / args.max_stocks
         codes = [codes[int(i * step)] for i in range(args.max_stocks)]
     data: Dict[str, List[dict]] = {}
+    list_dates: Dict[str, str] = {}
     for c in codes:
         p = os.path.join(stock_dir, f"{c}.csv")
         m = os.path.join(stock_dir, f"{c}.metadata.json")
@@ -272,7 +331,13 @@ def main() -> int:
             bars = load_certified_csv(p, m)
             if len(bars) >= args.min_rows:
                 data[c] = bars
-    print(f"[1/3] 载入 {len(data)} 只，共 {sum(len(v) for v in data.values()):,} 行", flush=True)
+                try:
+                    with open(m, encoding="utf-8") as mf:
+                        list_dates[c] = json.load(mf).get("list_date") or ""
+                except Exception:
+                    pass
+    print(f"[1/3] 载入 {len(data)} 只，共 {sum(len(v) for v in data.values()):,} 行"
+          f"（含上市日期 {sum(1 for v in list_dates.values() if v)} 只）", flush=True)
 
     with open(os.path.join(ds, "pit_universe.json"), encoding="utf-8") as f:
         universe = json.load(f)["snapshots"]
@@ -454,13 +519,35 @@ def main() -> int:
                 v = _rr.get(day, {}).get(code)
                 return True if v is None else v <= _cut
 
-            arms.append(("A_baseline", {"threshold": 70}))
-            arms.append(("A_plus_V1", {"threshold": 70, "candidate_filter": flt}))
+            if not args.skip_legacy_arms:
+                arms.append(("A_baseline", {"threshold": 70}))
+                arms.append(("A_plus_V1", {"threshold": 70, "candidate_filter": flt}))
             if args.exclude_jump:
                 def flt2(code, hist, day, _f=flt):
                     return _f(code, hist, day) and make_jump_filter()(code, hist, day)
                 arms.append(("A_plus_V1_V2", {"threshold": 70,
                                               "candidate_filter": flt2}))
+                # --- H-N1 / H-N3：在现行默认(V1+V2)之上叠加候选过滤（见
+                #     CANDIDATE_FILTERS_PREREG.md），对照基准固定为 A_plus_V1_V2 ---
+                n1 = (make_listing_filter(list_dates, args.min_listing_days)
+                      if args.min_listing_days > 0 else None)
+                n3 = make_limitup_filter() if args.exclude_limitup else None
+                if n1 is not None:
+                    def flt_n1(code, hist, day, _b=flt2, _n=n1):
+                        return _b(code, hist, day) and _n(code, hist, day)
+                    arms.append((f"A_V1V2_N1_{args.min_listing_days}d",
+                                 {"threshold": 70, "candidate_filter": flt_n1}))
+                if n3 is not None:
+                    def flt_n3(code, hist, day, _b=flt2, _n=n3):
+                        return _b(code, hist, day) and _n(code, hist, day)
+                    arms.append(("A_V1V2_N3_nolimitup",
+                                 {"threshold": 70, "candidate_filter": flt_n3}))
+                if n1 is not None and n3 is not None:
+                    def flt_n13(code, hist, day, _b=flt2, _a=n1, _c=n3):
+                        return (_b(code, hist, day) and _a(code, hist, day)
+                                and _c(code, hist, day))
+                    arms.append(("A_V1V2_N1N3",
+                                 {"threshold": 70, "candidate_filter": flt_n13}))
         else:
             arms.append(("A_baseline", {"threshold": 70}))
             arms.append(("B_fivefactor", {"threshold": 0.0, "score_func": score_b}))
@@ -479,7 +566,6 @@ def main() -> int:
                 "max_drawdown_pct": res.get("max_drawdown_pct"),
                 "trades": res.get("trades"), "win_rate_pct": res.get("win_rate_pct"),
                 "capacity_capped_buys": res.get("capacity_capped_buys", 0),
-                "impact_stats": res.get("impact_stats"),
             }
             if len(common) >= 252:
                 a = analyse_alpha({d: s_ret[d] for d in common},
@@ -512,6 +598,12 @@ def main() -> int:
         med = sorted(deltas)[len(deltas) // 2]
         print(f"  后臂优于前臂的窗口: {n_pos} / {len(deltas)}，Δ超额中位 {med:+.2f}pp")
     out = {"windows": rows, "args": vars(args),
+           # 落盘**生效**的基准路径（2026-10-06 增补）。
+           # args.benchmark 默认为空串、真实值由上面的兜底逻辑解析为
+           # bench_path —— 不额外记录的话，42 份研究 JSON 里只有显式
+           # 传 --benchmark 的 3 份能看出用了哪个基准，其余无法追溯
+           # （见 reports/EVIDENCE_INDEX.md 第六节缺口清单）。
+           "benchmark": bench_path,
            "prereg": "FIVE_FACTOR_PREREG.md", "runtime_sec": round(time.time() - t0, 1)}
     text = json.dumps(out, ensure_ascii=False, indent=1, default=str)
     if args.out:

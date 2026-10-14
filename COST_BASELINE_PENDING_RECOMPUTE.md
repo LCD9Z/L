@@ -47,6 +47,16 @@
 
 ## 三、受影响产物
 
+> **⚠️ A2 合并后的计数口径（2026-10-15 补记）**：本册 Tier A/B 是**我方侧**于 10-14
+> 用「成本特征键」启发式人工分类的结果（18+1 份）。A2 合并后，合并树的**机器规范集**
+> 由 `scripts/gen_evidence_index.py` 的 `stamp_duty_stale` 规则产出（判据 = 含
+> `windows` 键 ∧ 窗口跨 2023-08-28）—— **24 份 = 主侧 12 + 副本侧 12**，
+> 已由 `tests/test_evidence_index.py::test_stamp_duty_stale_is_expected_set_today`
+> 锁定，并以 `⚠️ 待核` 标注写入 `reports/EVIDENCE_INDEX.md`。
+> **两者判据不同、不矛盾**：机器规则按 `windows` 键机械判定，本册按成本代码链人工
+> 细分（如 `cost_model_check.json` 用哨兵日期须特判）。重算时以**机器 24 份为工作
+> 清单**，本册 §四 的引用规则对两者同等适用。
+
 ### 3.1 Tier A · 确认受影响（成本类 + 窗口跨线）—— **18 份**
 
 | # | 产物 | 最早窗口 | 状态 |

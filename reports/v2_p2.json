@@ -1,0 +1,96 @@
+{
+ "windows": [
+  {
+   "window": "2024-07-01",
+   "assets": 336,
+   "A_baseline": {
+    "total_return_pct": 23.119,
+    "max_drawdown_pct": 24.154,
+    "trades": 530,
+    "win_rate_pct": 46.42,
+    "capacity_capped_buys": 0,
+    "annualized_excess": -0.18082156924288106,
+    "t_stat": -1.8387581185192807,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "A_plus_V1": {
+    "total_return_pct": 40.651,
+    "max_drawdown_pct": 12.55,
+    "trades": 461,
+    "win_rate_pct": 50.33,
+    "capacity_capped_buys": 0,
+    "annualized_excess": -0.12045187374177078,
+    "t_stat": -1.1465830059265185,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "A_plus_V1_V2": {
+    "total_return_pct": 46.924,
+    "max_drawdown_pct": 11.942,
+    "trades": 455,
+    "win_rate_pct": 49.89,
+    "capacity_capped_buys": 0,
+    "annualized_excess": -0.1027555890170726,
+    "t_stat": -0.9502530121643183,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "delta_excess_pp": 7.81
+  },
+  {
+   "window": "2025-01-02",
+   "assets": 332,
+   "A_baseline": {
+    "total_return_pct": 4.861,
+    "max_drawdown_pct": 25.884,
+    "trades": 411,
+    "win_rate_pct": 46.23,
+    "capacity_capped_buys": 0,
+    "annualized_excess": -0.16106881814082938,
+    "t_stat": -1.5391766984840518,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "A_plus_V1": {
+    "total_return_pct": 27.427,
+    "max_drawdown_pct": 12.288,
+    "trades": 367,
+    "win_rate_pct": 50.95,
+    "capacity_capped_buys": 0,
+    "annualized_excess": -0.04650113322509364,
+    "t_stat": -0.39991278287092763,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "A_plus_V1_V2": {
+    "total_return_pct": 36.936,
+    "max_drawdown_pct": 10.724,
+    "trades": 360,
+    "win_rate_pct": 51.67,
+    "capacity_capped_buys": 0,
+    "annualized_excess": -0.004767176740070961,
+    "t_stat": -0.03838170285438046,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "delta_excess_pp": 15.63
+  }
+ ],
+ "args": {
+  "dataset": "D:/tdx_dataset_v2",
+  "max_stocks": 400,
+  "min_rows": 504,
+  "top_n": 20,
+  "position_pct": 0.05,
+  "horizon": 20,
+  "windows": "2024-07-01,2025-01-02",
+  "benchmark": "",
+  "survivorship_evidence": "D:/tdx_dataset_v2/evidence.json",
+  "exclude_ret20_top": 0.2,
+  "neutralize": false,
+  "regime_switch": false,
+  "style_switch": false,
+  "max_participation": 0.0,
+  "impact_model": false,
+  "compare_factors": "",
+  "exclude_jump": true,
+  "out": "reports/v2_p2.json"
+ },
+ "prereg": "FIVE_FACTOR_PREREG.md",
+ "runtime_sec": 1180.9
+}

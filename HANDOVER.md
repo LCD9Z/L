@@ -4,6 +4,8 @@
 > **仓库**：`https://github.com/LCD9Z/L.git`（**私有**）　**分支**：`main`
 > **HEAD**：`7a3d005`（**写入本文件时的值；每次提交都会变，以 `git log` 实际为准**）
 > **交接范围**：2026-09-13 ~ 2026-09-19 的工程改造、量化研究与 Alpha 能力缺口补齐
+> **HEAD**：`dbb198a`（**写入本文件时的值；每次提交都会变，以 `git log` 实际为准**）
+> **交接范围**：2026-09-13 ~ 2026-09-30（工程改造 + 量化研究 + TDX 原生数据/推荐系统）
 > **配套阅读**：[`WORKLOG.md`](WORKLOG.md)（过程与证据）· [`CHANGELOG.md`](CHANGELOG.md)（版本演进）· [`DIRECTORY_LAYOUT.md`](DIRECTORY_LAYOUT.md)（结构全景，脚本生成）
 > **本轮新增**：[`ALPHA_CAPABILITY_GAP_ANALYSIS.md`](ALPHA_CAPABILITY_GAP_ANALYSIS.md)（能力缺口分析）·
 > [`P0_P1_EXECUTION_REPORT.md`](P0_P1_EXECUTION_REPORT.md)（P0/P1 落地执行报告）
@@ -54,6 +56,11 @@
 | **控制市值残差检验** | 同上 `--control log_amount_20`：**`pb` 溢价独立于市值（保留 88%）**；控制后 `net_profit_growth`/`ocf_per_share` 变为显著；合并族 m=14 校正后 **4/7 存活** | ✅ |
 | **全池等权基准** | `scripts/build_equal_weight_benchmark.py`（流式，内存 O(交易日数)）：分母均值 **937.8 → 5,187 只**，覆盖率 **18.1% → 约 96%** | ✅ |
 | **全A股票池** | `D:/tdx_dataset_v3`：入选 **5,667 只**，池规模 2,542~5,428，在市覆盖 22.7% → **约 97.6%** | ✅ |
+| **TDX 原生数据** | `tdx_native/`：`.day` 二进制直读、`gbbq` 3DES 解密→权息缓存、前复权（零第三方主路径） | ✅ |
+| **全市场复检** | 5,613 只 / 632,968 样本 / 245 个不重叠截面（2021-08~2026-09）；五因子 IC 稳健性成立 | ✅ |
+| **执行层改善** | C20 + 持有 20 日 + V2 跳空过滤（**唯二经组合层验证有效的参数**） | ✅ |
+| **推荐系统产品化** | `tdx_native/`：日度推荐 + 名称表 + L3 跟踪回填 + 一键运行 + 自选股导出 | ✅ |
+| **质量门禁** | ruff 0 · mypy 265 文件 0 错 · pytest **620 项** · 本地 CI 6/6 | ✅ |
 
 ### 1.3 待完成功能
 
@@ -67,7 +74,9 @@
 | 策略层面实验补记 p 值 | 12 项实验归档的是判定而非 p 值 → 无法纳入多重检验校正 |
 | ARK 付费模型凭据验收 | 需用户提供凭据 |
 | `disallow_untyped_defs` 收紧 | 569 处纯标注告警，收益递减，暂缓 |
-| 无直接测试覆盖模块补测 | 见 [6.2](#62-高风险模块) |
+| 无直接测试覆盖模块补测 | 见 [6.2](#62-高风险模块)（`tdx_native` 已于 2026-09-30 补齐） |
+| L3 跟踪样本积累 | `tracking.csv` 需随每日运行积累到期样本，才能校准推荐质量 |
+| 北交所数据接入 | pytdx `get_security_list` 的 market=2 在 20 台服务器均不可用（已知局限） |
 
 ### 1.4 验收标准
 
@@ -81,9 +90,9 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 |------|---------|
 | syntax | 全部 `.py` 可编译（含 BOM/编码检查） |
 | ruff | `All checks passed` |
-| mypy | `no issues found in 236 source files` |
+| mypy | `no issues found in 265 source files` |
 | compat | Python 3.10 语法兼容 |
-| pytest | 失败 0、错误 0（跳过 ≤1） |
+| pytest | 失败 0、错误 0（跳过 ≤1）；当前 **620 项** |
 | credentials | 无明文凭据 |
 
 **研究验收**（事前登记门槛，不可事后放宽）：
@@ -97,6 +106,13 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 
 > **当前结论**：`ALPHA_NOT_ESTABLISHED` —— 基线在全部实验条件下均为负超额；
 > 复合反转 H-C1 对照沪深 300 后超额仅 +0.48pp / −4.88pp（≈ 指数水平）。
+>
+> **2026-09-30 追加（TDX 原生全市场复检）**：结论未改变，但边界更清晰 ——
+> ① 五因子 IC 在 5,613 只 / 632,968 样本上**稳健成立**（maxret20 −0.0787/t−7.78 等），
+> 但 IC 层成立 ≠ 组合层可获利；② **IC 随前瞻期单调增强**（1 日 +0.051 → 60 日 +0.130），
+> 属持久型截面特征而非短周期择时信号；③ 唯二经组合层验证有效的改善是
+> **持有 20 日**与 **V2 跳空过滤**（5/5 窗口改善、Δ中位 +3.12pp）；
+> ④ H-F4（剔除 amihud20）IC 层与组合层**双双不通过** —— 又一次「IC 更高但组合更差」。
 
 ---
 
@@ -133,6 +149,10 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 | `factors/factor_ic_lab.py:COMPOSITE_FACTORS / ORTHO_ORDER_DEFAULT` | 复合五因子集合与**顺序残差化的事前声明顺序** | **契约常量**：改顺序会改变正交化结果，且**不得按 IC 结果调整**（等于用结果选参数） |
 | `notify/feishu_notifier.py:14` | `WORK_DIR = dirname(__file__)` | **`__file__` 派生路径** —— 改动风险高，见 [6.2](#62-高风险模块) |
 | `track/schema.py:13` | `_DB_PATH` 取两层父目录 | 同上，已有守卫 `test_db_path_stays_at_project_root` |
+| `tdx_native/five_factor.py:23` | `DIRECTIONS`（五因子先验方向）、`LIQ_MIN=1e8` | **契约常量，改动会翻转策略方向**（与 `factors/factor_ic_lab.py:62` 同性质） |
+| `tdx_native/backfill.py:31` | `INDEX_CODE = "sh000001"` | 交易日历来源（与全市场 IC 研究同源，改则口径不一致） |
+| `tdx_native/backfill.py:113` | 建仓停牌顺延上限 **5 个交易日**（`min(i + 6, len(cal))`） | 模块内常量，非 CLI 参数 |
+| `tdx_native/daily_report.py:30,38` | V2 跳空阈值 `limit_pct - 0.002`、流动性标签线 `2e8` | 研究默认值 |
 
 ### 2.3 TODO / FIXME 备注
 
@@ -167,6 +187,11 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 | `beautifulsoup4` | >=4.12 | 同上 | 同上 |
 | `tushare` | >=1.4.0（已注释） | `TUSHARE_TOKEN=<token>` | 资金流/龙虎榜/公告等 |
 | `pandas` | >=1.5（已注释） | 随 tushare | tushare_provider 测试依赖 |
+| `pytdx` | 未固定 | 仅 `tdx_native` 的两条**离线**路径 | `fetch_names`（名称表）、`gbbq_reader.build_cache`（权息解密） |
+
+> **`tdx_native` 的主路径刻意零依赖**：`gbbq` 解密一次后落 `data/gbbq_events.csv`，
+> 之后用标准库读缓存；`.day` 读取全部用 `struct`。`pytdx` 缺失不影响 CI
+> （`mypy.ini` 已配 `[mypy-pytdx.*] ignore_missing_imports`）。
 
 `requirements-dev.txt`：`pytest>=7.0` · `pytest-cov>=4.0` · `ruff>=0.6` · `mypy>=1.10`
 
@@ -211,10 +236,15 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 ```
 项目根/
 ├── *.py          56 个：入口 / 门面 / 核心编排 / 门禁工具 / 未成族单例
-├── <19 子包>/     每个都有 __init__.py（写「管什么 + 共同红线」）
-├── scripts/       35 个可执行脚本（研究 / 数据准备 / 验收）
-├── tests/         66 个测试文件
+├── <20 子包>/     每个都有 __init__.py（写「管什么 + 共同红线」）
+├── scripts/       39 个可执行脚本（研究 / 数据准备 / 验收）
+├── tests/         71 个测试文件
 └── conftest.py    把项目根 + scripts/ 加入 sys.path
+
+> 结构指纹（由 `gen_layout_doc.structural_fingerprint()` 给出，`test_layout_doc_in_sync.py` 守卫）：
+> **20 个子包 / 80 个入包模块 / 56 个根目录模块**。
+> 子包：`alpha ashare console corporate factors fetch notify phase62 pit regime
+> reporting risk router runtime stage2 tdx tdx_native track tushare_client validation`。
 ```
 
 **分层原则**：用 AST 建全仓库 import 图，统计每个家族的**外部入/出边**，
@@ -257,6 +287,13 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 | [`DELISTED_UNIVERSE_REPORT.md`](DELISTED_UNIVERSE_REPORT.md) | 180 只窗口内退市股识别与并入 |
 | [`ADJUSTED_FACTOR_REPORT.md`](ADJUSTED_FACTOR_REPORT.md) | 复权因子对比（预测未获支持） |
 | `TDX_DATA_ASSESSMENT.md` / `TDX_EVALUATION_REPORT.md` | 数据性质评估与首次端到端实证 |
+| [`tdx_native/README.md`](tdx_native/README.md) | **TDX 原生模块用法与格式备忘**（`.day` 32B `<IIIIIfII`、gbbq 3DES、复权验证法）与结论 |
+| [`FACTOR_SUBSET_PREREG.md`](FACTOR_SUBSET_PREREG.md) | H-F4 因子子集事前登记（结果：不支持剔除 amihud20） |
+| [`IC_DECAY_PREREG.md`](IC_DECAY_PREREG.md) | H-DECAY 前瞻期衰减登记（结果：IC 单调增强，非衰减） |
+| [`IMPACT_COST_PREREG.md`](IMPACT_COST_PREREG.md) · [`TURNOVER_CAPACITY_PREREG.md`](TURNOVER_CAPACITY_PREREG.md) | 冲击成本 / 容量登记 |
+| `reports/tdx_ic_full.json` · `reports/tdx_ic_800.json` | 全市场 vs 800 只抽样的 IC 对照（样本稳健性证据） |
+| `reports/decay_h1.json` · `decay_h5.json` · `decay_h10.json` · `decay_h20.json` · `decay_h60.json` | IC 衰减曲线原始结果 |
+| `reports/f4_p1~p3.json` · `reports/v2_p1~p3.json` | H-F4 / H-V2 组合层结果 |
 
 ---
 
@@ -267,6 +304,8 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 `tests/` 共 **70+ 个测试文件**（2026-09-19 新增 7 个：等权基准 / 多重检验 /
 正交化 / 因子IC重构锁定 / 涨跌幅规则 / PIT财务 / 财务数据源，共 **176 项**）。
 除常规单测外，**8 个为守卫测试**（防止已修缺陷回退）：
+`tests/` 共 **71 个测试文件 / 620 项**。除常规单测外，**9 个为守卫测试**
+（防止已修缺陷回退）：
 
 | 守卫测试 | 守住什么 |
 |---------|---------|
@@ -276,8 +315,13 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 | `test_annualization_conventions.py` | 年化口径单一来源；禁止重新内联；算术≠几何 |
 | `test_study_regressions.py` | 等距抽样塌缩、成本拖累窗口硬编码、滑点模型未记录（**含缺陷复现**） |
 | `test_orchestrator.py` | 会话存/读往返完整；序列化键集合 == `AnalysisResult` 字段契约（拦整类「save 写的字段 load 读不了」） |
+| **`test_tdx_native.py`** | **`tdx_native` 40 项**：`.day` 二进制往返、板块/涨跌停判定、前复权消除除权缺口、回填 T+1/T+5/T+20 口径与停牌三态、gbbq 解析、五因子方向语义 |
 | `test_survivorship_guard.py` | 幸存者偏差门禁 |
 | `test_credential_scan.py` | 凭据扫描器自身正确性 |
+
+> ⚠️ **收集陷阱（本轮踩到）**：`tdx_native/smoke_test.py` 虽然函数名以 `test_` 开头，
+> 但**位于包内而非 `tests/`**，pytest 默认只收集 `tests/test_*.py` —— 该模块因此
+> 长期零门禁覆盖。**新增自测必须落到 `tests/`**。
 
 > 其余：`test_db_path_stays_at_project_root`（在 `test_package_layout.py` 内）、
 > `test_main_smoke.py`（15 项，入口冒烟，不触发 LLM/网络）。
@@ -318,6 +362,9 @@ python scripts/gen_layout_doc.py --check
 | 8 | ~~`build_certified_dataset_v2.py` 引用未定义名 `prev_day`~~ | **已修（2026-09-19）** | 停牌区间推导中 `prev_day` 仅在循环体内赋值，循环后仍被引用。当前路径"恰好安全"但静态上不可保证。已循环外初始化。发现方式：`ruff` F821 |
 | 9 | ~~`_rows_iter` 闭包未绑定循环变量 `code`~~ | **已修（2026-09-19）** | 发现方式：`ruff` B023。已加 `code=code` 默认参数绑定 |
 | 10 | ~~财务数据源公告日 88.4% 不可信~~ | **已兜底（2026-09-19）** | 东财 `最新公告日期` 在 2016-01~2025-06 **全部期数**上系统性偏移 **+1 年**（茅台 2016Q1 EPS 3.89 确为 2016Q1，却标注 2017-04-25）；仅最近约 4 期正确。**财务数值本身正确，只有公告日错**。已由 `pit.pit_fundamentals.resolve_availability` 兜底：公告日超法定截止日 45 天即判不可信 → 退回法定披露截止日。**残留风险**：真实延迟披露且超窗口者会略早可用（2025-09 后各期 1.6%~4.2%）。彻底解决需改用带真实披露日的源 |
+| 6 | ~~`dbb198a` 之前门禁为红：ruff 51 项 / mypy 57 项 / pytest 2 项~~ | **已修（2026-09-30）** | 根因是 `tdx_native` 产品化提交（`d7625ff`）**未过门禁即入库**，使 `run_ci.py` 失去「一条命令验证状态」的作用。已全部清零并补 40 项守卫测试。**教训：提交前必须跑 `run_ci.py`** |
+| 7 | ~~`DIRECTORY_LAYOUT.md` 缺 `tdx_native` 子包~~ | **已修（2026-09-30）** | 新增子包后未重跑 `scripts/gen_layout_doc.py`；`test_layout_doc_in_sync.py` 已捕获。**新增/删除子包后必须重跑生成器** |
+| 8 | ~~`reports/daily_screen_2026-09-19.json` 含 CRLF 行尾~~ | **已修（2026-09-30）** | 该旧产物由 Windows 文本模式写出；已转 LF。**注意：`test_line_endings_are_lf` 扫描工作区全部文本文件（不看 git 跟踪状态），未跟踪的产物同样会被扫到** |
 
 > **已修复**的历史缺陷（含复现路径）见 `WORKLOG.md` 第六节与
 > `tests/test_study_regressions.py`、`tests/test_annualization_conventions.py`。
@@ -368,6 +415,29 @@ python scripts/gen_layout_doc.py --check
 
 10. **目录体积疑云**
     「10 MB」里约 8.3 MB 是工具缓存（`.mypy_cache` 占 7.5 MB）。
+
+11. **一处错误的类型标注会污染整条调用链**
+    `day_reader` 把含 `date: str` 的 bar 标注为 `Dict[str, float]`，下游
+    `backfill` / `screen` / `five_factor` / `adjust` / `run_*` 全部据此把 date
+    当 float 用 —— **单点错误贡献了 mypy 57 项中的约 30 项**。
+    **教训：类型标注必须诚实（混合类型就用 `Dict[str, Any]`），
+    不要为了"好看"而声称单一类型。** 排查时先看**根因文件**，别逐条改下游。
+
+12. **循环内定义的闭包会捕获循环变量（ruff B023）**
+    若闭包逃逸到循环外，全部实例读到的是最后一轮的值 —— **静默失效**。
+    本仓库 9 处属于"同轮内立即调用"，当前正确但依赖隐含前提。
+    **约定：循环内定义闭包一律用默认参数显式绑定当轮变量**
+    （`def f(x, _v=v)`）；能用模块级函数就不用闭包（`backfill._ret_at` 已如此重构）。
+
+13. **mypy 的变量名复用会让类型推断崩塌**
+    同一函数内 `o` 既作 `Optional[float]` 又作循环元素、`c` 既作 float 又作 str、
+    `f` 既作 dict 又作文件句柄 —— 都会产生成片的伪错误。
+    **排查手法：先看错误消息里的类型，再回头找同名变量的"前一次绑定"。**
+
+14. **`tests/` 之外的自测脚本不会被 pytest 收集**
+    `tdx_native/smoke_test.py` 函数名以 `test_` 开头，但 pytest 默认只收集
+    `tests/test_*.py` —— 该模块因此长期零门禁覆盖（新模块在门禁之外 = 静默失效）。
+    **约定：新增自测一律放 `tests/`。**
     判断真实大小：`git ls-files` 统计受控文件体积。
 
 11. **等距抽样在旋转下可能不变 —— 静默失效**
@@ -414,7 +484,14 @@ python scripts/gen_layout_doc.py --check
 | `orchestrator.py` | 🟡 中 | 337 行核心类；2026-09-16 已补 21 项行为测试（借此发现 `load_session` 必然失败的严重缺陷并修复） |
 | `console/`（`main.py`） | 🟡 中 | 程序入口；`main.py` 曾 402 行无测试，现补了 15 项冒烟 |
 | `notify/feishu_notifier.py` | 🟡 中 | `WORK_DIR = dirname(__file__)`；发送参数曾用错（`--content` 应为 `--text`） |
+| **`tdx_native/day_reader.py`** | 🔴 高 | `.day` 二进制解析是**全部原生数据的唯一入口**；struct 格式或 `PRICE_DIV` 错则整条链路静默失真 |
+| **`tdx_native/adjust.py`** | 🔴 高 | 前复权因子；错则 `ret20` 被权息缺口污染（实测 000028 会把 −2.47% 读成 −13.70%） |
+| **`tdx_native/backfill.py`** | 🔴 高 | L3 校准的日期口径（T+1 建仓 / T+5 / T+20 / 停牌顺延）；错则推荐质量被系统性误判 |
+| **`tdx_native/five_factor.py`** | 🟠 中高 | `DIRECTIONS` 与 `factors/factor_ic_lab.py` 的 `PRIOR_SIGN` 同性质 —— **方向写反即策略反向** |
 | 无直接测试引用（10 个） | 🟡 中 | `agents_base` · `cycle_price_action` · `llm_client` · `log_utils` · `market_universe_provider` · `pool_manager` · `professional_committee` · `prompt_engine` · `stock_god` · `v3_data_bus`（可能被间接覆盖） |
+
+> `tdx_native` 的 4 个高风险模块已于 2026-09-30 纳入 `tests/test_tdx_native.py`
+> （40 项），风险等级由「🔴 高 + 无覆盖」降为「🔴 高 + 有守卫」。
 
 ---
 
@@ -452,6 +529,24 @@ python scripts/gen_layout_doc.py --check
 | 8 | `disallow_untyped_defs` 全量收紧 | **2~3 天** | 569 处纯标注补全，**无缺陷捕获收益**，建议最后做 |
 
 **建议顺序**：**1（主攻）** → 2 → 3 → 4 → 5 → 6/7（待凭据）→ 8
+| — | 缓存备份处置 | **已结案（保留）** | 2026-09-16 已核验 `_1.0_cache_backup_…`（9.8M，纯缓存）与 `_backup_1.0`（9.1M，完全冗余）均为零信息损失；因环境批量删除护栏拦截，**用户决定保持现状**。其中的研究证据已抢救入库（`AB_STUDIES_EVIDENCE.md`） |
+| — | ~~门禁欠账（ruff 51 / mypy 57 / pytest 2）~~ | **✅ 已完成（2026-09-30）** | 根因是 `d7625ff` 未过门禁即入库。已清零并补 `tdx_native` 守卫测试 40 项；见 [5.3](#53-已知缺陷与复现步骤) 第 6~8 条 |
+| — | ~~`tdx_native` 零测试覆盖~~ | **✅ 已完成（2026-09-30）** | `tests/test_tdx_native.py`（40 项），覆盖 4 个高风险模块 |
+| **1** | **新的经济逻辑假设（追求 Alpha）** | **3~5 天** | 含：逻辑调研 0.5 天 → 事前登记 0.5 天 → 因子实现 1 天 → IC 检验 0.5 天 → 组合层面 + 基准对照 1~2 天（多窗口回测）。**前提：必须提出新逻辑，禁止调现有 7 因子权重/阈值** |
+| 2 | ARK 付费模型凭据验收 | **0.5 天** | 阻塞于用户提供凭据；含接通 + 一次真实调用 + 结果留档 |
+| 3 | ~~修复 `tdx_ab_stage2` verdict 文案~~ | **✅ 已完成** | 根因是 `params` 未记录 `slip_mode`。已修脚本 + 加守卫测试（见 [5.3](#53-已知缺陷与复现步骤) 第 1 条） |
+| 4 | ~~为 10 个无直接覆盖模块补单测~~ → **剩余 9 个** | **1~1.5 天** | ✅ `orchestrator` 已完成（21 项，并修掉一个严重缺陷）。剩余优先 `pool_manager`、`v3_data_bus`、`professional_committee`；纯标注类（`log_utils`）可略 |
+| 5 | `disallow_untyped_defs` 全量收紧 | **2~3 天** | 569 处纯标注补全，**无缺陷捕获收益**，建议最后做 |
+| 6 | 其余外部集成验收 | **1 天** | 需凭据；每项含真实调用 + 留档 |
+| 7 | 补齐数据库迁移机制 | **0.5 天** | 当前无迁移脚本；若 schema 需变更则必须先做 |
+| 8 | **L3 跟踪样本积累（非工时类）** | **持续** | `tracking.csv` 当前 20 行全 pending（TDX 客户端数据停在 0928）。需**每交易日 15:05 后**开一次通达信更新 `.day`，再 `python -m tdx_native.run_daily`。样本到期后才能校准推荐质量 |
+| 9 | 北交所数据接入 | **0.5~1 天** | 阻塞于 pytdx：`get_security_list` 的 `market=2` 在 20 台服务器均不可用。备选：从本地 `bj/lday` 目录直接扫（`scan_stocks` 已支持 `bj`） |
+
+**建议顺序**：2 → 1（主攻方向）→ 8（并行，每日维护）→ 4 → 7 → 9 → 6 → 5。
+
+> **运行前提（重要）**：`tdx_native` 的日度推荐与回填都依赖**本地 TDX 客户端数据**
+> （`D:/new_tdx/vipdoc`）。若客户端未更新，`run_daily` 会因**未收盘保护**或
+> `as_of_not_in_calendar` 而拒绝/标记，**不会产出假数据**（这是刻意设计）。
 
 
 ## 八、中断后如何接上（会话恢复流程）

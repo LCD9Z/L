@@ -53,6 +53,50 @@ AI股神团队 · A 股多 Agent 智能分析系统的版本演进记录。
 `python run_ci.py` **6/6 通过**：ruff All checks passed · mypy **264** 文件零错误（此前 237）·
 pytest **795 项**（此前 538，+257）失败 0 错误 0 · 凭据扫描通过 ·
 新增测试文件 8 个 · 清理今日早前遗留的 20 处 ruff 告警与 25 处 mypy 错误。
+## 研究结论归档（2026-09-14 ~ 2026-10-02）
+
+> **补记于 2026-10-02**：本文件自 09-14 起停更，其间约 25 个提交（含 7 项
+> 实验判定）未进版本记录。按项目纪律「负面结果必须归档」，补记如下。
+> **每项的原始 JSON 证据见 [`reports/EVIDENCE_INDEX.md`](reports/EVIDENCE_INDEX.md)。**
+
+### 负面结论（项目一半以上的资产，优先归档）
+
+| 提交 | 实验 | 判定 | 预注册 | 结论文档 |
+|---|---|---|---|---|
+| `eb37509` | H-C1 复合反转 vs 沪深300 | ❌ **无 Alpha** | `ALPHA_HYPOTHESIS_PREREG.md` | `CONTRARIAN_HYPOTHESIS_REPORT.md` |
+| `ea69623`~`eb37509` | 组合层 A/B 三阶段 | ❌ 未证出超额 | `PORTFOLIO_AB_PREREG{,_2,_3}.md` | `PORTFOLIO_AB_REPORT{,_2,_3}.md` |
+| `c14d8c9` | H-F4 组合层五因子 | ❌ 1/5 窗口、Δ中位 −2.80pp | `FIVE_FACTOR_PREREG.md` | `STEP1_3_EXECUTION_REPORT.md` §18 |
+| `ecdf625` | H-IC-DECAY | ⚠️ IC 虚高，衰减 16.75% | `IC_DIAGNOSIS_PREREG.md` | 同上 §二十 |
+| `3b44d22` | Sequoia-X 六形态 | ❌ **不需要**（3/6 高冗余） | ⚠️ 无独立预注册 | `FORM_SCREEN_VERDICT.md` |
+| `cbd918b` | N1 次新股偏好 | ❌ **不必要**（打分池次新 0.50%） | `CANDIDATE_FILTERS_PREREG.md` | `CANDIDATE_FILTERS_VERDICT.md` |
+| `67dd619`~`4ef95e7` | N3 信号日涨停过滤 | ❌ **冗余**（5/5 窗口 Δ 全 +0.00pp） | 同上 | 同上 |
+
+### 正面 / 存续结论
+
+| 提交 | 实验 | 判定 |
+|---|---|---|
+| `ecdf625` | H-FACTOR-SUBSET（V2 组合层） | ✅ **有效**（5/5，Δ中位 +3.12pp） |
+| `ecdf625` | H-IC 衰减五档 | ✅ 登记有效（0.0514→0.1302） |
+| `c14d8c9`~ | H-T1 降换手 | ✅ +4.27pp |
+
+### 工程与产品化
+
+| 提交 | 内容 |
+|---|---|
+| `ecdf625` | TDX 原生推荐系统初版（`tdx_native/`） |
+| `d7625ff` | 名称表 / 跟踪回填 / 一键运行 / 自选股导出 |
+| `dbb198a` | 恢复质量门禁（ruff 51→0、mypy 57→0）+ tdx_native 40 项守卫测试 |
+| `a0050f7` | 计划任务 TDXDaily 上线 + 运维手册 |
+| `af21506` | 到期卖出提示（15 天逾期窗口） |
+| `214fa4e` | 数据完整性预检 + 修卖出提示漏报 |
+| `7d8722c` | 跟踪基准改为全市场等权 ⚠️ **证据不足，10-02 已撤回数字** |
+| `5da770b` | `AGENTS.md` 项目说明书 |
+
+### 2026-10-02 独立审计
+
+见 [`AUDIT_2026_10_02_REPORT.md`](AUDIT_2026_10_02_REPORT.md)。修了 5 处静默失效
+（顺延持仓漏报卖出、停牌误杀、复权误判、V2 死代码、bat 吞错误码），
+放行 59 份研究证据入库，撤回 1 个基于冒烟数据的结论。
 
 ---
 

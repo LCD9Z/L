@@ -1,0 +1,12 @@
+status=PASS
+initial_cash=100000.00
+start_date=20210802
+end_date=20260930
+final_nav=120299.34
+total_return=20.30%
+max_drawdown=36.74%
+sharpe=0.2785
+rebalance_count=61
+buy_trades=1146
+sell_trades=1127
+data=RAW TDX .day; simulation only

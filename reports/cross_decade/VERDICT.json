@@ -1,0 +1,47 @@
+{
+ "verdict": {
+  "verdict": "方向稳健",
+  "reason": "4/5 个因子在 ≥4 个窗口方向一致",
+  "n_windows": 6,
+  "n_factors_consistent": 4,
+  "per_factor": {
+   "ret20": {
+    "一致窗口数": 6,
+    "总窗口数": 6,
+    "一致": true
+   },
+   "vol20": {
+    "一致窗口数": 6,
+    "总窗口数": 6,
+    "一致": true
+   },
+   "amihud20": {
+    "一致窗口数": 0,
+    "总窗口数": 6,
+    "一致": false
+   },
+   "loga20": {
+    "一致窗口数": 6,
+    "总窗口数": 6,
+    "一致": true
+   },
+   "maxret20": {
+    "一致窗口数": 6,
+    "总窗口数": 6,
+    "一致": true
+   }
+  }
+ },
+ "windows_valid": [
+  "W1",
+  "W2",
+  "W3",
+  "W4",
+  "W5",
+  "R"
+ ],
+ "windows_inconclusive": [],
+ "main_gate": "median",
+ "min_cross_section": 200,
+ "source": "D:/new_tdx/vipdoc"
+}

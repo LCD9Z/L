@@ -1,0 +1,41 @@
+{
+ "windows": [
+  {
+   "window": "2025-07-01",
+   "assets": 329,
+   "A_baseline": {
+    "total_return_pct": 15.299,
+    "max_drawdown_pct": 11.55,
+    "trades": 1026,
+    "win_rate_pct": 44.74,
+    "annualized_excess": 0.015234561817129613,
+    "t_stat": 0.09651058580351855,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "B_fivefactor": {
+    "total_return_pct": 0.0,
+    "max_drawdown_pct": 0,
+    "trades": 0,
+    "win_rate_pct": 0,
+    "annualized_excess": -0.12058429084497353,
+    "t_stat": -0.6245684688956986,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "delta_excess_pp": -13.58
+  }
+ ],
+ "args": {
+  "dataset": "D:/tdx_dataset_v2",
+  "max_stocks": 400,
+  "min_rows": 504,
+  "top_n": 20,
+  "position_pct": 0.05,
+  "horizon": 5,
+  "windows": "2025-07-01",
+  "benchmark": "",
+  "survivorship_evidence": "D:/tdx_dataset_v2/evidence.json",
+  "out": "reports/five_factor_ab_smoke.json"
+ },
+ "prereg": "FIVE_FACTOR_PREREG.md",
+ "runtime_sec": 374.2
+}

@@ -9,8 +9,8 @@
 | 指标 | 值 |
 |------|----|
 | 子包数 | **20** |
-| 已入包模块 | **90**（约 11,990 行） |
-| 根目录 `.py` | **57**（约 6,218 行） |
+| 已入包模块 | **90**（约 12,385 行） |
+| 根目录 `.py` | **57**（约 6,261 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -44,7 +44,7 @@ Alpha 假设实验与存活实验室。
 | `alpha/alpha_experiment.py` | 11 |
 | `alpha/alpha_survival_lab.py` | 218 |
 
-### `ashare/`　（6 模块，约 495 行）
+### `ashare/`　（6 模块，约 483 行）
 
 **职责**：A 股市场结构与确定性特征层。
 
@@ -83,8 +83,8 @@ A 股市场结构与确定性特征层。
 
 | 模块 | 行数 |
 |------|-----:|
-| `ashare/ashare_cross_section.py` | 53 |
-| `ashare/ashare_event_engine.py` | 127 |
+| `ashare/ashare_cross_section.py` | 48 |
+| `ashare/ashare_event_engine.py` | 120 |
 | `ashare/ashare_factor_engine.py` | 103 |
 | `ashare/ashare_flow_engine.py` | 54 |
 | `ashare/ashare_market.py` | 99 |
@@ -166,7 +166,7 @@ A 股公司行为（corporate action）与复权因子子包。
 | `corporate/corporate_action_provider.py` | 202 |
 | `corporate/corporate_actions.py` | 171 |
 
-### `factors/`　（6 模块，约 1,212 行）
+### `factors/`　（6 模块，约 1,201 行）
 
 **职责**：因子研究子包：注册、准入、验证、IC 检验与盲测。
 
@@ -207,13 +207,13 @@ A 股公司行为（corporate action）与复权因子子包。
 | 模块 | 行数 |
 |------|-----:|
 | `factors/factor_blind_test.py` | 102 |
-| `factors/factor_gate.py` | 83 |
+| `factors/factor_gate.py` | 79 |
 | `factors/factor_ic_lab.py` | 739 |
 | `factors/factor_lab.py` | 76 |
 | `factors/factor_registry.py` | 82 |
-| `factors/factor_validation.py` | 130 |
+| `factors/factor_validation.py` | 123 |
 
-### `fetch/`　（8 模块，约 1,377 行）
+### `fetch/`　（8 模块，约 1,362 行）
 
 **职责**：L2 数据管道实现层（由 data_fetcher.py 拆分）。
 
@@ -249,7 +249,7 @@ L2 数据管道实现层（由 data_fetcher.py 拆分）。
 | `fetch/akshare_source.py` | 142 |
 | `fetch/cli.py` | 41 |
 | `fetch/common.py` | 120 |
-| `fetch/fundamentals_source.py` | 307 |
+| `fetch/fundamentals_source.py` | 292 |
 | `fetch/kline.py` | 257 |
 | `fetch/news.py` | 243 |
 | `fetch/quote.py` | 137 |
@@ -305,7 +305,7 @@ PHASE62 系列 —— TDX 指数 / 序列接入（v4.9 选择性移植）。
 | `phase62/phase62_series.py` | 19 |
 | `phase62/phase62_tdx_index.py` | 70 |
 
-### `pit/`　（10 模块，约 1,729 行）
+### `pit/`　（10 模块，约 1,741 行）
 
 **职责**：Point-in-time (PIT) 研究数据子集。
 
@@ -348,11 +348,11 @@ Point-in-time (PIT) 研究数据子集。
 |------|-----:|
 | `pit/baostock_guard.py` | 74 |
 | `pit/pit_event_master.py` | 87 |
-| `pit/pit_fundamentals.py` | 378 |
+| `pit/pit_fundamentals.py` | 370 |
 | `pit/pit_integrity.py` | 88 |
-| `pit/pit_quarterly.py` | 209 |
+| `pit/pit_quarterly.py` | 204 |
 | `pit/pit_research_rows.py` | 44 |
-| `pit/pit_snapshot_store.py` | 474 |
+| `pit/pit_snapshot_store.py` | 499 |
 | `pit/pit_trading_filter.py` | 57 |
 | `pit/pit_universe_builder.py` | 91 |
 | `pit/statistical_industry.py` | 227 |
@@ -417,7 +417,7 @@ HTML 研究报告生成子包。
 | `reporting/report_markdown.py` | 90 |
 | `reporting/report_styles.py` | 463 |
 
-### `risk/`　（8 模块，约 1,083 行）
+### `risk/`　（8 模块，约 1,076 行）
 
 **职责**：风险与可执行性子包。
 
@@ -459,8 +459,8 @@ HTML 研究报告生成子包。
 | `risk/market_risk_gate.py` | 311 |
 | `risk/risk_budget.py` | 22 |
 | `risk/risk_engine.py` | 22 |
-| `risk/valuation_weight.py` | 146 |
-| `risk/var_calculator.py` | 191 |
+| `risk/valuation_weight.py` | 140 |
+| `risk/var_calculator.py` | 190 |
 
 ### `router/`　（2 模块，约 108 行）
 
@@ -523,7 +523,7 @@ HTML 研究报告生成子包。
 | `runtime/runtime_env.py` | 56 |
 | `runtime/runtime_profile.py` | 49 |
 
-### `stage2/`　（3 模块，约 295 行）
+### `stage2/`　（3 模块，约 281 行）
 
 **职责**：Stage-2 Alpha 重排 / 富集 / 消融实验。
 
@@ -547,11 +547,11 @@ Stage-2 Alpha 重排 / 富集 / 消融实验。
 
 | 模块 | 行数 |
 |------|-----:|
-| `stage2/stage2_ablation.py` | 179 |
+| `stage2/stage2_ablation.py` | 170 |
 | `stage2/stage2_enrichment.py` | 44 |
-| `stage2/stage2_scoring.py` | 72 |
+| `stage2/stage2_scoring.py` | 67 |
 
-### `tdx/`　（3 模块，约 436 行）
+### `tdx/`　（3 模块，约 429 行）
 
 **职责**：通达信（TDX）本地数据集适配子包。
 
@@ -582,11 +582,11 @@ Stage-2 Alpha 重排 / 富集 / 消融实验。
 
 | 模块 | 行数 |
 |------|-----:|
-| `tdx/tdx_csv_adapter.py` | 332 |
+| `tdx/tdx_csv_adapter.py` | 325 |
 | `tdx/tdx_inventory.py` | 22 |
 | `tdx/tdx_lifecycle.py` | 82 |
 
-### `tdx_native/`　（10 模块，约 1,375 行）
+### `tdx_native/`　（10 模块，约 1,824 行）
 
 **职责**：tdx_native 测试包：把五因子研究接入通达信原生 `.day` 数据。
 
@@ -601,14 +601,14 @@ tdx_native 测试包：把五因子研究接入通达信原生 `.day` 数据。
 | 模块 | 行数 |
 |------|-----:|
 | `tdx_native/adjust.py` | 81 |
-| `tdx_native/backfill.py` | 247 |
-| `tdx_native/daily_report.py` | 157 |
+| `tdx_native/backfill.py` | 327 |
+| `tdx_native/daily_report.py` | 172 |
 | `tdx_native/day_reader.py` | 178 |
 | `tdx_native/fetch_names.py` | 120 |
 | `tdx_native/five_factor.py` | 85 |
 | `tdx_native/gbbq_reader.py` | 81 |
-| `tdx_native/run_daily.py` | 168 |
-| `tdx_native/screen.py` | 148 |
+| `tdx_native/run_daily.py` | 451 |
+| `tdx_native/screen.py` | 219 |
 | `tdx_native/smoke_test.py` | 110 |
 
 ### `track/`　（4 模块，约 359 行）
@@ -762,7 +762,7 @@ TuShare 数据接入（可选依赖）。
 | `agents_base.py` | 89 | 4 | 1 |
 | `agents_decision.py` | 153 | 1 | 1 |
 | `agents_researchers.py` | 192 | 1 | 1 |
-| `backtest_engine.py` | 116 | 3 | 2 |
+| `backtest_engine.py` | 130 | 3 | 2 |
 | `cycle_price_action.py` | 63 | 2 | 0 |
 | `daily_stock_pick.py` | 242 | 0 | 6 |
 | `execution_rules.py` | 18 | 2 | 1 |
@@ -776,7 +776,7 @@ TuShare 数据接入（可选依赖）。
 | `portfolio_backtest.py` | 189 | 1 | 3 |
 | `professional_committee.py` | 89 | 1 | 1 |
 | `prompt_engine.py` | 187 | 0 | 3 |
-| `real_alpha_pipeline.py` | 209 | 0 | 4 |
+| `real_alpha_pipeline.py` | 206 | 0 | 4 |
 | `real_data_collector.py` | 115 | 0 | 1 |
 | `release_gate.py` | 156 | 1 | 1 |
 | `stock_scoring.py` | 173 | 2 | 2 |
@@ -790,7 +790,7 @@ TuShare 数据接入（可选依赖）。
 | `candidate_prefilter.py` | 40 | 1 | 0 |
 | `crawl4ai_fetcher.py` | 370 | 0 | 0 |
 | `daily_csv_adapter.py` | 74 | 0 | 0 |
-| `data_contracts.py` | 91 | 1 | 0 |
+| `data_contracts.py` | 123 | 1 | 0 |
 | `data_quality.py` | 111 | 0 | 0 |
 | `exchange_rules.py` | 127 | 1 | 0 |
 | `industry_strength.py` | 44 | 1 | 0 |

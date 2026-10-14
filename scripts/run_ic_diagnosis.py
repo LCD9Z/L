@@ -125,6 +125,7 @@ def main() -> int:
             is_st = str(bars[i].get("is_st", "0")) == "1"
             lim = _limit_pct(c, is_st) - 0.002
             pos = date_pos.get(date, -1) if date in signal_dates else -1
+            pos = all_dates.index(date) if date in signal_dates else -1
             next_day_ok = (pos >= 0 and pos + 1 < len(all_dates)
                            and str(eb["date"]) == all_dates[pos + 1])
             # t+1 涨停（买不到）

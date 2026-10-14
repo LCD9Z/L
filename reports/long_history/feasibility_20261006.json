@@ -1,0 +1,45 @@
+{
+ "measured_at": "2026-10-06 22:45:37",
+ "tdx_path": "D:/new_tdx/vipdoc",
+ "files_total": 9160,
+ "files_retrieved_gt_1253bars": 5784,
+ "retrieve_pct": 63.1,
+ "total_bars": 22776342,
+ "index_range": [
+  "20000104",
+  "20260930"
+ ],
+ "index_bars": 2210,
+ "download_rate_bar_per_sec": 4402,
+ "eta_minutes": 60,
+ "completeness_spotcheck": {
+  "sampled": 30,
+  "readable": 30,
+  "corrupted": 0
+ },
+ "liquidity_gate_pass_rate_by_year": {
+  "2001": {
+   "with_bar": 992,
+   "passed": 20,
+   "pct": 2.0
+  },
+  "2005": {
+   "with_bar": 1276,
+   "passed": 40,
+   "pct": 3.1
+  },
+  "2007": {
+   "with_bar": 1531,
+   "passed": 1060,
+   "pct": 69.2
+  },
+  "2015": {
+   "with_bar": 463,
+   "passed": 424,
+   "pct": 91.6
+  }
+ },
+ "gate": "liq20 >= 1e8 (five_factor.LIQ_MIN)",
+ "method": "合成夹具实测，入口 five_factor.compute_factors（生产同路径）；不引用任何历史报告数字",
+ "caveat": "2016-2025 未算（抽样池集中早期上市股）；下载未完成（61.6%）"
+}

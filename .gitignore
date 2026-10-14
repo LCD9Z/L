@@ -32,6 +32,55 @@ runtime_logs/
 *.log
 *.partial
 
+# --- 例外：研究证据必须入库 ---
+# reports/ 里混了两类东西，不能一刀切忽略（2026-10-02 审计发现）：
+#   ① 可再生的运行产物（daily/ 下的每日报告、tracking 回填、run.log）
+#   ② **研究证据**（各实验的原始 JSON）——这是结论可溯源的**唯一凭据**，
+#      丢失后 VERDICT/REPORT 里的每个数字都无法复核，负面结果也无法归档。
+# 纪律要求「负面结果必须归档」，前提是原始数据在库里。
+# 详见 reports/EVIDENCE_INDEX.md
+!reports/
+reports/*
+!reports/*.json
+!reports/*.md
+!reports/EVIDENCE_INDEX.md
+!reports/external_v3/
+!reports/external_v3/*
+!reports/long_history/
+!reports/long_history/*
+!reports/cross_decade/
+!reports/cross_decade/*
+!reports/delisted/
+!reports/delisted/*
+# ⚠️ 2026-10-13 补：`reports/xsource/`（H-XSRC 跨源验证的**正式结论**产物）
+# 此前**漏在白名单外** → `XSRC.json` 一直被静默忽略、从未入库，
+# 也不在 `EVIDENCE_INDEX.md` 里 —— 正是本项目反复防的「静默失效」。
+# 该 JSON 是 P0-1 判定的唯一凭据，必须入库。
+!reports/xsource/
+!reports/xsource/*
+
+# --- 凭据：绝不入库 ---
+# 飞书 Webhook 等同于该群发帖权限，谁拿到都能往群里发消息
+data/feishu_webhook.txt
+data/*.key
+data/*secret*
+.env
+
+# --- 工具二进制 ---
+# AOCI-CODE 24MB 可执行文件不入库（仓库会膨胀），只留文档与接入说明。
+# 校验值见 AOCI_INTEGRATION.md：sha256 4013002f...5c67
+tools/aoci/*.exe
+tools/aoci/aoci
+tools/aoci/LICENSE
+tools/aoci/NOTICE
+tools/aoci/PATENTS
+tools/aoci/THIRD-PARTY-NOTICES
+tools/aoci/TRADEMARKS
+# AOCI 认知资产**必须入库**（它按设计就靠 git 版本化），此处预留放行：
+#   !aoci.txt / !aoci.meta.txt / !aoci.code.txt
+# ⚠️ 但注意 AOCI 要求这些文件**不能**被 ignore——被忽略会被静默跳过、索引建不起来。
+# 当前尚未 init（2026-10-04），故先不写规则；启用时再按 AOCI 要求补。
+
 # --- 覆盖率产物（pytest --cov 与 CI 会生成） ---
 coverage.xml
 .coverage

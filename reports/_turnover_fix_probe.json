@@ -1,0 +1,48 @@
+{
+ "rows": [
+  {
+   "horizon": 20,
+   "window": "2023-07-03",
+   "aligned_days": 776,
+   "trades": 195,
+   "win_rate_pct": 43.08,
+   "total_return_pct": 1.764,
+   "max_drawdown_pct": 36.739,
+   "benchmark_return_pct": 16.84,
+   "net_annualized_excess_pct": -1.08,
+   "t_stat": -0.07879843716665301,
+   "p_value": 0.9371929471441811,
+   "est_cost_drag_pp": 4.33,
+   "gross_est_excess_pct": 3.25
+  }
+ ],
+ "summary": {
+  "20": {
+   "n_windows": 1,
+   "net_mean": -1.08,
+   "net_min": -1.08,
+   "net_max": -1.08,
+   "positive_windows": 0,
+   "trades_mean": 195,
+   "est_cost_drag_mean": 4.33,
+   "gross_est_mean": 3.25
+  }
+ },
+ "args": {
+  "dataset": "D:/tdx_dataset_v3",
+  "horizons": "20",
+  "windows": "2023-07-03",
+  "max_stocks": 300,
+  "top_n": 5,
+  "position_pct": 0.25,
+  "threshold": 70.0,
+  "out": "reports/_turnover_fix_probe.json"
+ },
+ "horizons": [
+  20
+ ],
+ "windows": [
+  "2023-07-03"
+ ],
+ "complete": true
+}

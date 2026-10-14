@@ -42,34 +42,66 @@ SUBSETS = {
 }
 
 
-def _factors_at(closes: List[float], amounts: List[float], i: int
+def _factors_at(closes: List[float], amounts: List[float], i: int,
+                liq_min: Optional[float] = None, window: int = 80
                 ) -> Optional[Dict[str, float]]:
-    """以下标 i 为信号日计算五因子（与 `five_factor.compute_factors` 逐字一致）。
+    """以下标 i 为信号日计算五因子 —— 与 `five_factor.compute_factors` 逐字一致。
 
-    注意 ret20 的回溯是 **20 根**（closes[i-20]），不是 21 根 —— 曾误用 i-21，
-    已由与冻结引擎的逐股交叉校验抓出并修正。
+    ## ⚠️ 关键：`compute_factors` 的结果**依赖传入窗口长度**
+
+    `amihud` 的候选集是「窗口内过滤后取最后 20 个」，
+    所以**门槛判定**会随窗口长度变化：
+
+    | 窗口长度 | amihud 候选数 | 通过条件 |
+    |---|---|---|
+    | 22 根 | 21 | 最多允许 **1** 个无效日 |
+    | 80 根（生产 `screen.py`） | 79 | 最多允许 **59** 个无效日 |
+
+    **但因子值本身不变** —— 「最后 20 个有效日」在窗口 ≥20 个有效日时恒定。
+    即：窗口长度只影响**哪些股票通过门槛**，不影响通过者的因子值。
+
+    这是生产代码里一个**未被写下来的隐含依赖**（2026-10-07 发现）。
+    本函数以 `window=80` 对齐 `screen.py` 的 `read_day_tail(p, 80)`，
+    这也是推荐系统的**实际生产口径**。
+
+    ## 2026-10-07 修正（原实现有偏差，由对照测试锁死）
+
+    | 项 | 原 IC 实现 | 生产 `compute_factors` |
+    |---|---|---|
+    | amihud 取值 | `sum(amihud)/len(amihud)`（分母随停牌数变） | `sum(amihud[-20:])/20.0`（**固定 20**） |
+    | amihud 样本门槛 | `len < 15` | `len < 20` |
+    | amihud 候选窗口 | 无限回溯 | 受 `window` 限制 |
+
+    ## 关于 `liq_min`
+
+    `None`（默认）= **不做**流动性过滤 —— 跨年代实验需要 P1/P2/P3 三口径
+    并列，而 P2（截面中位数）依赖当期截面，无法在逐股计算时决定，
+    故把门槛判断移出计算、由调用方按截面筛选。
+    传入数值则与生产一致地过滤（默认 1e8 = `five_factor.LIQ_MIN`）。
     """
-    if i < 21 or i + 1 >= len(closes):
+    if i < 21 or i + 1 > len(closes):
         return None
-    c = closes[i]
-    if c <= 0 or closes[i - 20] <= 0:
+    if closes[i - 20] <= 0:
         return None
-    rets = [closes[k] / closes[k - 1] - 1 for k in range(i - 19, i + 1)]
+    # rets[-20:]：最近 20 个交易日的收益（等价于生产 rets[-20:]）
+    recent = [closes[p] / closes[p - 1] - 1 for p in range(i - 19, i + 1)]
     liq20 = sum(amounts[i - 19:i + 1]) / 20.0
-    if liq20 < 1e8:
+    if liq_min is not None and liq20 < liq_min:
         return None
-    amihud = []
-    for k in range(i - 19, i + 1):
-        if amounts[k] > 0 and closes[k - 1] > 0:
-            amihud.append(abs(closes[k] / closes[k - 1] - 1) / amounts[k])
-    if len(amihud) < 15:
+    # amihud：复刻生产「窗口内过滤 → 取最后 20 个 → 除以固定 20」
+    lo = max(1, i - (window - 2))
+    valid = [p for p in range(lo, i + 1) if amounts[p] > 0]
+    if len(valid) < 20:
         return None
+    last20 = valid[-20:]
     return {
-        "ret20": c / closes[i - 20] - 1,
-        "vol20": statistics.pstdev(rets),
-        "amihud20": sum(amihud) / len(amihud),
+        "ret20": closes[i] / closes[i - 20] - 1,
+        "vol20": statistics.pstdev(recent),
+        "amihud20": sum(abs(closes[p] / closes[p - 1] - 1) / amounts[p]
+                        for p in last20) / 20.0,
         "loga20": math.log1p(liq20),
-        "maxret20": max(rets),
+        "maxret20": max(recent),
+        "liq20": liq20,
     }
 
 
@@ -114,6 +146,20 @@ def main() -> int:
                     help="样本起点（与 v2 研究可比；早期年份仅少数股票在交易）")
     ap.add_argument("--out", default="")
     args = ap.parse_args()
+    ap.add_argument("--end", default="",
+                    help="区间结束日（含）；空=到日历末尾。2026-10-07 新增，"
+                         "用于跨年代实验切窗口")
+    ap.add_argument("--liq-modes", default="abs",
+                    help="流动性口径，逗号分隔：abs,median,none。"
+                         "默认 abs（= 1e8 绝对门槛），与 2026-10-07 改动前行为一致；"
+                         "跨年代实验用 abs,median,none 三口径并列")
+    ap.add_argument("--liq-abs", type=float, default=1e8,
+                    help="abs 口径的绝对门槛（默认 1e8，与生产 five_factor.LIQ_MIN 一致）")
+    ap.add_argument("--out", default="")
+    args = ap.parse_args()
+    args.liq_modes = [m.strip() for m in args.liq_modes.split(",") if m.strip()]
+    if not args.liq_modes:
+        args.liq_modes = ["abs"]
     t0 = time.time()
 
     from tdx_native import adjust, day_reader, gbbq_reader
@@ -134,6 +180,11 @@ def main() -> int:
     master = [b["date"] for b in cal]
     rebal = [d for i, d in enumerate(master) if i % args.step == 0 and d >= args.start]
     print(f"      主日历 {len(master)} 天，调仓日 {len(rebal)} 个（不重叠）", flush=True)
+    end = args.end or "99999999"
+    rebal = [d for i, d in enumerate(master)
+             if i % args.step == 0 and args.start <= d <= end]
+    print(f"      主日历 {len(master)} 天，调仓日 {len(rebal)} 个（不重叠）"
+          f"；区间 {args.start} ~ {args.end or '末尾'}", flush=True)
 
     # 列式桶：每期每因子一个 array('d')
     # 每期一个 dict：因子列是 array('d')，adj_factor 是 {因子: array}，
@@ -142,10 +193,18 @@ def main() -> int:
     n_used = 0
 
     print("[2/4] 逐股计算因子（raw / adj 两套）...", flush=True)
+    bad_files: List[str] = []
     for n, (code, _market, path) in enumerate(stocks, 1):
         if n % 500 == 0:
             print(f"      {n}/{len(stocks)}  ({time.time()-t0:.0f}s)", flush=True)
-        bars = day_reader.read_day_all(path)
+        # 2026-10-07 加容错：单文件读取失败（PermissionError 等瞬时占用）
+        # 不得中断整个窗口 —— 首次跑 W1/W2 时正是因一个文件被占用而整窗作废。
+        # 失败必须显式计数并输出，不允许静默跳过（§2.4 纪律）。
+        try:
+            bars = day_reader.read_day_all(path)
+        except Exception as e:                       # noqa: BLE001
+            bad_files.append(f"{code}:{type(e).__name__}")
+            continue
         if len(bars) < 40:
             continue
         ev = events.get(code) or []
@@ -176,11 +235,15 @@ def main() -> int:
                 b["adj_factor"] = {f: array("d") for f in FACTORS}
                 b["fwd"] = array("d")
                 b["flag"] = array("b")
+                #: 2026-10-07 新增：保留 liq20 供三口径（P1/P2/P3）截面筛选。
+                # 因子计算本身不做门槛过滤，门槛由调用方按口径施加。
+                b["liq20"] = array("d")
                 buckets[d] = b
             for f in FACTORS:
                 b[f].append(fr[f])
                 b["adj_factor"][f].append(fa[f])
             b["fwd"].append(fwd)
+            b["liq20"].append(fr["liq20"])
             b["flag"].append(1 if any(
                 abs(closes_r[k] / closes_r[k - 1] - 1) > lim
                 for k in range(max(1, i - 21), i + 1)) else 0)
@@ -228,6 +291,74 @@ def main() -> int:
                 if ic_ce is not None:
                     comp_series_ex[sname].append(ic_ce)
 
+    def _gate_sel(liqs: List[float], mode: str) -> List[int]:
+        """按流动性口径返回保留的样本索引（2026-10-07 新增）。
+
+        口径只影响**样本选择**，不影响因子值本身——因子在填桶时
+        已用 `liq_min=None`（不过滤）计算完毕。
+        """
+        n = len(liqs)
+        if mode == "none":
+            return list(range(n))
+        if mode == "abs":
+            th = args.liq_abs
+        elif mode == "median":
+            th = sorted(liqs)[n // 2]
+        else:
+            raise SystemExit(f"未知 liq-mode: {mode}")
+        return [k for k in range(n) if liqs[k] >= th]
+
+    def _run_gate(mode: str) -> Dict[str, Any]:
+        """按某一流动性口径统计 IC。"""
+        ser: Dict[str, Dict[str, List[float]]] = {
+            cfg: {f: [] for f in FACTORS} for cfg in CONFIGS}
+        ser["raw_flag_excluded"] = {f: [] for f in FACTORS}
+        comp_s: Dict[str, List[float]] = {s: [] for s in SUBSETS}
+        comp_s_ex: Dict[str, List[float]] = {s: [] for s in SUBSETS}
+        flags: List[float] = []
+        sizes: List[int] = []
+        for d in sorted(buckets):
+            b = buckets[d]
+            sel = _gate_sel(list(b["liq20"]), mode)
+            if len(sel) < args.min_cross_section:
+                continue
+            sizes.append(len(sel))
+            n = len(sel)
+            fwd = [b["fwd"][k] for k in sel]
+            keep = [j for j, k in enumerate(sel) if b["flag"][k] == 0]
+            flags.append(1 - len(keep) / n)
+            for f in FACTORS:
+                raw = [b[f][k] for k in sel]
+                adj = [b["adj_factor"][f][k] for k in sel]
+                ic = _spearman(raw, fwd)
+                if ic is not None:
+                    ser["raw_factor"][f].append(ic)
+                ic2 = _spearman(adj, fwd)
+                if ic2 is not None:
+                    ser["adj_factor"][f].append(ic2)
+                if len(keep) >= args.min_cross_section:
+                    ic3 = _spearman([raw[j] for j in keep],
+                                    [fwd[j] for j in keep])
+                    if ic3 is not None:
+                        ser["raw_flag_excluded"][f].append(ic3)
+            # 子集合成分的 IC（方向化分位均值，复权价口径）
+            for sname, keys in SUBSETS.items():
+                rk = {k: _rank([b["adj_factor"][k][j] for j in sel])
+                      for k in keys}
+                comp = [sum((rk[k][idx] / n if DIRECTION[k] > 0
+                             else 1.0 - rk[k][idx] / n)
+                            for k in keys) / len(keys) for idx in range(n)]
+                ic_c = _spearman(comp, fwd)
+                if ic_c is not None:
+                    comp_s[sname].append(ic_c)
+                if len(keep) >= args.min_cross_section:
+                    ic_ce = _spearman([comp[j] for j in keep],
+                                      [fwd[j] for j in keep])
+                    if ic_ce is not None:
+                        comp_s_ex[sname].append(ic_ce)
+        return {"ser": ser, "comp_s": comp_s, "comp_s_ex": comp_s_ex,
+                "flags": flags, "sizes": sizes}
+
     def stat(v: List[float]) -> Dict:
         if len(v) < 2:
             return {"ic_mean": None, "t": None, "n": len(v)}
@@ -273,11 +404,100 @@ def main() -> int:
     print(f"\n{'子集（复权价）':18s} {'IC / t（全样本）':>24s} {'IC / t（剔跳空）':>24s}")
     for s in SUBSETS:
         print(f"{s:18s} {_fmt(comp_res[s]):>24s} {_fmt(comp_ex[s]):>24s}")
+    #: 按口径逐个统计（口径只影响样本选择）
+    by_gate: Dict[str, Any] = {}
+    for mode in args.liq_modes:
+        g = _run_gate(mode)
+        s_ = g["ser"]
+        by_gate[mode] = {
+            "ic": {cfg: {f: stat(s_[cfg][f]) for f in FACTORS} for cfg in s_},
+            "composite_ic": {x: stat(g["comp_s"][x]) for x in SUBSETS},
+            "composite_ic_jump_excluded": {x: stat(g["comp_s_ex"][x])
+                                           for x in SUBSETS},
+            "cross_sections": len(g["sizes"]),
+            "avg_cross_section": (round(sum(g["sizes"]) / len(g["sizes"]), 1)
+                                  if g["sizes"] else None),
+            "flagged_share_mean": (round(sum(g["flags"]) / len(g["flags"]), 4)
+                                   if g["flags"] else None),
+        }
+        print(f"      [{mode:6s}] 期数 {by_gate[mode]['cross_sections']:3d}，"
+              f"平均截面 {by_gate[mode]['avg_cross_section']}", flush=True)
+
+    # 主输出 = abs 口径（与 2026-10-07 改动前行为一致，便于与历史结论对照）
+    main_gate = "abs" if "abs" in by_gate else args.liq_modes[0]
+    mg = by_gate[main_gate]
+    res = mg["ic"]
+    comp_res = mg["composite_ic"]
+    comp_ex = mg["composite_ic_jump_excluded"]
+    out = {
+        "source": args.vipdoc, "stocks": len(stocks), "samples": n_used,
+        "cross_sections": mg["cross_sections"],
+        "flagged_share_mean": mg["flagged_share_mean"],
+        #: 读取失败而被跳过的文件（2026-10-07 加）。为 0 才说明本窗完整。
+        "bad_files": bad_files,
+        "bad_files_n": len(bad_files),
+        "ic": res,
+        "composite_ic": comp_res,
+        "composite_ic_jump_excluded": comp_ex,
+        "ic_by_gate": by_gate,
+        "main_gate": main_gate,
+        "liq_modes": args.liq_modes,
+        "liq_abs": args.liq_abs,
+        "range": {"start": args.start, "end": args.end or None},
+        "runtime_sec": round(time.time() - t0, 1),
+        # ⚠️ 2026-10-12 补：数据集标识（整改清单 P0-2 —— 每项结论可追溯到唯一数据集）。
+        # 缺失时守卫 test_verdict_artifacts_declare_source 会失败。
+        # 曾因「v3 vs 通达信」混淆出过实质性错误，故此处显式落盘。
+        # 2026-10-14 A2 修正：删去此处重复的 `"source": str(args.data)` ——
+        # ① 该行引用**未定义**的 `args.data`（本脚本无 --data 参数）⇒ 潜在崩溃，
+        #    且该行在两侧都存在、从未被成功执行覆盖过（现存 JSON 的 source 均为
+        #    `args.vipdoc`，即登记册 D1）；
+        # ② 重复键会**静默覆盖**上面的 `"source": args.vipdoc`（D:/new_tdx/vipdoc，
+        #    KNOWN_DATASETS["D1"]）——守卫只认后者。
+        "note": "标签统一用前复权价（收益必须先复权）；raw_factor=未复权价算因子；"
+                "raw_flag_excluded=未复权且剔除窗口内含超涨跌停跳空的样本。"
+                "主输出 ic 为 abs 口径；ic_by_gate 含全部口径。"
+                "2026-10-07 起 _factors_at 与生产 compute_factors 逐字一致"
+                "（原 amihud 分母固定 20 / 样本门槛 20 的偏差已修）。",
+    }
+    if bad_files:
+        print(f"      ⚠️ {len(bad_files)} 个文件读取失败被跳过"
+              f"（前 5：{bad_files[:5]}）", flush=True)
+
+    def _f(v: Optional[float], spec: str = "+.6f") -> str:
+        """格式化可能为 None 的统计量（2026-10-11 修复）。
+
+        原代码直接 `f"{a['ic_mean']:+.6f}"`，当某口径因样本不足、
+        `stat()` 返回 `{"ic_mean": None, "t": None, "n": 0}` 时抛
+        `TypeError: unsupported format string passed to NoneType.__format__`。
+        **该异常发生在写 JSON 之前，导致整个窗口白跑**（W1 就这样废掉的）。
+        """
+        return "      n/a" if v is None else format(v, spec)
+
+    # ⚠️ 先落盘，再打印（2026-10-11 调整）。
+    # 原顺序是「打印 → 落盘」，而打印曾因 None 格式化抛异常 →
+    # 整个窗口算完却什么都没存下（W1 就这样白跑 7 分钟）。
+    # 落盘是**结果**，打印只是**显示**——结果必须优先保住。
     text = json.dumps(out, ensure_ascii=False, indent=1)
     if args.out:
         with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(text)
         print(f"已写入: {args.out}")
+
+    print("[4/4] 结果：")
+    print(f"{'因子':14s} {'原始价 IC/t':>20s} {'复权价 IC/t':>20s} {'剔跳空 IC/t':>20s}")
+    for f in FACTORS:
+        r = res["raw_factor"][f]
+        a = res["adj_factor"][f]
+        x = res["raw_flag_excluded"][f]
+        print(f"{f:14s} {_f(r['ic_mean'])!s}/{_f(r['t'], '+.2f')!s}  "
+              f"{_f(a['ic_mean'])!s}/{_f(a['t'], '+.2f')!s}  "
+              f"{_f(x['ic_mean'])!s}/{_f(x['t'], '+.2f')!s}")
+    print(f"\n{'子集（复权价）':18s} {'IC / t（全样本）':>24s} {'IC / t（剔跳空）':>24s}")
+    for s in SUBSETS:
+        a, x = comp_res[s], comp_ex[s]
+        print(f"{s:18s} {_f(a['ic_mean'])!s}/{_f(a['t'], '+.2f')!s}      "
+              f"{_f(x['ic_mean'])!s}/{_f(x['t'], '+.2f')!s}")
     return 0
 
 

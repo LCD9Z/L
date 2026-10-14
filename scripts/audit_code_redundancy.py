@@ -134,13 +134,21 @@ def iter_functions(tree: ast.AST) -> List[Tuple[str, Any]]:
 # ---------------------------------------------------------------------------
 # 采集
 # ---------------------------------------------------------------------------
+#: 外部供应商参考代码（2026-10-14 A2 随主干进入本仓）——**不参与冗余审计**：
+#: 它是第三方 v3 包的**只读参考资料**（与我方 factors/factor_ic_lab.py 等内容
+#: 同源重复是预期），不是本项目维护的代码（ruff/mypy 同样排除，见 ruff.toml
+#: 与 mypy.ini）。纳入审计会把「 vendored copy 」误报成我方的复制粘贴。
+_EXCLUDE_PREFIXES = ("docs/external/",)
+
+
 def git_py_files(root: Path) -> List[Path]:
     """git 跟踪的 .py（**不含**未跟踪/忽略文件 —— 判定须以入库代码为准）。"""
     proc = subprocess.run(
         ["git", "ls-files", "*.py"],
         cwd=str(root), capture_output=True, text=True, check=True,
     )
-    return sorted(root / f for f in proc.stdout.splitlines() if f.strip())
+    return sorted(root / f for f in proc.stdout.splitlines()
+                  if f.strip() and not f.replace("\\", "/").startswith(_EXCLUDE_PREFIXES))
 
 
 def _area_of(rel: str) -> str:

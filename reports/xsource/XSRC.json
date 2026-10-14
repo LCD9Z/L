@@ -1,0 +1,245 @@
+{
+ "windows": {
+  "W1": {
+   "cross_sections": 242,
+   "ic": {
+    "ret20": {
+     "ic_mean": -0.064741,
+     "t": -5.59,
+     "n": 242
+    },
+    "vol20": {
+     "ic_mean": -0.038551,
+     "t": -3.59,
+     "n": 242
+    },
+    "amihud20": {
+     "ic_mean": 0.007389,
+     "t": 0.62,
+     "n": 242
+    },
+    "loga20": {
+     "ic_mean": -0.033904,
+     "t": -2.99,
+     "n": 242
+    },
+    "maxret20": {
+     "ic_mean": -0.045795,
+     "t": -5.23,
+     "n": 242
+    }
+   }
+  },
+  "W2": {
+   "cross_sections": 244,
+   "ic": {
+    "ret20": {
+     "ic_mean": -0.070277,
+     "t": -6.86,
+     "n": 244
+    },
+    "vol20": {
+     "ic_mean": -0.032675,
+     "t": -3.2,
+     "n": 244
+    },
+    "amihud20": {
+     "ic_mean": 0.059374,
+     "t": 6.4,
+     "n": 244
+    },
+    "loga20": {
+     "ic_mean": -0.074823,
+     "t": -8.09,
+     "n": 244
+    },
+    "maxret20": {
+     "ic_mean": -0.049018,
+     "t": -6.15,
+     "n": 244
+    }
+   }
+  },
+  "W3": {
+   "cross_sections": 243,
+   "ic": {
+    "ret20": {
+     "ic_mean": -0.067406,
+     "t": -6.81,
+     "n": 243
+    },
+    "vol20": {
+     "ic_mean": -0.056167,
+     "t": -4.97,
+     "n": 243
+    },
+    "amihud20": {
+     "ic_mean": 0.054346,
+     "t": 5.19,
+     "n": 243
+    },
+    "loga20": {
+     "ic_mean": -0.084733,
+     "t": -8.57,
+     "n": 243
+    },
+    "maxret20": {
+     "ic_mean": -0.071198,
+     "t": -8.23,
+     "n": 243
+    }
+   }
+  },
+  "W4": {
+   "cross_sections": 243,
+   "ic": {
+    "ret20": {
+     "ic_mean": -0.051709,
+     "t": -5.59,
+     "n": 243
+    },
+    "vol20": {
+     "ic_mean": -0.068405,
+     "t": -6.76,
+     "n": 243
+    },
+    "amihud20": {
+     "ic_mean": 0.031537,
+     "t": 3.13,
+     "n": 243
+    },
+    "loga20": {
+     "ic_mean": -0.06086,
+     "t": -6.16,
+     "n": 243
+    },
+    "maxret20": {
+     "ic_mean": -0.07271,
+     "t": -8.97,
+     "n": 243
+    }
+   }
+  },
+  "W5": {
+   "cross_sections": 181,
+   "ic": {
+    "ret20": {
+     "ic_mean": -0.053765,
+     "t": -3.83,
+     "n": 181
+    },
+    "vol20": {
+     "ic_mean": -0.05987,
+     "t": -3.94,
+     "n": 181
+    },
+    "amihud20": {
+     "ic_mean": 0.046533,
+     "t": 2.99,
+     "n": 181
+    },
+    "loga20": {
+     "ic_mean": -0.079211,
+     "t": -6.19,
+     "n": 181
+    },
+    "maxret20": {
+     "ic_mean": -0.064645,
+     "t": -5.35,
+     "n": 181
+    }
+   }
+  },
+  "R": {
+   "cross_sections": 250,
+   "ic": {
+    "ret20": {
+     "ic_mean": -0.052275,
+     "t": -4.55,
+     "n": 250
+    },
+    "vol20": {
+     "ic_mean": -0.066437,
+     "t": -5.38,
+     "n": 250
+    },
+    "amihud20": {
+     "ic_mean": 0.050894,
+     "t": 4.1,
+     "n": 250
+    },
+    "loga20": {
+     "ic_mean": -0.083023,
+     "t": -7.81,
+     "n": 250
+    },
+    "maxret20": {
+     "ic_mean": -0.069209,
+     "t": -7.01,
+     "n": 250
+    }
+   }
+  }
+ },
+ "n_stocks": 368,
+ "codes_file": "",
+ "codes_required": null,
+ "codes_covered": null,
+ "source": "D:\\xs_tencent\\klines",
+ "source_dataset_id": "D5",
+ "sample_mode": "calendar",
+ "amount_is_estimated": true,
+ "note": "amount 为 volume×(H+L+C)/3 估算值；amihud20/loga20 结论应视为较弱证据。样本=--src 目录内全部 CSV（300/1000/早年 三名单并集），**非**预注册的 seed=42 单次抽样；仅用于**方向一致性**判定，不得用于「跨源 IC 数值可比」声称",
+ "main_verdict_ref": "reports\\cross_decade\\VERDICT.json",
+ "consistent_windows": {
+  "ret20": 5,
+  "vol20": 5,
+  "amihud20": 5,
+  "loga20": 5,
+  "maxret20": 5
+ },
+ "vs_main": {
+  "ref": "reports\\cross_decade\\ORTH.json",
+  "gate": "plain(不设门槛)",
+  "by_factor": {
+   "ret20": {
+    "same": 6,
+    "compared": 6
+   },
+   "vol20": {
+    "same": 6,
+    "compared": 6
+   },
+   "amihud20": {
+    "same": 6,
+    "compared": 6
+   },
+   "loga20": {
+    "same": 6,
+    "compared": 6
+   },
+   "maxret20": {
+    "same": 6,
+    "compared": 6
+   }
+  }
+ },
+ "coverage": {
+  "usable_windows": [
+   "W1",
+   "W2",
+   "W3",
+   "W4",
+   "W5",
+   "R"
+  ],
+  "missing_windows": [],
+  "n_stocks": 368
+ },
+ "verdict": {
+  "factors_consistent_ge4": 5,
+  "n_regular_windows_usable": 5,
+  "flipped": {},
+  "conclusion": "跨源一致"
+ }
+}

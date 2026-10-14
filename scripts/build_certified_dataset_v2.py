@@ -417,6 +417,9 @@ def main() -> int:
         gap_start: Optional[str] = None
         # 必须在循环外初始化：循环体内的 `continue` 会跳过赋值，
         # 循环后仍可能引用它（原实现靠"恰好总会先赋值"才没炸，静态上不可保证）。
+        # 上一日历日。显式初始化：进入下方 elif 分支的前提是前一轮已执行
+        # 循环末尾的 `prev_day = d`，故运行时必已赋值；此处初始化仅为让静态
+        # 分析可证（否则 F821「可能未定义」），并抵御未来加 continue 的改坏。
         prev_day: Optional[str] = None
         for d in calendar:
             if d < start or d > end:
@@ -448,7 +451,7 @@ def main() -> int:
     # ---- Pass 4: PIT 股票池快照 --------------------------------------------
     print("[4/5] 构建 PIT 股票池快照 ...", flush=True)
     stock_cal: Set[str] = set(calendar)
-    for code in per_stock:
+    for code, _info in per_stock.items():
         with (out / "stocks" / f"{code}.csv").open(encoding="utf-8", newline="") as f:
             for r in csv.DictReader(f):
                 stock_cal.add(r["date"])
@@ -474,6 +477,7 @@ def main() -> int:
     print("[5/5] 写证据清单、生成档案 ...", flush=True)
     shutil.copyfile(st_events_path, out / "st_events.csv")
     with (out / "pool_v2.csv").open("w", encoding="utf-8", newline="") as f:
+        # 变量名不与上面 `w = csv.writer(f)`（Writer）复用
         dw = csv.DictWriter(f, fieldnames=list(next(iter(per_stock.values())).keys()))
         dw.writeheader()
         for info in sorted(per_stock.values(), key=lambda x: x["code"]):

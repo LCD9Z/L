@@ -1,0 +1,587 @@
+{
+ "source": "D:/new_tdx/vipdoc",
+ "stocks": 2000,
+ "samples": 42665,
+ "cross_sections": 0,
+ "flagged_share_mean": null,
+ "bad_files": [],
+ "bad_files_n": 0,
+ "ic": {
+  "raw_factor": {
+   "ret20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   },
+   "vol20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   },
+   "amihud20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   },
+   "loga20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   },
+   "maxret20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   }
+  },
+  "adj_factor": {
+   "ret20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   },
+   "vol20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   },
+   "amihud20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   },
+   "loga20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   },
+   "maxret20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   }
+  },
+  "raw_flag_excluded": {
+   "ret20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   },
+   "vol20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   },
+   "amihud20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   },
+   "loga20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   },
+   "maxret20": {
+    "ic_mean": null,
+    "t": null,
+    "n": 0
+   }
+  }
+ },
+ "composite_ic": {
+  "S5_all": {
+   "ic_mean": null,
+   "t": null,
+   "n": 0
+  },
+  "S4_no_amihud": {
+   "ic_mean": null,
+   "t": null,
+   "n": 0
+  },
+  "S4_no_loga": {
+   "ic_mean": null,
+   "t": null,
+   "n": 0
+  },
+  "S3_core": {
+   "ic_mean": null,
+   "t": null,
+   "n": 0
+  },
+  "S2_vol_max": {
+   "ic_mean": null,
+   "t": null,
+   "n": 0
+  }
+ },
+ "composite_ic_jump_excluded": {
+  "S5_all": {
+   "ic_mean": null,
+   "t": null,
+   "n": 0
+  },
+  "S4_no_amihud": {
+   "ic_mean": null,
+   "t": null,
+   "n": 0
+  },
+  "S4_no_loga": {
+   "ic_mean": null,
+   "t": null,
+   "n": 0
+  },
+  "S3_core": {
+   "ic_mean": null,
+   "t": null,
+   "n": 0
+  },
+  "S2_vol_max": {
+   "ic_mean": null,
+   "t": null,
+   "n": 0
+  }
+ },
+ "ic_by_gate": {
+  "abs": {
+   "ic": {
+    "raw_factor": {
+     "ret20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     },
+     "vol20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     },
+     "amihud20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     },
+     "loga20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     },
+     "maxret20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     }
+    },
+    "adj_factor": {
+     "ret20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     },
+     "vol20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     },
+     "amihud20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     },
+     "loga20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     },
+     "maxret20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     }
+    },
+    "raw_flag_excluded": {
+     "ret20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     },
+     "vol20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     },
+     "amihud20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     },
+     "loga20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     },
+     "maxret20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 0
+     }
+    }
+   },
+   "composite_ic": {
+    "S5_all": {
+     "ic_mean": null,
+     "t": null,
+     "n": 0
+    },
+    "S4_no_amihud": {
+     "ic_mean": null,
+     "t": null,
+     "n": 0
+    },
+    "S4_no_loga": {
+     "ic_mean": null,
+     "t": null,
+     "n": 0
+    },
+    "S3_core": {
+     "ic_mean": null,
+     "t": null,
+     "n": 0
+    },
+    "S2_vol_max": {
+     "ic_mean": null,
+     "t": null,
+     "n": 0
+    }
+   },
+   "composite_ic_jump_excluded": {
+    "S5_all": {
+     "ic_mean": null,
+     "t": null,
+     "n": 0
+    },
+    "S4_no_amihud": {
+     "ic_mean": null,
+     "t": null,
+     "n": 0
+    },
+    "S4_no_loga": {
+     "ic_mean": null,
+     "t": null,
+     "n": 0
+    },
+    "S3_core": {
+     "ic_mean": null,
+     "t": null,
+     "n": 0
+    },
+    "S2_vol_max": {
+     "ic_mean": null,
+     "t": null,
+     "n": 0
+    }
+   },
+   "cross_sections": 0,
+   "avg_cross_section": null,
+   "flagged_share_mean": null
+  },
+  "median": {
+   "ic": {
+    "raw_factor": {
+     "ret20": {
+      "ic_mean": -0.047403,
+      "t": -1.17,
+      "n": 35
+     },
+     "vol20": {
+      "ic_mean": -0.042786,
+      "t": -0.98,
+      "n": 35
+     },
+     "amihud20": {
+      "ic_mean": -0.028767,
+      "t": -1.06,
+      "n": 35
+     },
+     "loga20": {
+      "ic_mean": -0.000147,
+      "t": -0.01,
+      "n": 35
+     },
+     "maxret20": {
+      "ic_mean": -0.033524,
+      "t": -0.97,
+      "n": 35
+     }
+    },
+    "adj_factor": {
+     "ret20": {
+      "ic_mean": -0.045192,
+      "t": -1.08,
+      "n": 35
+     },
+     "vol20": {
+      "ic_mean": -0.044207,
+      "t": -0.99,
+      "n": 35
+     },
+     "amihud20": {
+      "ic_mean": -0.028781,
+      "t": -1.06,
+      "n": 35
+     },
+     "loga20": {
+      "ic_mean": -0.000147,
+      "t": -0.01,
+      "n": 35
+     },
+     "maxret20": {
+      "ic_mean": -0.033547,
+      "t": -0.97,
+      "n": 35
+     }
+    },
+    "raw_flag_excluded": {
+     "ret20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 1
+     },
+     "vol20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 1
+     },
+     "amihud20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 1
+     },
+     "loga20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 1
+     },
+     "maxret20": {
+      "ic_mean": null,
+      "t": null,
+      "n": 1
+     }
+    }
+   },
+   "composite_ic": {
+    "S5_all": {
+     "ic_mean": 0.030342,
+     "t": 1.08,
+     "n": 35
+    },
+    "S4_no_amihud": {
+     "ic_mean": 0.042565,
+     "t": 1.28,
+     "n": 35
+    },
+    "S4_no_loga": {
+     "ic_mean": 0.039006,
+     "t": 1.23,
+     "n": 35
+    },
+    "S3_core": {
+     "ic_mean": 0.048669,
+     "t": 1.36,
+     "n": 35
+    },
+    "S2_vol_max": {
+     "ic_mean": 0.040801,
+     "t": 1.0,
+     "n": 35
+    }
+   },
+   "composite_ic_jump_excluded": {
+    "S5_all": {
+     "ic_mean": null,
+     "t": null,
+     "n": 1
+    },
+    "S4_no_amihud": {
+     "ic_mean": null,
+     "t": null,
+     "n": 1
+    },
+    "S4_no_loga": {
+     "ic_mean": null,
+     "t": null,
+     "n": 1
+    },
+    "S3_core": {
+     "ic_mean": null,
+     "t": null,
+     "n": 1
+    },
+    "S2_vol_max": {
+     "ic_mean": null,
+     "t": null,
+     "n": 1
+    }
+   },
+   "cross_sections": 35,
+   "avg_cross_section": 205.0,
+   "flagged_share_mean": 0.1133
+  },
+  "none": {
+   "ic": {
+    "raw_factor": {
+     "ret20": {
+      "ic_mean": -0.060687,
+      "t": -3.12,
+      "n": 112
+     },
+     "vol20": {
+      "ic_mean": -0.054886,
+      "t": -3.1,
+      "n": 112
+     },
+     "amihud20": {
+      "ic_mean": -0.005885,
+      "t": -0.32,
+      "n": 112
+     },
+     "loga20": {
+      "ic_mean": -0.018784,
+      "t": -1.12,
+      "n": 112
+     },
+     "maxret20": {
+      "ic_mean": -0.05372,
+      "t": -3.99,
+      "n": 112
+     }
+    },
+    "adj_factor": {
+     "ret20": {
+      "ic_mean": -0.060931,
+      "t": -3.08,
+      "n": 112
+     },
+     "vol20": {
+      "ic_mean": -0.054787,
+      "t": -3.03,
+      "n": 112
+     },
+     "amihud20": {
+      "ic_mean": -0.00561,
+      "t": -0.31,
+      "n": 112
+     },
+     "loga20": {
+      "ic_mean": -0.018784,
+      "t": -1.12,
+      "n": 112
+     },
+     "maxret20": {
+      "ic_mean": -0.053635,
+      "t": -3.99,
+      "n": 112
+     }
+    },
+    "raw_flag_excluded": {
+     "ret20": {
+      "ic_mean": -0.0614,
+      "t": -3.1,
+      "n": 112
+     },
+     "vol20": {
+      "ic_mean": -0.052266,
+      "t": -2.94,
+      "n": 112
+     },
+     "amihud20": {
+      "ic_mean": -0.004957,
+      "t": -0.26,
+      "n": 112
+     },
+     "loga20": {
+      "ic_mean": -0.01624,
+      "t": -0.95,
+      "n": 112
+     },
+     "maxret20": {
+      "ic_mean": -0.051367,
+      "t": -4.06,
+      "n": 112
+     }
+    }
+   },
+   "composite_ic": {
+    "S5_all": {
+     "ic_mean": 0.054002,
+     "t": 3.42,
+     "n": 112
+    },
+    "S4_no_amihud": {
+     "ic_mean": 0.065438,
+     "t": 4.28,
+     "n": 112
+    },
+    "S4_no_loga": {
+     "ic_mean": 0.061938,
+     "t": 4.02,
+     "n": 112
+    },
+    "S3_core": {
+     "ic_mean": 0.070672,
+     "t": 4.67,
+     "n": 112
+    },
+    "S2_vol_max": {
+     "ic_mean": 0.056738,
+     "t": 3.57,
+     "n": 112
+    }
+   },
+   "composite_ic_jump_excluded": {
+    "S5_all": {
+     "ic_mean": 0.052083,
+     "t": 3.32,
+     "n": 112
+    },
+    "S4_no_amihud": {
+     "ic_mean": 0.063921,
+     "t": 4.3,
+     "n": 112
+    },
+    "S4_no_loga": {
+     "ic_mean": 0.060916,
+     "t": 4.05,
+     "n": 112
+    },
+    "S3_core": {
+     "ic_mean": 0.069675,
+     "t": 4.79,
+     "n": 112
+    },
+    "S2_vol_max": {
+     "ic_mean": 0.054747,
+     "t": 3.6,
+     "n": 112
+    }
+   },
+   "cross_sections": 112,
+   "avg_cross_section": 380.9,
+   "flagged_share_mean": 0.0558
+  }
+ },
+ "main_gate": "abs",
+ "liq_modes": [
+  "abs",
+  "median",
+  "none"
+ ],
+ "liq_abs": 100000000.0,
+ "range": {
+  "start": "20030101",
+  "end": "20050428"
+ },
+ "runtime_sec": 188.6,
+ "note": "标签统一用前复权价（收益必须先复权）；raw_factor=未复权价算因子；raw_flag_excluded=未复权且剔除窗口内含超涨跌停跳空的样本。主输出 ic 为 abs 口径；ic_by_gate 含全部口径。2026-10-07 起 _factors_at 与生产 compute_factors 逐字一致（原 amihud 分母固定 20 / 样本门槛 20 的偏差已修）。"
+}

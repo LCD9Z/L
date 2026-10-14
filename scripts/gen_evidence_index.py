@@ -25,7 +25,9 @@ from __future__ import annotations
 import argparse
 import glob
 import hashlib
+import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import List, Optional
@@ -34,20 +36,51 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 ROOT = Path(__file__).resolve().parent.parent
 REPORTS = ROOT / "reports"
-INDEX = ROOT / "EVIDENCE_INDEX.md"
+# ⚠️ 适配（主干）：索引在 reports/ 下，非仓库根目录（副本在根目录）
+INDEX = REPORTS / "EVIDENCE_INDEX.md"
 
 #: 索引文件的表头锚点（守卫测试据此定位表格）
 TABLE_HEADER = "| 证据文件 | 字节 | sha256 | 引用它的报告 | 生成脚本 |"
 
 
 def evidence_files() -> List[str]:
-    """被跟踪的证据 JSON（排除 `_` 前缀的临时探针）。"""
-    names = [
-        os.path.basename(p)
-        for p in glob.glob(str(REPORTS / "*.json"))
-        if not os.path.basename(p).startswith("_")
-    ]
-    return sorted(names)
+    """被跟踪的证据 JSON（排除 `_` 前缀的临时探针）。
+
+    ⚠️ 适配（主干，2026-10-12）两处：
+
+    1. **主干证据分布在子目录**（`reports/cross_decade/`、`reports/delisted/`），
+       而副本只在根目录 → 改为按相对路径扫描。
+    2. **改用 `git ls-files` 而非磁盘 glob** —— P008 §5.1 要求
+       「索引条数 == tracked 证据数」。实测磁盘 glob 得 84 份、
+       tracked 为 81 份（差 3 份为磁盘上未跟踪的文件）。
+       索引的语义是「**入库的证据**」，故以 git 为准。
+       若 git 不可用，回退到磁盘扫描。
+    """
+    rels: List[str] = []
+    try:
+        import subprocess
+        out = subprocess.run(
+            ["git", "ls-files", "reports/*.json"],
+            cwd=str(ROOT), capture_output=True, text=True, timeout=60)
+        if out.returncode == 0:
+            for line in out.stdout.splitlines():
+                line = line.strip().replace("\\", "/")
+                if not line.startswith("reports/") or not line.endswith(".json"):
+                    continue
+                rel = line[len("reports/"):]
+                # ⚠️ 不排除 `_` 前缀 —— 项目规则是「**已跟踪 = 证据快照**」。
+                # 实测有 3 份带 `_` 的被 tracked（`_intermediate/VERDICT_partial.json`
+                # 等），它们**既然入库就是证据**（其中 VERDICT_partial 是"H-CD 判定沿革"
+                # 的历史凭据）。排除它们会使索引条数（78）≠ tracked（81），
+                # 违反 P008 §5.1 的验收标准。
+                rels.append(rel)
+    except Exception:                                # noqa: BLE001
+        rels = []
+    if not rels:
+        # 回退：磁盘扫描（git 不可用时）。同样不排除 （见上）
+        for p in REPORTS.rglob("*.json"):
+            rels.append(p.relative_to(REPORTS).as_posix())
+    return sorted(set(rels))
 
 
 def _sha256_12(path: Path) -> str:
@@ -58,10 +91,80 @@ def _sha256_12(path: Path) -> str:
     return h.hexdigest()[:12]
 
 
-def citing_reports(name: str) -> List[str]:
-    """哪些 .md 报告引用了该证据文件。"""
+# --------------------------------------------------------------------------
+# 成本口径待核（印花税分段生效日）
+# --------------------------------------------------------------------------
+
+#: 印花税分段生效日（`backtest_engine.STAMP_DUTY_CHANGE_DATE`）
+STAMP_DUTY_CUT = "20230828"
+
+_DATE_RE = re.compile(r"(?<!\d)(20\d{2})-?(\d{2})-?(\d{2})(?!\d)")
+
+
+def _crosses_stamp_change(text: str) -> bool:
+    """文本内的日期区间是否**跨过** `2023-08-28`（含校验，滤掉数字串误配）。
+
+    ⚠️ 单纯「含 8 位数字」会误判：实测 `20002493`（月 24 非法）曾被当成日期。
+    故必须校验 月 ∈ 1..12、日 ∈ 1..31。
+    """
+    ds = set()
+    for m in _DATE_RE.finditer(text):
+        y, mo, d = m.groups()
+        if 1 <= int(mo) <= 12 and 1 <= int(d) <= 31:
+            ds.add(y + mo + d)
+    if not ds:
+        return False
+    return min(ds) < STAMP_DUTY_CUT <= max(ds)
+
+
+def stamp_duty_stale(names: List[str]) -> List[str]:
+    """**组合/回测类**产物中，窗口跨 `2023-08-28` 且**尚未重算**的证据。
+
+    判据（机械可复算）：
+      ① 产物含 `windows` 键 —— 即**组合/回测类**；
+         IC / 因子研究类（键为 `source`/`stocks`/`cross_sections`…）**无交易成本**，排除。
+      ② 其日期区间**跨过** `2023-08-28`。
+
+    背景：`backtest_engine._stamp_rate` 的分段判定曾因
+    `str(trade_date) >= str(change)`（`'-' < '0'` ⇒ **恒真**）**完全失效**，
+    于 `8b3cba8`（2026-10-13）修复。**修复后未重算**这些产物 ——
+    它们处于「**新代码 vs 旧数字**」状态，引用前必须知道。
+
+    ⚠️ 这是**机械判据**，不是「已核实每个都真的发生了印花税」；
+    它回答的是「**窗口是否跨过生效日且属回测类**」。
+    重算完成后，本函数自然返回空列表 —— **无需手工维护清单**。
+    """
     out: List[str] = []
-    for p in sorted(glob.glob(str(ROOT / "*.md"))):
+    for name in names:
+        p = REPORTS / name
+        if not p.exists():
+            continue
+        try:
+            text = p.read_text(encoding="utf-8", errors="replace")
+            data = json.loads(text)
+        except (OSError, ValueError):
+            continue
+        if not isinstance(data, dict) or "windows" not in data:
+            continue
+        if _crosses_stamp_change(text):
+            out.append(name)
+    return out
+
+
+def citing_reports(name: str) -> List[str]:
+    """哪些 .md 报告引用了该证据文件。
+
+    ⚠️ 适配（主干）：`name` 现为**相对路径**（如 `cross_decade/W1.json`），
+    而报告里多写**裸文件名**（`W1.json`）→ 用 basename 匹配，
+    否则子目录证据的「引用报告」列会全空。
+    """
+    base_name = os.path.basename(name)
+    out: List[str] = []
+    # ⚠️ 适配（主干）：报告不只在根目录，`reports/` 下也有 9 份
+    candidates = sorted(glob.glob(str(ROOT / "*.md"))) + sorted(
+        glob.glob(str(REPORTS / "**" / "*.md"), recursive=True)
+    )
+    for p in candidates:
         base = os.path.basename(p)
         if base in ("README.md", "EVIDENCE_INDEX.md"):
             continue
@@ -69,35 +172,79 @@ def citing_reports(name: str) -> List[str]:
             text = Path(p).read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        if name in text:
-            out.append(base)
+        if base_name in text or name in text:
+            rel = os.path.relpath(p, ROOT).replace("\\", "/")
+            if rel not in out:
+                out.append(rel)
     return out
 
 
 def generating_scripts(name: str) -> List[str]:
     """哪些脚本提到该文件名（多为 `--out` 缺省或文档串）。"""
+    base_name = os.path.basename(name)
     out: List[str] = []
     for p in sorted(glob.glob(str(ROOT / "scripts" / "*.py"))) + sorted(
-        glob.glob(str(ROOT / "*.py"))
-    ):
+        glob.glob(str(ROOT / "scripts" / "**" / "*.py"), recursive=True)
+    ) + sorted(glob.glob(str(ROOT / "*.py"))):
         base = os.path.basename(p)
         try:
             text = Path(p).read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        if name in text:
-            out.append(base)
+        if base_name in text or name in text:
+            if base not in out:
+                out.append(base)
     return out
+
+
+def _preserved_preamble() -> List[str]:
+    """保留主干原有的「为什么有这个文件」历史说明段（P008 §4.3）。
+
+    该段记录了 2026-10-02 独立审计发现的动因（`.gitignore` 曾忽略整个 `reports/`
+    → 2026-09-19 后全部实验原始 JSON 从未入库）。**自动生成不得覆盖它** ——
+    否则会丢掉「这个索引为什么存在」的历史。
+
+    ⚠️ 适配（主干）：副本无此段，是主干独有内容。
+    """
+    if not INDEX.exists():
+        return []
+    try:
+        text = INDEX.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    lines = text.splitlines()
+    start = next((i for i, ln in enumerate(lines)
+                  if "为什么有这个文件" in ln), None)
+    if start is None:
+        return []
+    # 从「为什么有这个文件」所在行开始，向下收集到**下一个 `---` / `##` 标题**为止。
+    # ⚠️ 初版从标题行往下、遇空行即 break → 只提取到 1 行就丢掉了整段
+    #   （2026-10-12 实测覆盖了主干的历史说明段，靠备份才发现）。
+    block: List[str] = []
+    for ln in lines[start:]:
+        if ln.strip().startswith("---") or ln.startswith("## "):
+            break
+        block.append(ln)
+    while block and block[-1].strip() == "":
+        block.pop()
+    return block + [""]
 
 
 def build_index() -> str:
     files = evidence_files()
+    stale = set(stamp_duty_stale(files))
     lines: List[str] = [
         "# 证据索引（EVIDENCE_INDEX）",
         "",
         "> **自动生成** —— 由 `scripts/gen_evidence_index.py` 产出，**请勿手改**。",
         "> 重新生成：`python scripts/gen_evidence_index.py`",
         "",
+    ]
+    # P008 §4.3：主干独有的历史说明段必须保留
+    pre = _preserved_preamble()
+    if pre:
+        lines += pre
+    lines += [
         "## 这份索引解决什么",
         "",
         "报告里的每个数字都来自 `reports/*.json`。这些文件此前被 `.gitignore` 整体排除，",
@@ -130,7 +277,39 @@ def build_index() -> str:
         scripts = generating_scripts(name)
         cite_s = "<br>".join(cites) if cites else "（暂无报告直接引用）"
         scr_s = "<br>".join(f"`{s}`" for s in scripts[:3]) if scripts else "—"
-        lines.append(f"| `{name}` | {size:,} | `{digest}` | {cite_s} | {scr_s} |")
+        mark = " ⚠️" if name in stale else ""
+        lines.append(f"| `{name}`{mark} | {size:,} | `{digest}` | {cite_s} | {scr_s} |")
+
+    lines += [
+        "",
+        "---",
+        "",
+        "## ⚠️ 成本口径待核（窗口跨 `2023-08-28`）",
+        "",
+        "**判据（机械可复算，`stamp_duty_stale()`）**：产物含 `windows` 键",
+        "（＝**组合/回测类**；IC/因子研究类键为 `source`/`stocks`/`cross_sections`…，"
+        "**无交易成本**，已排除）**且**其日期区间**跨过** `2023-08-28`",
+        "（= `STAMP_DUTY_CHANGE_DATE`，**印花税分段生效日**）。",
+        "",
+        "**背景**：`backtest_engine._stamp_rate` 的分段判定曾因 "
+        "`str(trade_date) >= str(change)`（`'-' < '0'` ⇒ **恒真**）**完全失效** —— "
+        "2023-08-28 前的卖出一律按**新**税率 0.5‰ 计，**旧税率 1‰ 从未生效**。",
+        "已于 `8b3cba8`（2026-10-13）修复，**但修复后未重算下列产物** —— "
+        "它们处于「**新代码 vs 旧数字**」状态。",
+        "",
+        "**处置**：P006 A2 合并落定后由主干**统一重算**（此时代码/数据/口径三者才同时稳定）；"
+        "在此之前引用须显式标注，**不得静默当作现行成本口径**。",
+        "**方向预期**：修复 ⇒ 2023-08-28 前卖出成本 0.5‰→1‰ ⇒ 成本升、收益降 ⇒ "
+        "「**无 alpha**」结论**更稳、不翻转**。",
+        "",
+        f"**当前 {len(stale)} 份待核：**",
+        "",
+    ]
+    if stale:
+        for n in sorted(stale):
+            lines.append(f"- `{n}`")
+    else:
+        lines.append("（无 —— 说明受影响产物均已重算）")
 
     lines += [
         "",

@@ -1,0 +1,33 @@
+{
+ "windows": [
+  {
+   "oos_start": "2023-01-03",
+   "aligned": 895,
+   "assets": 374,
+   "verdict": "ALPHA_NOT_ESTABLISHED",
+   "statistical_verdict": "ALPHA_NOT_ESTABLISHED",
+   "alpha_status": "RELEASABLE",
+   "annualized_excess": -0.38767898416246854,
+   "t_stat": -2.637358022135562,
+   "p_value": 0.008355459409471244,
+   "ci_lower": -0.002685299264824932,
+   "ci_upper": -0.00039369031830369745,
+   "benchmark_return_pct": 40.15,
+   "trades": 854,
+   "win_rate_pct": 43.79,
+   "total_return_pct": -65.986,
+   "max_drawdown_pct": 69.779
+  }
+ ],
+ "args": {
+  "dataset": "D:/tdx_dataset_v2",
+  "max_stocks": 400,
+  "min_periods": 252,
+  "min_rows_asset": 504,
+  "windows": "2023-01-03",
+  "out": "reports/v2_ew_bench_20230103.json",
+  "survivorship_evidence": "D:/tdx_dataset_v2/evidence.json",
+  "benchmark": "D:/tdx_dataset_v2/benchmark_ew.csv",
+  "benchmark_meta": ""
+ }
+}

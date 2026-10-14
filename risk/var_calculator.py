@@ -133,9 +133,8 @@ class EnhancedVaRCalculator:
         var = self.calculate_var(returns, confidence)
         if var is None:
             return None, None
-        vals = self._clean_window(returns)
-        if vals is None:
-            return var, None
+        # var 非 None 已保证窗口合格；`or []` 仅为类型收窄（不改行为）
+        vals = self._clean_window(returns) or []
         tail = [v for v in vals if v < var]
         if not tail:
             return var, None

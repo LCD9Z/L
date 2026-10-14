@@ -141,6 +141,6 @@
    "n": 245
   }
  },
- "runtime_sec": 648.4,
+ "runtime_sec": 541.8,
  "note": "标签统一用前复权价（收益必须先复权）；raw_factor=未复权价算因子；raw_flag_excluded=未复权且剔除窗口内含超涨跌停跳空的样本。"
 }

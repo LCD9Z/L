@@ -36,7 +36,6 @@ LEGACY_COSTS_KWARGS: Dict[str, Any] = {
     "transfer_fee_rate": 0.0, "stamp_duty_change_date": "0001-01-01",
 }
 
-
 def _load_universe(dataset: str) -> Dict[str, List[str]]:
     with open(os.path.join(dataset, "pit_universe.json"), encoding="utf-8") as f:
         return json.load(f)["snapshots"]
@@ -100,6 +99,7 @@ def main() -> int:
     print("=" * 96)
 
     man = _load_manifest(dataset, args.max_stocks, args.min_rows_asset)
+    man = _load_manifest(dataset, args.max_stocks)
     print(f"股票池: {len(man['codes']):,} 只")
 
     print("[1/3] 一次性审计（sha256 + 全量行校验）...")
@@ -204,9 +204,15 @@ def main() -> int:
     print("  声明：本检查不构成策略有效性结论；数据存在幸存者偏差与不复权两项缺陷。")
 
     if args.out:
+        # 2026-10-14 A2 合并：主干侧原为裸 json.dump 结尾（含 10-06 增补的
+        # 「生效基准路径」benchmark 字段）；本侧纪律是 write_final（原子写）。
+        # 合并 = write_final 落盘 + 保留 benchmark 字段（基准口径留痕）。
         write_final(args.out, {"windows": rows, "cost_models": {
                 k: dict(vars(v)) for k, v in cost_models.items()},
-                "args": vars(args)})
+                "args": vars(args),
+                # 生效基准路径（2026-10-06 增补）：默认为 benchmark.csv 即沪深300
+                "benchmark": bench})
+        print(f"\n结果已写入: {args.out}")
     return 0
 
 

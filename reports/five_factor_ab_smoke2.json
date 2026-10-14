@@ -1,0 +1,64 @@
+{
+ "windows": [
+  {
+   "window": "2025-07-01",
+   "assets": 329,
+   "A_baseline": {
+    "total_return_pct": 15.299,
+    "max_drawdown_pct": 11.55,
+    "trades": 1026,
+    "win_rate_pct": 44.74,
+    "annualized_excess": 0.015234561817129613,
+    "t_stat": 0.09651058580351855,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "B_fivefactor": {
+    "total_return_pct": -9.274,
+    "max_drawdown_pct": 24.523,
+    "trades": 1091,
+    "win_rate_pct": 46.75,
+    "annualized_excess": -0.19670799406705788,
+    "t_stat": -1.4658299776747286,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "delta_excess_pp": -21.19
+  },
+  {
+   "window": "2025-01-02",
+   "assets": 332,
+   "A_baseline": {
+    "total_return_pct": 16.422,
+    "max_drawdown_pct": 13.339,
+    "trades": 1409,
+    "win_rate_pct": 44.64,
+    "annualized_excess": -0.10499972190737125,
+    "t_stat": -0.762531256183086,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "B_fivefactor": {
+    "total_return_pct": 5.618,
+    "max_drawdown_pct": 21.888,
+    "trades": 1551,
+    "win_rate_pct": 48.29,
+    "annualized_excess": -0.16724105352817226,
+    "t_stat": -1.3266472679204095,
+    "verdict": "ALPHA_NOT_ESTABLISHED"
+   },
+   "delta_excess_pp": -6.22
+  }
+ ],
+ "args": {
+  "dataset": "D:/tdx_dataset_v2",
+  "max_stocks": 400,
+  "min_rows": 504,
+  "top_n": 20,
+  "position_pct": 0.05,
+  "horizon": 5,
+  "windows": "2025-07-01,2025-01-02",
+  "benchmark": "",
+  "survivorship_evidence": "D:/tdx_dataset_v2/evidence.json",
+  "out": "reports/five_factor_ab_smoke2.json"
+ },
+ "prereg": "FIVE_FACTOR_PREREG.md",
+ "runtime_sec": 953.2
+}
