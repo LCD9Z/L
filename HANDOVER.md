@@ -970,3 +970,89 @@ CSV 中该列一直有值（认证字段，抽样 195,472 行全部非空）。
 - 8 份 `1.0` 的事前登记**均未执行**（状态「待执行」）
 - `1.0` 的 `HANDOVER.md`/`WORKLOG.md` 版本未吸收（避免覆盖本副本更新内容）
 - `tdx_native` 需本机通达信客户端更新 `.day` 文件才能实跑
+
+---
+
+# 附：2026-10-14 收尾状态 —— PIT 快照 L3 收官 + P010 跨侧闭环
+
+> **写入时 HEAD**：`ccf1cec`（**以 `git log` 实际为准**）。本附按「7 点交接要求」组织，
+> 与上文（09-30 合并状态）叠加阅读；10-11~10-14 的逐日过程见 `.workbuddy/memory/2026-10-1*.md`。
+
+## 1. 项目目标与进度
+
+**主线（10-11~10-14）**：PIT 快照体系 L1/L2/L3 三层落地，其中 L3 全市场回填收官。
+**验收标准（P3 §4，事前固定）与结果**：
+
+| # | 标准 | 结果 |
+|:--:|---|---|
+| 1 | 退出码 0 / n_stocks≈5,667 / n_failed_codes=0 | ⚠️ 主跑退出码 **2**（601718 真截断，跑内全量恢复）；n_failed_codes=0 ✓；n_stocks=5,386=5,667−281（281 只源无覆盖，逐只定性） |
+| 2 | `--rebuild-norm` 层间缺口 0 | ✅ 退出码 0，双向缺口 0（raw 5,386 = norm 5,386） |
+| 3 | ingest_log 如实留痕 | ✅ FAIL/OK 双记录 |
+| 4 | 对账 impossible=0 | ✅ n=60（P2 为 24）；**性质=逻辑一致性检查**（非统计代表性） |
+| 5 | CI 六项全绿 | ✅ 6/6（pytest 1,163 项） |
+
+**数据现状**：`D:/pit_snapshots` raw 11,060,152 行 / 5,386 只；norm 1:1 对齐；
+281 只北交所 920 段 baostock 源不覆盖（本地 tdx 有数据；主干侧 tdx 实测 350 只可覆盖）
+→ 清单 `meta/l3_zero_data_codes_2026-10-13.txt`，`--resume` 经边车排除（退出码 0）。
+
+**跨侧状态**：P010（请求国内版独立评审）已闭环——主干四条建议全部采纳并落实
+（`ccf1cec`），主干巡检 08:01 独立复现通过；**双方跨侧待办 0**；飞书群因租户策略
+21001 瘫痪（**需人工重新授权**），信箱/台账通道正常。
+
+## 2. 代码与仓库
+
+- 仓库：`https://github.com/LCD9Z/L.git`（私有），分支 `main`；HEAD `ccf1cec`。
+- 本批新增：`scripts/_study_common.py`（研究脚本共享 helper）·
+  `scripts/_audit_l3_tail_gap.py`（零数据代码审计）· `tests/test_study_common.py` ·
+  `tests/test_data_contracts_num.py` · `tests/test_mailbox_integrity.py`。
+- **临时硬编码**：`scripts/run_pit_snapshot_ingest.py` 的 `_L3_SOCKET_TIMEOUT_S=120`
+  （挂起防护，P3 §5 有实测依据）；无其他。
+- **TODO/未落地**：920 段补数（换 tdx 源）· 审计 P3 同构 5 组参数化 ·
+  L3 首个消费者前的流式读取已备好（`iter_normalized`），消费者尚未出现。
+
+## 3. 环境与依赖
+
+- 采集/对账：**系统 Python 3.13.15**（`baostock 0.9.3`；隔离 venv 无 baostock，勿用错）。
+- 质量门禁：`run_ci.py` 6 项（syntax/ruff/mypy/compat/pytest/credentials）；
+  ruff/mypy 走 `~/.workbuddy/binaries/python/envs/default/` 独立可执行文件。
+- 数据根：`D:/pit_snapshots`（快照库）· universe `D:/tdx_dataset_v3`；
+  baostock 端点只认 `sh./sz.` 前缀（`bj.` 报 10004011）。
+
+## 4. 设计与文档
+
+- 设计：`PIT_SNAPSHOT_DESIGN.md`；阶段报告：P0 / P2（对账）/ **P3（回填收官+韧性）**；
+  证据索引 `EVIDENCE_INDEX.md`（58 份，由 `scripts/gen_evidence_index.py` 生成，
+  守卫测试强制新证据必须登记）。
+- 跨侧协议：`_AI协作信箱/README_协议.md`（P009 收敛规则等第十一节）· 台账 1,452 行。
+
+## 5. 测试与已知缺陷
+
+- **测试**：pytest 1,163 项 / CI 6/6；关键守卫：挂起超时顺序、零数据双形态、
+  边车 resume 排除、层间双向缺口、等价性（_study_common）、行尾 LF、证据索引覆盖。
+- **已知缺陷/限制（逐条）**：
+  1. L3 缺 281 只 920 段（baostock 源不覆盖）——补数方案=换 tdx 源，未排期；
+  2. `bs_symbol` 对 universe 外号段显式抛错（4/8 段）——bounded by 边车记账，非缺陷；
+  3. 审计 P3 同构 5 组未收敛（LLM 输入，须专项冒烟）——缓做；
+  4. 飞书通道 21001——通道层，待人工。
+
+## 6. 踩坑记录与高风险模块
+
+- **挂起不抛异常**（08:53 卡死 2h）→ `socket.setdefaulttimeout(120s)` 落入重试通道；
+  全量回填生产检验 8 次网络错误全部恢复。
+- **nohup 后台进程随工具壳层退出被静默 kill** → 长跑必须用受管后台任务。
+- **Python `write_text` 在 Windows 文本模式写 CRLF**（832 处，被行尾守卫抓住）→
+  跨文件改写必须 `write_bytes` 或显式 `newline=""`。
+- **stdout 走管道是块缓冲** → 长跑进度看落盘文件增长，不看 tee 日志。
+- **高风险模块**：`_fetch_l3`（backfill 主路径，改动影响 resume 语义）·
+  `pit/pit_snapshot_store.py`（层语义：只追加不改写）· `real_alpha_pipeline.load_certified_csv`
+  （认证加载，全研究脚本的地基）。
+
+## 7. 剩余任务与预估工时
+
+| # | 任务 | 预估 | 前置 |
+|:--:|---|---|---|
+| 1 | 920 段补数（tdx/pytdx 源接入 + 对账） | 2~3 人日 | 源评估；口径与 L3 对齐 |
+| 2 | 审计 P3 同构收敛（generate_prompt×4 等 5 组） | 1~1.5 人日 | LLM 输入冒烟回归 |
+| 3 | 9 个研究脚本的端到端等价回归（P2 收敛后） | 0.5 人日 | 需全量数据集 |
+| 4 | P006 两库 git 历史收敛 | — | **球在主干**（待对方确认） |
+| 5 | 飞书群重新授权 | — | **人工**（租户数据安全策略） |
