@@ -25,7 +25,9 @@ from __future__ import annotations
 import argparse
 import glob
 import hashlib
+import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import List, Optional
@@ -87,6 +89,66 @@ def _sha256_12(path: Path) -> str:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()[:12]
+
+
+# --------------------------------------------------------------------------
+# 成本口径待核（印花税分段生效日）
+# --------------------------------------------------------------------------
+
+#: 印花税分段生效日（`backtest_engine.STAMP_DUTY_CHANGE_DATE`）
+STAMP_DUTY_CUT = "20230828"
+
+_DATE_RE = re.compile(r"(?<!\d)(20\d{2})-?(\d{2})-?(\d{2})(?!\d)")
+
+
+def _crosses_stamp_change(text: str) -> bool:
+    """文本内的日期区间是否**跨过** `2023-08-28`（含校验，滤掉数字串误配）。
+
+    ⚠️ 单纯「含 8 位数字」会误判：实测 `20002493`（月 24 非法）曾被当成日期。
+    故必须校验 月 ∈ 1..12、日 ∈ 1..31。
+    """
+    ds = set()
+    for m in _DATE_RE.finditer(text):
+        y, mo, d = m.groups()
+        if 1 <= int(mo) <= 12 and 1 <= int(d) <= 31:
+            ds.add(y + mo + d)
+    if not ds:
+        return False
+    return min(ds) < STAMP_DUTY_CUT <= max(ds)
+
+
+def stamp_duty_stale(names: List[str]) -> List[str]:
+    """**组合/回测类**产物中，窗口跨 `2023-08-28` 且**尚未重算**的证据。
+
+    判据（机械可复算）：
+      ① 产物含 `windows` 键 —— 即**组合/回测类**；
+         IC / 因子研究类（键为 `source`/`stocks`/`cross_sections`…）**无交易成本**，排除。
+      ② 其日期区间**跨过** `2023-08-28`。
+
+    背景：`backtest_engine._stamp_rate` 的分段判定曾因
+    `str(trade_date) >= str(change)`（`'-' < '0'` ⇒ **恒真**）**完全失效**，
+    于 `8b3cba8`（2026-10-13）修复。**修复后未重算**这些产物 ——
+    它们处于「**新代码 vs 旧数字**」状态，引用前必须知道。
+
+    ⚠️ 这是**机械判据**，不是「已核实每个都真的发生了印花税」；
+    它回答的是「**窗口是否跨过生效日且属回测类**」。
+    重算完成后，本函数自然返回空列表 —— **无需手工维护清单**。
+    """
+    out: List[str] = []
+    for name in names:
+        p = REPORTS / name
+        if not p.exists():
+            continue
+        try:
+            text = p.read_text(encoding="utf-8", errors="replace")
+            data = json.loads(text)
+        except (OSError, ValueError):
+            continue
+        if not isinstance(data, dict) or "windows" not in data:
+            continue
+        if _crosses_stamp_change(text):
+            out.append(name)
+    return out
 
 
 def citing_reports(name: str) -> List[str]:
@@ -170,6 +232,7 @@ def _preserved_preamble() -> List[str]:
 
 def build_index() -> str:
     files = evidence_files()
+    stale = set(stamp_duty_stale(files))
     lines: List[str] = [
         "# 证据索引（EVIDENCE_INDEX）",
         "",
@@ -214,7 +277,39 @@ def build_index() -> str:
         scripts = generating_scripts(name)
         cite_s = "<br>".join(cites) if cites else "（暂无报告直接引用）"
         scr_s = "<br>".join(f"`{s}`" for s in scripts[:3]) if scripts else "—"
-        lines.append(f"| `{name}` | {size:,} | `{digest}` | {cite_s} | {scr_s} |")
+        mark = " ⚠️" if name in stale else ""
+        lines.append(f"| `{name}`{mark} | {size:,} | `{digest}` | {cite_s} | {scr_s} |")
+
+    lines += [
+        "",
+        "---",
+        "",
+        "## ⚠️ 成本口径待核（窗口跨 `2023-08-28`）",
+        "",
+        "**判据（机械可复算，`stamp_duty_stale()`）**：产物含 `windows` 键",
+        "（＝**组合/回测类**；IC/因子研究类键为 `source`/`stocks`/`cross_sections`…，"
+        "**无交易成本**，已排除）**且**其日期区间**跨过** `2023-08-28`",
+        "（= `STAMP_DUTY_CHANGE_DATE`，**印花税分段生效日**）。",
+        "",
+        "**背景**：`backtest_engine._stamp_rate` 的分段判定曾因 "
+        "`str(trade_date) >= str(change)`（`'-' < '0'` ⇒ **恒真**）**完全失效** —— "
+        "2023-08-28 前的卖出一律按**新**税率 0.5‰ 计，**旧税率 1‰ 从未生效**。",
+        "已于 `8b3cba8`（2026-10-13）修复，**但修复后未重算下列产物** —— "
+        "它们处于「**新代码 vs 旧数字**」状态。",
+        "",
+        "**处置**：P006 A2 合并落定后由主干**统一重算**（此时代码/数据/口径三者才同时稳定）；"
+        "在此之前引用须显式标注，**不得静默当作现行成本口径**。",
+        "**方向预期**：修复 ⇒ 2023-08-28 前卖出成本 0.5‰→1‰ ⇒ 成本升、收益降 ⇒ "
+        "「**无 alpha**」结论**更稳、不翻转**。",
+        "",
+        f"**当前 {len(stale)} 份待核：**",
+        "",
+    ]
+    if stale:
+        for n in sorted(stale):
+            lines.append(f"- `{n}`")
+    else:
+        lines.append("（无 —— 说明受影响产物均已重算）")
 
     lines += [
         "",

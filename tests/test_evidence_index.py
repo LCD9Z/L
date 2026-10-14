@@ -134,3 +134,87 @@ def test_git_actually_tracks_evidence_and_ignores_scratch():
     assert not ignored("reports/ic_diagnosis.json"), "证据 JSON 被忽略了"
     assert ignored("reports/_ci.log"), "日志未被忽略"
     assert ignored("reports/ic_diagnosis.json.partial"), ".partial 未被忽略"
+
+
+# --------------------------------------------------------------------------
+# 成本口径待核（印花税分段生效日 2023-08-28）
+# --------------------------------------------------------------------------
+
+
+def _stamp_stale_by_rule() -> list[str]:
+    """用**生成器的判据**独立复算（不读索引，避免自证）。"""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "gen_evidence_index", ROOT / "scripts" / "gen_evidence_index.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return sorted(mod.stamp_duty_stale(_tracked_evidence()))
+
+
+def _index_section(name: str) -> str:
+    """取索引中某个 `## ` 章节的正文（到下一个 `## ` 为止）。"""
+    text = INDEX.read_text(encoding="utf-8")
+    parts = text.split(f"## {name}", 1)
+    assert len(parts) == 2, f"索引缺少章节「{name}」"
+    body = parts[1]
+    end = body.find("\n## ")
+    return body if end == -1 else body[:end]
+
+
+def test_stamp_duty_stale_marked_rows_match_section_and_rule():
+    """⚠️ 三者必须一致：**表中 ⚠️ 标记行** == **专章清单** == **判据复算**。
+
+    防三类漂移：
+    - 索引手改后与判据不符（应重跑 `gen_evidence_index.py`）
+    - 表格标了但专章漏列（或反之）
+    - 判据被改宽/改窄而索引未随动
+    """
+    text = INDEX.read_text(encoding="utf-8")
+    marked = sorted(
+        ln.split("`")[1]
+        for ln in text.splitlines()
+        if ln.startswith("| `") and "⚠️" in ln and ln.count("`") >= 2
+    )
+    listed = sorted(
+        ln.split("`")[1]
+        for ln in _index_section("⚠️ 成本口径待核").splitlines()
+        if ln.startswith("- `") and ln.count("`") >= 2
+    )
+    by_rule = _stamp_stale_by_rule()
+    assert marked == listed, f"⚠️ 标记行与专章清单不一致：{marked} vs {listed}"
+    assert marked == by_rule, (
+        "索引标注与机械判据不一致（请重跑 scripts/gen_evidence_index.py）：\n"
+        f"  索引 {marked}\n  判据 {by_rule}"
+    )
+
+
+def test_stamp_duty_stale_excludes_costless_studies():
+    """**无交易成本**的 IC / 因子研究不得被标注。
+
+    判据必须同时要求「含 `windows` 键（＝组合/回测类）」——
+    若放宽成**纯日期匹配**，`cross_decade/W1–W5` 等跨年代 IC 产物会被误标
+    （实测纯日期规则命中 24 份，其中 11 份是 IC/可行性研究）。
+    """
+    stale = set(_stamp_stale_by_rule())
+    for n in ("cross_decade/W1.json", "cross_decade/W3.json",
+              "tdx_ic_full.json"):
+        assert n not in stale, (
+            f"{n} 属 IC/因子研究（无 `windows` 键、无交易成本），"
+            f"不应被判为「成本口径待核」——判据是否被放宽成纯日期匹配？"
+        )
+
+
+def test_stamp_duty_stale_is_expected_set_today():
+    """今日的已知待核集合（**重算后应清空**，届时改本断言）。"""
+    expected = {
+        "ab_n3_batchA.json", "cost_model_check.json", "f4_p1.json",
+        "five_factor_ab_main.json", "impact_p3.json", "rs_main.json",
+        "ss_p1.json", "t1b_p1.json", "tc_t1_p2.json", "tc_t2_p1.json",
+        "v2_c20_v1_p2.json", "v2_ew_bench_part1.json", "v2_p1.json",
+    }
+    got = set(_stamp_stale_by_rule())
+    assert got == expected, (
+        f"待核集合变化：\n  新增 {sorted(got - expected)}\n"
+        f"  减少 {sorted(expected - got)}\n"
+        f"（若为「已重算」导致的减少，请同步收窄本断言）"
+    )
