@@ -38,6 +38,20 @@
 baostock 与通达信**逐位相同**（`sh600007@2026-10-08` 均 4,243,639），
 故**不需要换算** —— 直接用 baostock 原值即与主干口径一致。
 
+## 连接级超时（2026-10-14 补）
+
+⚠️ 此前本脚本**没有任何连接级超时**：baostock 偶发挂起（login / 取数）
+会让整个抓取**永久阻塞**，只能靠上层子进程超时兜底
+（P010 后由信箱巡检登记为「主干内部待决项」）。
+
+**修法**：在 `bs.login()` **之前**调用 `socket.setdefaulttimeout(args.timeout)`。
+**为什么必须在 login 之前**：`setdefaulttimeout` 只影响**其后新建**的 socket，
+而 baostock 的服务端连接正是在 `login()` 时建立的。
+
+**超时后行为**：`_fetch_segment` 的 `except Exception` 会捕获 `socket.timeout`
+→ 返回 `None` → 走既有的「退避重试」分支；重试仍失败则该只计入 `_failed.txt`，
+**重跑即续**（不会再有「静默挂住不结束」的形态）。
+
 用法::
 
     python scripts/fetch_baostock_xsrc.py --out D:/xs_baostock/klines \\
@@ -49,6 +63,7 @@ import argparse
 import csv
 import datetime as _dt
 import os
+import socket
 import sys
 import time
 from typing import Dict, List, Optional
@@ -140,9 +155,18 @@ def main() -> int:
     ap.add_argument("--shard", default="", help="分片 N/M")
     ap.add_argument("--retry", type=int, default=3)
     ap.add_argument("--backoff", type=float, default=20.0)
+    ap.add_argument("--timeout", type=float, default=30.0,
+                    help="连接级 socket 超时（秒）。⚠️ 2026-10-14 补："
+                         "此前**无**连接级超时，baostock 挂起会永久阻塞，"
+                         "仅靠调用方子进程超时兜底")
     args = ap.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
+    # ⚠️ 2026-10-14 补：**连接级** socket 超时。
+    # 须在 bs.login() **之前**设置 —— setdefaulttimeout 只影响其后新建的 socket，
+    # 而 baostock 的服务端连接在 login() 时建立。
+    # 见模块 docstring「连接级超时」节。
+    socket.setdefaulttimeout(args.timeout)
     import baostock as bs
     lg = bs.login()
     if lg.error_code != "0":
