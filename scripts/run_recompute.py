@@ -34,6 +34,12 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "reports" / "_recalc"
 PY = sys.executable
 
+#: 印花税分段生效日（与 `gen_evidence_index.STAMP_DUTY_CUT` 一致）。
+#: 窗口**起点**早于该日 ⇒ 窗口内交易跨越生效日 ⇒ 受印花税缺陷影响。
+#: ⚠️ 2026-10-15 实测：单窗口耗时 7~43 分钟（combo_study 5 组合 ≈ 43 min），
+#: 52 窗口全量需 30+ 小时 → 提供 `--crossing-only` 只跑受影响窗口（15 个，约 29%）。
+CROSSING_CUT = "2023-08-28"
+
 #: 副本侧 12 份（`gen_evidence_index.stamp_duty_stale` 规范集 ∩ 副本侧产物）
 COPY_TASKS: List[Dict[str, Any]] = [
     {"name": "combo_study_h20", "script": "scripts/run_combo_study.py",
@@ -126,10 +132,15 @@ def run_window(task: Dict[str, Any], window: str) -> int:
     return 0 if ok else 1
 
 
-def run_task(task: Dict[str, Any], resume: bool) -> int:
-    print(f"=== {task['name']}（{len(task['windows'])} 窗口）===", flush=True)
+def run_task(task: Dict[str, Any], resume: bool, crossing_only: bool = False) -> int:
+    wins = [w for w in task["windows"] if (not crossing_only or w < CROSSING_CUT)]
+    if crossing_only:
+        print(f"=== {task['name']}（跨线 {len(wins)}/{len(task['windows'])} 窗口）===",
+              flush=True)
+    else:
+        print(f"=== {task['name']}（{len(task['windows'])} 窗口）===", flush=True)
     fails = 0
-    for w in task["windows"]:
+    for w in wins:
         if resume and is_done(task, w):
             print(f"  ⏭ {task['name']} @ {w} 已完成，跳过", flush=True)
             continue
@@ -155,6 +166,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--batch", type=int, default=0, help="只跑指定批次号")
     ap.add_argument("--no-resume", action="store_true",
                     help="不跳过已完成窗口（默认跳过）")
+    ap.add_argument("--crossing-only", action="store_true",
+                    help=f"只跑窗口起点 < {CROSSING_CUT} 的窗口（受印花税缺陷影响者）")
     args = ap.parse_args(argv)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -179,7 +192,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     fails = 0
     for t in tasks:
-        fails += run_task(t, resume=not args.no_resume)
+        fails += run_task(t, resume=not args.no_resume,
+                        crossing_only=args.crossing_only)
     print(f"\n{progress()}　失败窗口数：{fails}")
     return 1 if fails else 0
 
