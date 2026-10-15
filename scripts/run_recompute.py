@@ -103,6 +103,73 @@ BATCHES: Dict[int, List[str]] = {
     7: ["impact_cost"],
 }
 
+#: 主侧 12 份（命令由主干 2026-10-15 晚逐份反推 args 确认，回应计划 §四 请求）。
+#: P013 裁定口径：**只跑跨线窗口**（`--crossing-only`），产物作 D1 印花税影响量
+#: 独立证据，**不并入**正式报告；A 档非跨线窗口不补跑。
+#: `v2_ew_bench_part1` 生成脚本确认为 `run_tdx_rolling_eval.py`
+#: （args 的 min_periods/min_rows_asset/benchmark_meta/skip_audit 形状匹配）。
+MAIN_TASKS: List[Dict[str, Any]] = [
+    {"name": "ab_n3_batchA", "script": "scripts/run_five_factor_ab.py",
+     "args": ["--dataset", "D:/tdx_dataset_v2", "--horizon", "20",
+              "--exclude-ret20-top", "0.2", "--exclude-jump", "--exclude-limitup",
+              "--skip-legacy-arms"],
+     "windows": ["2023-07-03", "2024-01-02"]},
+    {"name": "f4_p1", "script": "scripts/run_five_factor_ab.py",
+     "args": ["--dataset", "D:/tdx_dataset_v2",
+              "--survivorship-evidence", "D:/tdx_dataset_v2/evidence.json",
+              "--compare-factors", "ret20,vol20,loga20,maxret20"],
+     "windows": ["2023-07-03", "2024-01-02"]},
+    {"name": "five_factor_ab_main", "script": "scripts/run_five_factor_ab.py",
+     "args": ["--dataset", "D:/tdx_dataset_v2",
+              "--survivorship-evidence", "D:/tdx_dataset_v2/evidence.json"],
+     "windows": ["2023-07-03", "2024-01-02", "2024-07-01"]},
+    {"name": "impact_p3", "script": "scripts/run_five_factor_ab.py",
+     "args": ["--dataset", "D:/tdx_dataset_v2", "--horizon", "20",
+              "--survivorship-evidence", "D:/tdx_dataset_v2/evidence.json",
+              "--exclude-ret20-top", "0.2", "--impact-model"],
+     "windows": ["2023-07-03", "2024-07-01"]},
+    {"name": "rs_main", "script": "scripts/run_five_factor_ab.py",
+     "args": ["--dataset", "D:/tdx_dataset_v2",
+              "--survivorship-evidence", "D:/tdx_dataset_v2/evidence.json",
+              "--regime-switch"],
+     "windows": ["2023-07-03", "2024-01-02", "2024-07-01", "2025-01-02"]},
+    {"name": "ss_p1", "script": "scripts/run_five_factor_ab.py",
+     "args": ["--dataset", "D:/tdx_dataset_v2",
+              "--survivorship-evidence", "D:/tdx_dataset_v2/evidence.json",
+              "--style-switch"],
+     "windows": ["2023-07-03", "2024-01-02"]},
+    {"name": "t1b_p1", "script": "scripts/run_five_factor_ab.py",
+     "args": ["--dataset", "D:/tdx_dataset_v2", "--horizon", "60",
+              "--survivorship-evidence", "D:/tdx_dataset_v2/evidence.json",
+              "--exclude-ret20-top", "0.2"],
+     "windows": ["2023-07-03", "2024-01-02"]},
+    {"name": "tc_t1_p2", "script": "scripts/run_five_factor_ab.py",
+     "args": ["--dataset", "D:/tdx_dataset_v2", "--horizon", "20",
+              "--survivorship-evidence", "D:/tdx_dataset_v2/evidence.json",
+              "--exclude-ret20-top", "0.2"],
+     "windows": ["2023-07-03", "2024-01-02"]},
+    {"name": "tc_t2_p1", "script": "scripts/run_five_factor_ab.py",
+     "args": ["--dataset", "D:/tdx_dataset_v2",
+              "--survivorship-evidence", "D:/tdx_dataset_v2/evidence.json",
+              "--exclude-ret20-top", "0.2", "--max-participation", "0.05"],
+     "windows": ["2023-07-03", "2024-01-02"]},
+    {"name": "v2_c20_v1_p2", "script": "scripts/run_five_factor_ab.py",
+     "args": ["--dataset", "D:/tdx_dataset_v2",
+              "--survivorship-evidence", "D:/tdx_dataset_v2/evidence.json",
+              "--exclude-ret20-top", "0.2"],
+     "windows": ["2023-07-03", "2024-01-02", "2024-07-01"]},
+    {"name": "v2_ew_bench_part1", "script": "scripts/run_tdx_rolling_eval.py",
+     "args": ["--dataset", "D:/tdx_dataset_v2", "--max-stocks", "400",
+              "--min-rows-asset", "504",
+              "--benchmark", "D:/tdx_dataset_v2/benchmark_ew.csv", "--skip-audit"],
+     "windows": ["2023-07-03", "2024-01-02"]},
+    {"name": "v2_p1", "script": "scripts/run_five_factor_ab.py",
+     "args": ["--dataset", "D:/tdx_dataset_v2", "--horizon", "20",
+              "--survivorship-evidence", "D:/tdx_dataset_v2/evidence.json",
+              "--exclude-ret20-top", "0.2", "--exclude-jump"],
+     "windows": ["2023-07-03", "2024-01-02"]},
+]
+
 
 def out_path(task: Dict[str, Any], window: str) -> Path:
     return OUT_DIR / f"{task['name']}_{window}.json"
@@ -148,22 +215,23 @@ def run_task(task: Dict[str, Any], resume: bool, crossing_only: bool = False) ->
     return fails
 
 
-def progress() -> str:
+def progress(tasks: List[Dict[str, Any]], side: str) -> str:
     done = total = 0
-    for t in COPY_TASKS:
+    for t in tasks:
         for w in t["windows"]:
             total += 1
             done += is_done(t, w)
-    return f"副本侧进度：{done}/{total} 窗口"
+    label = "副本侧" if side == "copy" else "主侧"
+    return f"{label}进度：{done}/{total} 窗口"
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(description="成本口径重算驱动（方案③下半场）")
     ap.add_argument("--list", action="store_true", help="列出任务与进度")
-    ap.add_argument("--side", choices=["copy"], default="copy",
-                    help="产物侧别（当前仅副本侧；主侧待双方确认命令）")
+    ap.add_argument("--side", choices=["copy", "main"], default="copy",
+                    help="产物侧别（main = 主侧 12 份，命令已由 P013 配套确认）")
     ap.add_argument("--only", default="", help="只跑指定产物名")
-    ap.add_argument("--batch", type=int, default=0, help="只跑指定批次号")
+    ap.add_argument("--batch", type=int, default=0, help="只跑指定批次号（仅副本侧）")
     ap.add_argument("--no-resume", action="store_true",
                     help="不跳过已完成窗口（默认跳过）")
     ap.add_argument("--crossing-only", action="store_true",
@@ -171,20 +239,23 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = ap.parse_args(argv)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    all_tasks = COPY_TASKS if args.side == "copy" else MAIN_TASKS
 
     if args.list:
-        for t in COPY_TASKS:
+        for t in all_tasks:
             marks = "".join("✓" if is_done(t, w) else "·" for w in t["windows"])
             print(f"  {t['name']:34} [{marks}]  {t['script']}")
-        print(progress())
+        print(progress(all_tasks, args.side))
         return 0
 
-    tasks = COPY_TASKS
+    tasks = all_tasks
     if args.only:
         tasks = [t for t in tasks if t["name"] == args.only]
         if not tasks:
             raise SystemExit(f"未知产物名：{args.only}")
     if args.batch:
+        if args.side != "copy":
+            raise SystemExit("--batch 仅适用于副本侧（主侧按 --only 或全量）")
         names = BATCHES.get(args.batch)
         if names is None:
             raise SystemExit(f"未知批次：{args.batch}（可用 {sorted(BATCHES)}）")
@@ -194,7 +265,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     for t in tasks:
         fails += run_task(t, resume=not args.no_resume,
                         crossing_only=args.crossing_only)
-    print(f"\n{progress()}　失败窗口数：{fails}")
+    print(f"\n{progress(all_tasks, args.side)}　失败窗口数：{fails}")
     return 1 if fails else 0
 
 
