@@ -1415,3 +1415,14 @@ A2 合并时在 `mypy.ini` 显式登记的债务（主侧脚本类型推断松�
 | 执行 | `--side main --crossing-only`：12/12 跨线窗口（均 `2023-07-03`）成功，零失败，约 2 小时 |
 | 验收 | `check_recompute.py`：V1 结构缺失 0、V2 差异 12/12、**V3 方向异常 6 份 14 处**（收益上升，源自 A2 合并基线演进而非印花税）——已逐条登记于 COST_BASELINE 登记册 §六，归因排查列 07 篇 L9 |
 | 遗留 | 副本侧剩余 8 跨线窗口（tc_t0/tc_t2/rolling×6）待副本侧按 P013 执行 |
+
+### 19.10 L9 V3 方向异常归因收口（2026-10-16）
+
+| 项 | 内容 |
+|---|---|
+| 任务 | 查明 A2 合并后 6 份产物收益**上升**（与印花税修复方向相反）的根因 |
+| 方法 | 二分 diff `f293d40`（主干 A2 前）→ `8db1c65`（重算基线），对 6 份产物共用代码路径（`backtest_engine`/`portfolio_backtest`/`run_five_factor_ab`/`run_tdx_rolling_eval`/`real_alpha_pipeline`/`walk_forward`）逐文件审查 |
+| 根因 | **`0a81a5f`（09-26）修复「换手率分项静默失效」**：`load_certified_csv` 白名单漏 `turnover` → `score_history` 换手率分项恒为 0 → 候选池过线率 **6.65% → 18.71%**（近 3 倍）→ 策略从远窄于设计意图的池子选股 → 收益大幅上升 |
+| 验证 | ① `0a81a5f` 自身记录的量化影响（C5_V0 -7.46→+5.21，+12.67pp）与 V3 异常幅度吻合；② 共用 `A_baseline` 臂的 `tc_t1_p2` 与 `v2_p1` 数值变化逐位一致（-13.103→-9.055）；③ 对照组 `ss_p1`：SS_style_switch（不走 `score_history`）逐位不变，SS_inv_falsify（走 `score_history`）降 12pp——同一产物内两臂方向相反，锁定根因 |
+| 处置 | COST_BASELINE 册新增 §七 归因记录；07 篇 L9「6 份跨窗口结论冻结」解除，改为「基线演进已归因，跨窗口比较待非跨线窗口重算后统一引用」；非跨线窗口补跑由 P013 A/B 档一并裁定 |
+| 关联提交 | `0a81a5f`（根因）· `bfd4c52`（impact_stats，中性）· `a3a7f88`（ATR止损/weight_func，默认关闭）· `86956c8`（A2 合并新增参数，默认关闭） |
