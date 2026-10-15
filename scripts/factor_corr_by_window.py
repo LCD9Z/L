@@ -38,7 +38,8 @@ import math
 import os
 import sys
 import time
-from typing import Dict, List, Optional
+from typing import Dict, Optional, Tuple
+from typing import List
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -195,7 +196,7 @@ def main() -> int:
     print("\n  === 「4 个方向一致」因子之间的相关（跨窗口平均）===")
     consistent = ["ret20", "vol20", "loga20", "maxret20"]
     print("  " + "".join(f"{f[:7]:>10}" for f in consistent))
-    avg_mat = {}
+    avg_mat: Dict[Tuple[str, str], Optional[float]] = {}
     for a, b in PAIRS:
         vs = [out["windows"][t]["corr"].get(f"{a}|{b}")
               for t in out["windows"]]
@@ -207,8 +208,10 @@ def main() -> int:
             if a == b:
                 row += f"{1.0:>10.4f}"
             else:
-                key = (a, b) if (a, b) in avg_mat else (b, a)
-                v = avg_mat.get(key)
+                # 变量名避让：本函数他处已用 key: str，同名复用会被 mypy 判为
+                # 类型冲突（2026-10-15 债务清理）；重命名为 pair_key 不改逻辑。
+                pair_key = (a, b) if (a, b) in avg_mat else (b, a)
+                v = avg_mat.get(pair_key)
                 row += f"{v:>10.4f}" if v is not None else f"{'n/a':>10}"
         print(row)
 

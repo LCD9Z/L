@@ -224,6 +224,7 @@ def main() -> int:
         didx = {d: k for k, d in enumerate(dates)} if rebal is not None else None
         for tag, ws, we in WINDOWS:
             if rebal is not None:
+                assert didx is not None      # 与 rebal 同生（同一条三元表达式）
                 pairs = [(didx[d], d) for d in rebal if d in didx]
             else:
                 pairs = [(i, dates[i]) for i in range(0, len(dates), args.step)]
@@ -267,7 +268,7 @@ def main() -> int:
         # list 对象**，append 全进同一个列表，导致 5 个因子 IC 完全相同。
         # （2026-10-12 实测踩到：我曾为消 ruff C420 改成 dict.fromkeys，
         #  结果 5 因子 IC 全是 -0.0326/-4.34。）
-        got = {k: [] for k in FACTORS}
+        got: Dict[str, List[float]] = {k: [] for k in FACTORS}
         n_cs = 0
         for _d, slot in buckets[tag].items():
             y = slot["y"]

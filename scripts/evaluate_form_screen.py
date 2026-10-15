@@ -43,7 +43,7 @@ import json
 import math
 import os
 import sys
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -112,6 +112,7 @@ def form_values(bars: List[dict], i: int, lim: float) -> Optional[Dict[str, floa
     vma20 = _sma(vols[:-1], 20)
     if not ma20 or not vma20:
         return None
+    assert ma5 is not None and ma20 is not None    # _sma 返回 Optional；上方已排除空值
     h40, l40 = max(highs[i - 39:i + 1]), min(lows[i - 39:i + 1])
     h10, l10 = max(highs[i - 9:i + 1]), min(lows[i - 9:i + 1])
     if l40 <= 0 or l10 <= 0:
@@ -202,14 +203,14 @@ def run(vipdoc: str, events_cache: str, n_sections: int) -> Dict:
                      if k * step < len(cal)]
     print(f"截面日期 {len(section_dates)} 个：{section_dates[0]} … {section_dates[-1]}")
 
-    corr_acc = {f: {g: [] for g in FACTORS} for f in FORMS}
-    trig_acc = {k: [] for k in TRIGGERS}
+    corr_acc: Dict[str, Dict[str, List[float]]] = {f: {g: [] for g in FACTORS} for f in FORMS}
+    trig_acc: Dict[str, List[float]] = {k: [] for k in TRIGGERS}
     n_used = 0
     n_stock_used = []
 
     for D in section_dates:
-        cols = {f: [] for f in FACTORS}
-        fcols = {f: [] for f in FORMS}
+        cols: Dict[str, List[float]] = {f: [] for f in FACTORS}
+        fcols: Dict[str, List[float]] = {f: [] for f in FORMS}
         pair = []          # (f_index, rps120, close_ge_flag)
         trig = dict.fromkeys(TRIGGERS, 0)
         for c in cache:
@@ -252,7 +253,7 @@ def run(vipdoc: str, events_cache: str, n_sections: int) -> Dict:
         for k in TRIGGERS:
             trig_acc[k].append(trig[k] / len(cols["ret20"]))
 
-    result = {"n_sections_used": n_used,
+    result: Dict[str, Any] = {"n_sections_used": n_used,
               "n_stocks_per_section_avg":
                   (sum(n_stock_used) / len(n_stock_used)) if n_stock_used else 0,
               "section_dates": [section_dates[0], section_dates[-1]],

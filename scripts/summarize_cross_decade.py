@@ -19,6 +19,7 @@ import argparse
 import json
 import os
 import sys
+from typing import Any, Dict
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -68,7 +69,7 @@ def judge(rows):
     if n_win == 0:
         return {"verdict": "INCONCLUSIVE", "reason": "无有效窗口",
                 "n_windows": 0, "per_factor": {}}
-    per = {}
+    per: Dict[str, Dict[str, Any]] = {}
     for f in FACTORS:
         n_ok = sum(1 for _tag, _lab, d in rows
                    if consistency(d, MAIN_GATE, f)[2] is True)
@@ -190,8 +191,9 @@ def main() -> int:
     print("-" * 78)
     hist = os.path.join(args.dir, "..", "tdx_ic_full.json")
     if os.path.exists(hist):
-        with open(hist, encoding="utf-8") as f:
-            h = json.load(f)
+        # 变量名避让：本函数他处以 f 作因子名（str），同名复用会被 mypy 判冲突。
+        with open(hist, encoding="utf-8") as _fh:
+            h = json.load(_fh)
         for f_ in FACTORS:
             v = h["ic"]["adj_factor"][f_]
             print(f"  {f_:<10} IC {v['ic_mean']:+.6f}  t {v['t']:+.2f}")

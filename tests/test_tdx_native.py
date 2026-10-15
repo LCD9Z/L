@@ -592,8 +592,12 @@ def test_due_exits_notices_extended_suspended_position(tmp_path):
 def test_feishu_quiet_skips_when_no_exits(monkeypatch):
     """正常产出且无到期待卖 → 静默，不发消息（用户要求"有异常才推"）。"""
     sent = []
-    monkeypatch.setattr(run_daily, "_feishu_post",
-                        lambda w, c: sent.append(c) or True)
+    # 显式函数替代 lambda 技巧：`append` 返回 None，mypy 判 func-returns-value
+    def _capture(_w: str, _c: str) -> bool:
+        sent.append(_c)
+        return True
+
+    monkeypatch.setattr(run_daily, "_feishu_post", _capture)
     payload = {"as_of": "20260930", "top": [
         {"code": "600000", "name": "浦发银行", "score": 0.9,
          "ret20": -0.1}],
@@ -605,8 +609,12 @@ def test_feishu_quiet_skips_when_no_exits(monkeypatch):
 def test_feishu_pushes_when_exits_present(monkeypatch):
     """有到期待卖 → 必须推送，且卡片须含卖出段与逾期标注。"""
     sent = []
-    monkeypatch.setattr(run_daily, "_feishu_post",
-                        lambda w, c: sent.append(c) or True)
+    # 显式函数替代 lambda 技巧：`append` 返回 None，mypy 判 func-returns-value
+    def _capture(_w: str, _c: str) -> bool:
+        sent.append(_c)
+        return True
+
+    monkeypatch.setattr(run_daily, "_feishu_post", _capture)
     payload = {
         "as_of": "20260930",
         "top": [{"code": "600000", "name": "浦发银行",
@@ -627,8 +635,12 @@ def test_feishu_pushes_when_exits_present(monkeypatch):
 def test_feishu_top_limits_rows(monkeypatch):
     """候选只列前 N 只（默认 5），避免手机上刷屏。"""
     sent = []
-    monkeypatch.setattr(run_daily, "_feishu_post",
-                        lambda w, c: sent.append(c) or True)
+    # 显式函数替代 lambda 技巧：`append` 返回 None，mypy 判 func-returns-value
+    def _capture(_w: str, _c: str) -> bool:
+        sent.append(_c)
+        return True
+
+    monkeypatch.setattr(run_daily, "_feishu_post", _capture)
     top = [{"code": f"60000{i}", "name": f"股票{i}",
             "score": 0.9 - i / 100, "ret20": -0.1} for i in range(20)]
     payload = {"as_of": "20260930", "top": top,
@@ -971,9 +983,11 @@ def test_backfill_out_csv_t5_returns_are_correct(tmp_path):
     filled = tmp_path / "filled.csv"
     backfill.run(str(tmp_path / "vipdoc"), str(track), str(filled))
     with open(filled, encoding="utf-8", newline="") as f:
-        rows = list(csv.DictReader(f))
-    assert len(rows) == 4
-    for r in rows:
+        # 变量名避让：本函数上文 rows 为 tuple 列表（写 .day 用），此处为 dict 行，
+        # 同名复用会被 mypy 判类型冲突（2026-10-15 债务清理）→ 改名 csv_rows。
+        csv_rows = list(csv.DictReader(f))
+    assert len(csv_rows) == 4
+    for r in csv_rows:
         assert abs(float(r["t5_ret"]) - 0.10) < 1e-6,             f"{r['code']} t5_ret 应为 +10%，实际 {r['t5_ret']}"
         assert r["t5_status"] == "filled"
 

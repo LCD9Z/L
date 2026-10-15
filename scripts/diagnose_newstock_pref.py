@@ -29,7 +29,7 @@ import os
 import struct
 import sys
 from datetime import date
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -74,7 +74,7 @@ def run(vipdoc: str, names_csv: str, events_cache: str,
     names = day_reader.load_names(names_csv) if names_csv else {}
     events = gbbq_reader.load_events(events_cache) if events_cache else {}
 
-    cache = []
+    cache: List[Dict[str, Any]] = []
     for code, _mkt, path in day_reader.scan_paths(vipdoc):
         bars = day_reader.read_day_tail(path, TAIL)
         if len(bars) < 200:
@@ -88,7 +88,7 @@ def run(vipdoc: str, names_csv: str, events_cache: str,
                       "first": _first_bar_date(path),
                       "st": "ST" in (names.get(code, "").upper())})
     print(f"可用标的 {len(cache)} 只（≥200 根）", flush=True)
-    by_code = {c["code"]: c for c in cache}
+    by_code: Dict[str, Dict[str, Any]] = {c["code"]: c for c in cache}
 
     idx = os.path.join(vipdoc, "sh", "lday", "sh000001.day")
     cal = [b["date"] for b in day_reader.read_day_all(idx)]
@@ -96,7 +96,8 @@ def run(vipdoc: str, names_csv: str, events_cache: str,
     section_dates = [cal[-1 - k * step] for k in range(n_sections)
                      if k * step < len(cal)]
 
-    stats = {"pool_new": [], "top_new": [], "top_new_v2": [],
+    stats: Dict[str, List[float]] = {
+             "pool_new": [], "top_new": [], "top_new_v2": [],
              "top_ret_new": [], "top_ret_old": [], "top_ret_all": [],
              "pool_n": []}
     for D in section_dates:
