@@ -130,7 +130,7 @@ python -m tdx_native.fetch_names --out data/names.csv
 |------|------|
 | `D:/new_tdx/vipdoc/{sh,sz,bj}/lday/*.day` | 通达信原生日线（32 字节/条，`<IIIIIfII`，价格÷100） |
 | `data/gbbq_events.csv` | 权息事件缓存（63,608 条 / 6,005 只），主路径零依赖 |
-| `data/names.csv` | 代码→名称（47,846 条，覆盖 93.4%；**北交所在行情服务器上取不到**） |
+| `data/names.csv` | 代码→名称（2026-10-15 更新：47,934 条，沪深覆盖 99.5%；**北交所在行情服务器上取不到**——其缺失在 screen 中单列披露 `names_missing_bj`，不计 5% 告警口径） |
 | `D:/tdx_dataset_v2/` | 认证研究数据集（1,500 只，含退市股 + point-in-time universe） |
 
 **注意**：`tdx_dataset_v2` 的 `min_rows=504` 本身是一道**隐性次新股过滤**——

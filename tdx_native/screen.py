@@ -111,14 +111,18 @@ def run(vipdoc: str, top_n: int = 20, exclude_ret20_top: float = 0.0,
 
     # ST 剔除（仅在有名称映射时可用）
     st_removed = 0
-    names_missing = 0
+    names_missing = 0      # 非北交所缺失（告警口径：名称表过期的信号）
+    names_missing_bj = 0   # 北交所缺失（服务器结构性不提供，单列披露，不计告警）
     candidates: List[Dict[str, float]] = []
     adjusted_cnt = 0
     for code, market, _path, bars in fresh:
         nm = names.get(code, "")
         if not nm:
             # 无名称 → ST 判断短路，剔除失效。必须计数披露，不能静默
-            names_missing += 1
+            if market == "bj":
+                names_missing_bj += 1
+            else:
+                names_missing += 1
         elif "ST" in nm.upper():
             st_removed += 1
             continue
@@ -137,6 +141,12 @@ def run(vipdoc: str, top_n: int = 20, exclude_ret20_top: float = 0.0,
         candidates.append(f)
     print(f"      打分前 {len(candidates)} 只（ST 剔除 {st_removed} 只；"
           f"复权 {adjusted_cnt} 只）", flush=True)
+    if names and names_missing_bj:
+        # 北交所名称在行情服务器上结构性不可得（fetch_names 已知局限），
+        # 属恒定缺口而非「表过期」信号——单列披露，不参与 miss_pct 阈值判断，
+        # 否则告警恒响会掩盖沪深名称表真正过期时的信号。
+        print(f"      ℹ️ 北交所 {names_missing_bj} 只无名称映射（服务器不提供"
+              f"北交所列表，已知局限）——其 ST 剔除不可用", flush=True)
     if names and names_missing:
         # 名称表覆盖不全 → 这部分标的的 ST 剔除静默失效，须显式告警
         miss_pct = names_missing / max(1, len(fresh))
@@ -174,7 +184,8 @@ def run(vipdoc: str, top_n: int = 20, exclude_ret20_top: float = 0.0,
         "universe": {"stocks_found": len(stocks), "scored": len(candidates),
                      "st_removed": st_removed, "top_n": top_n,
                      "qfq_adjusted": adjusted_cnt, "stale_removed": stale,
-                     "names_missing": names_missing},
+                     "names_missing": names_missing,
+                     "names_missing_bj": names_missing_bj},
         "top": [_fmt(c) for c in top],
         "runtime_sec": round(time.time() - t0, 1),
         "disclaimer": ("五因子为统计特征，非收益承诺；"

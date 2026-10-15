@@ -98,7 +98,10 @@ def build_report(vipdoc: str, events_cache: str = "", names_csv: str = "",
         + (f"，V2 跳空剔除 {jump_dropped} 只"
            if jump_filter and jump_dropped else "")
         + (f"（另有 {res['universe']['names_missing']} 只无名称映射，"
-           f"ST 剔除对其失效）" if res['universe'].get('names_missing') else ""),
+           f"ST 剔除对其失效）" if res['universe'].get('names_missing') else "")
+        + (f"；北交所 {res['universe']['names_missing_bj']} 只无名称映射"
+           f"（服务器不提供，已知局限）"
+           if res['universe'].get('names_missing_bj') else ""),
         "- 数据源：通达信原生 `.day`"
         + ("（前复权）" if qfq else "（**原始价**，ret20 含除权跳空污染）"),
         "",

@@ -728,6 +728,27 @@ def test_screen_run_counts_missing_names(tmp_path):
     assert res["universe"]["st_removed"] == 0   # 缺名 → ST 短路，无法剔除
 
 
+def test_screen_run_splits_bj_missing_names(tmp_path):
+    """北交所名称缺失单列（服务器结构性不可得），不进 names_missing 告警口径。
+
+    2026-10-15：北交所 920 段在行情服务器上取不到名称表（fetch_names
+    已知局限），350 只缺口恒定存在。若计入 miss_pct，告警恒响（6.4%），
+    反而掩盖沪深名称表真正过期时的信号——故拆分披露。
+    """
+    ds = _dates(30)
+    spec = {
+        "600001": ("sh", _flat_rows(ds, close=10.0)),
+        "920001": ("bj", _flat_rows(ds, close=20.0)),
+        "920002": ("bj", _flat_rows(ds, close=30.0)),
+    }
+    vip = _make_market(tmp_path, spec)
+    names = tmp_path / "names.csv"
+    names.write_text("code,name\n600001,某某股份\n", encoding="utf-8")
+    res = screen_mod.run(vip, top_n=10, names_csv=str(names))
+    assert res["universe"]["names_missing"] == 0     # 沪深全覆盖 → 告警口径为零
+    assert res["universe"]["names_missing_bj"] == 2  # 北交所单列披露
+
+
 def test_screen_run_stale_exclude_uses_trading_days(tmp_path):
     """停牌剔除必须按**交易日**计，不得用 int(YYYYMMDD) 日历差。
 
