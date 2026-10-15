@@ -533,7 +533,7 @@ python scripts/gen_layout_doc.py --check
 | 优先级 | 任务 | 预估工时 | 假设与说明 |
 |:---:|------|:---:|------|
 | **1** | **新的经济逻辑假设（追求 Alpha）** | **3~5 天** | **当前唯一的主攻方向**。含逻辑调研 0.5 天 → 事前登记 0.5 天 → 因子实现 1 天 → IC 检验 0.5 天 → 组合层面 + 基准对照 1~2 天。**前提：必须提出新逻辑，禁止调现有因子权重/阈值**（原则 5） |
-| 2 | 为**无直接覆盖模块**补单测 | **3~5 天** | ⚠️ **2026-10-15 复核：实测 43 个**（HANDOVER 原记「剩余 9 个」已过时）；口径见 `scripts/list_uncovered_modules.py`（只看测试里的直接 import）。✅ 已完成：`orchestrator`(21) · `pool_manager`(22，本轮)。下一步优先 `v3_data_bus`、`professional_committee`；纯标注类（`log_utils`）可略 |
+| 2 | 为**无直接覆盖模块**补单测 | **2~3 天** | ⚠️ **2026-10-15 复核：实测 29 个**（HANDOVER 原记「剩余 9 个」已过时；首次盘点曾报 43，因脚本漏判 `from pkg import mod` 而虚高，已修）；口径见 `scripts/list_uncovered_modules.py`（只看测试里的直接 import）。✅ 已完成：`orchestrator`(21) · `pool_manager`(22，本轮)。下一步优先 `v3_data_bus`、`professional_committee`；纯标注类（`log_utils`）可略 |
 | 3 | 巨潮披露日早年覆盖补强 | **0.5 天** | 2016~2021 年覆盖 73~83%，余 12.8% 走法定截止日兜底。可试逐股接口补齐（`stock_zh_a_disclosure_report_cninfo`），但**已确认缺口多为当时未上市的公司**，收益可能有限 |
 | 4 | ADX 叠加的**绝对水平** p 值 | **1~2 小时** | Δ 型已用配对检验补完（§7.13）；`adx_attr_w1~w4.json` 只存了 const05 变体，overlay/baseline 的绝对超额 t/p 需重跑 `run_regime_overlay_study.py` |
 | 5 | 补齐数据库迁移机制 | **0.5 天** | 当前无迁移脚本；若 schema 需变更则必须先做 |
@@ -548,7 +548,7 @@ python scripts/gen_layout_doc.py --check
 | **1** | **新的经济逻辑假设（追求 Alpha）** | **3~5 天** | 含：逻辑调研 0.5 天 → 事前登记 0.5 天 → 因子实现 1 天 → IC 检验 0.5 天 → 组合层面 + 基准对照 1~2 天（多窗口回测）。**前提：必须提出新逻辑，禁止调现有 7 因子权重/阈值** |
 | 2 | ARK 付费模型凭据验收 | **0.5 天** | 阻塞于用户提供凭据；含接通 + 一次真实调用 + 结果留档 |
 | 3 | ~~修复 `tdx_ab_stage2` verdict 文案~~ | **✅ 已完成** | 根因是 `params` 未记录 `slip_mode`。已修脚本 + 加守卫测试（见 [5.3](#53-已知缺陷与复现步骤) 第 1 条） |
-| 4 | ~~为 10 个无直接覆盖模块补单测~~ → **实测 43 个**（2026-10-15 复核，原记「剩余 9 个」过时） | **3~5 天** | ✅ `orchestrator`(21) · `pool_manager`(22，含暴露 1 个边界缺陷) 已完成；剩余优先 `v3_data_bus`、`professional_committee`；纯标注类（`log_utils`）可略 |
+| 4 | ~~为 10 个无直接覆盖模块补单测~~ → **实测 29 个**（2026-10-15 复核，原记「剩余 9 个」过时） | **2~3 天** | ✅ `orchestrator`(21) · `pool_manager`(22) · `v3_data_bus`(24) · `professional_committee`(22) · `risk/expert_filter`(33) 已完成（共 122 项，暴露 4 个缺陷）；剩余优先 `v3_data_bus`、`professional_committee`；纯标注类（`log_utils`）可略 |
 | 5 | `disallow_untyped_defs` 全量收紧 | **2~3 天** | 569 处纯标注补全，**无缺陷捕获收益**，建议最后做 |
 | 6 | 其余外部集成验收 | **1 天** | 需凭据；每项含真实调用 + 留档 |
 | 7 | 补齐数据库迁移机制 | **0.5 天** | 当前无迁移脚本；若 schema 需变更则必须先做 |
