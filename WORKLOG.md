@@ -1405,3 +1405,13 @@ A2 合并时在 `mypy.ini` 显式登记的债务（主侧脚本类型推断松�
 | 守卫 | `test_screen_run_splits_bj_missing_names` 新增（拆分口径防回归）；`test_tdx_native.py` 77 项全过 |
 | 验证 | 重跑 screen：5% 告警消除；沪深缺 12 只（0.2%）；bj 349 只单列披露；run_ci 3/3 PASS |
 | 遗留 | 北交所名称补源（tushare `daily_basic` 可行性已登记 `PIT_L3_920_BACKFILL_FEASIBILITY.md`）仍待需执行 |
+
+### 19.9 L1 主侧重算执行与验收（2026-10-15 晚）
+
+| 项 | 内容 |
+|---|---|
+| 裁定 | P013（信箱）：认可副本侧 A/B 分档；A 档 26 窗口不补跑（D2 换基线非缺陷）；采纳回滚方案——跨线产物**不并入**正式报告，作 D1 印花税影响量独立证据 |
+| 命令确认 | 主侧 12 份逐份反推 args（含 #11 `v2_ew_bench_part1` = `run_tdx_rolling_eval.py`），落地 `run_recompute.py` 的 `MAIN_TASKS`（`--side main`）；提交 `8db1c65` |
+| 执行 | `--side main --crossing-only`：12/12 跨线窗口（均 `2023-07-03`）成功，零失败，约 2 小时 |
+| 验收 | `check_recompute.py`：V1 结构缺失 0、V2 差异 12/12、**V3 方向异常 6 份 14 处**（收益上升，源自 A2 合并基线演进而非印花税）——已逐条登记于 COST_BASELINE 登记册 §六，归因排查列 07 篇 L9 |
+| 遗留 | 副本侧剩余 8 跨线窗口（tc_t0/tc_t2/rolling×6）待副本侧按 P013 执行 |
