@@ -15,7 +15,7 @@
 | 2 | `factors/factor_ic_lab.py:143` + 5 脚本 `_rank` | ✅ **逻辑相同** | 仅变量名（`values/r`）与签名（`Sequence`/`List`）不同；**平均秩算法逐行一致** | **中高**（省 ~78 行） | 中（改 6 处调用） | **推荐** |
 | 3 | `fetch/fundamentals_source.py` `fetch_all_periods` / `fetch_all_disclosures` | ✅ **结构相同** | 逐期循环 + try/except + 空结果检查 + `on_progress` + `delay` **完全一致**；仅被调函数不同（`fetch_period` / `fetch_disclosure_period`） | **中**（省 ~25 行 + 消除双份维护） | **低** | **推荐** |
 | 4 | `orchestrator.py` `_get_agent_name` / `_get_agent_emoji` | ❌ **语义不同** | 两个**独立映射表**（中文名 vs emoji），结构相似但语义无关 | 低 | 低 | **保留**（可选合并为 `_AGENT_META`） |
-| 5 | `tdx/tdx_csv_adapter.py:124` + `tdx_native/day_reader.py:96` `board_of` | ✅ **完全相同** | 仅变量名（`code`/`c`）与 docstring 不同 | **中**（省 13 行） | **低** | **推荐** |
+| 5 | `board_of` **×3**（审计列 2 处，实为 3 处） | ⚠️ **②③ 完全相同，① 另一值域** | ②③ 仅变量名（`code`/`c`）不同；① 返回**中文板块名**且含 B 股分类 → **不可三合一** | **中**（②**生产零消费者** → 直接删 13 行） | **低**（不动回测主路径） | **推荐：删 ②，保留 ①③** |
 
 **结论**：推荐收敛 **2 / 3 / 5**（真重复、风险可控）；**保留 1**（改 LLM 输入收益低）、
 **4**（语义不同，强行合并会引入无谓嵌套）。
@@ -68,17 +68,47 @@ def fetch_all_disclosures(report_period_list, *, delay=0.4, on_progress=None):
 **验证**：mock `fetch_fn`，断言两函数在「全成功 / 部分空 / 抛 `AkshareUnavailable`」
 三种输入下的返回**逐键一致**（与改造前实现对比）。
 
-### 组 5（`board_of`）—— 需定宿主
+### 组 5（`board_of`）—— 依赖图已画：**修正审计，实际 3 处且值域分两派**
 
-- 两处逻辑相同；`tdx/tdx_csv_adapter.py` 与 `tdx_native/day_reader.py` 是**不同包**；
-- **方案**：以 `tdx_native/day_reader.board_of` 为宿主（它带 `limit_pct` 同伴函数，
-  语义更完整），`tdx/tdx_csv_adapter.py` 改为 `from tdx_native.day_reader import board_of`；
-- ⚠️ **依赖方向检查**：须确认 `tdx/` 不因该 import 产生循环依赖或使 `tdx_native` 成为
-  `tdx/` 的强制依赖（`tdx_csv_adapter` 是**数据集构建**用，`tdx_native` 是**推荐系统**用
-  —— 反向依赖可能不合架构，**须先画依赖图**）。若不合，改为两处都从
-  `exchange_rules.py` 导入（该模块已含 `derive_limit_ratio`/`is_st_flag`，语义最贴近）。
+> **2026-10-15 补正**（逐码比对后推翻原方案的两点）
 
-**验证**：对 `600/688/000/300/920/8xx` 等前缀断言返回值一致（两实现现成可比）。
+#### 修正一：审计列 2 处，实际 **3 处**
+
+| # | 位置 | 值域 | 生产消费者 |
+|:--:|---|---|---|
+| ① | `ashare/ashare_market.py:10` | **中文板块名**（沪主板/创业板/科创板/北交所/**沪B股/深B股**/其他A股） | `exchange_rules.py:87`、`ashare_universe.py:15`、`fetch/news.py:150` —— **回测主路径** |
+| ② | `tdx/tdx_csv_adapter.py:124` | 英文短码（`sh_main`/`star`/`sz_main`/`chinext`/`bse`） | **仅 `tests/test_tdx_adapter.py:99`——生产侧零消费者** |
+| ③ | `tdx_native/day_reader.py:96` | 英文短码（同上） | `daily_report.py:40`、`limit_pct`（盘后报告） |
+
+**①②值域互不相交**（中文名 vs 英文短码）⇒ **不可三合一**；组 5 只收敛 **②③**。
+
+#### 修正二：方案从「定宿主」改为「**删除 ②**」
+
+原方案（② 改为 `from tdx_native.day_reader import board_of`）会引入
+`tdx/ → tdx_native/` 的**跨包反向依赖**（`tdx_csv_adapter` 数据集构建 ← `tdx_native`
+推荐系统），架构上不成立。依赖图既明，**更干净的做法**：
+
+- **删除 ②**（生产侧零消费者，唯一引用是 `tests/test_tdx_adapter.py:99`）；
+- 该测试改指向 ③（`tdx_native.day_reader.board_of`，与其断言值一致）；
+- ① 与 ③ **保留**（值域不同、消费者不同，**不是重复**）。
+
+⇒ 组 5 消除后的净效果：删 13 行 + 消除 1 处跨包依赖风险，且**不动回测主路径**。
+（若日后要统一值域，那是**独立专项**，须同时改 3 处消费者并回归，不在本次范围。）
+
+#### 顺带发现：②③/① 的 3 处静默错误分类（**登记，不在本次修**）
+
+| 输入 | ① ashare | ②③ tdx | 影响面评估 |
+|---|---|---|---|
+| `900901` / `200011`（B 股） | 沪B股 / 深B股 ✅ | **`bse`（北交所）** ✗ → `limit_pct` 给 **30%**（实为 10%） | ②生产零消费者；③仅盘后报告。**待查 universe 是否含 B 股**（未定性） |
+| `sh600519`（带市场前缀） | 沪主板 ✅（会剥离 `sh/sz/bj`） | **`bse`** ✗ | 同上；②③ 只做 `zfill(6)`，不剥前缀 |
+| `689009`（科创板 CDR） | **`其他A股`** ✗ | `star` ✅ | 本地通达信 `sh/lday` **689 段 0 只** → **当前无实际影响** |
+
+三者均为**分类函数缺陷**而非本次重复治理目标；已写入
+`tests/test_p3_equivalence_baseline.py::test_board_of_known_divergences_locked`
+作为 characterization 锁定（**若日后修了，该测试会变红 → 强制人工确认影响面**）。
+
+**验证**：15 → **17 项**全绿（`test_board_of_third_site_is_a_distinct_value_domain`
+钉死「不可三合一」；`test_board_of_known_divergences_locked` 钉死 3 处现状）。
 
 ### 组 2（`_rank ×6`）—— 需等价性测试 + 需等重算结束
 
@@ -110,11 +140,17 @@ def fetch_all_disclosures(report_period_list, *, delay=0.4, on_progress=None):
 ## 三、执行序（重算完成后）
 
 1. **组 3**（最低风险，先做 + 等价性测试）→ 跑 CI；
-2. **组 5**（先画依赖图定宿主）→ 跑 CI；
-3. **组 2**（等价性测试先行，6 处逐一改）→ 跑 CI；
+2. **组 5**（依赖图已画：删 ② + 改 `tests/test_tdx_adapter.py:99` 指向 ③）→ 跑 CI；
+   ⚠️ 删 ② 时**不要**顺手修 B 股/前缀分类（见 §组5「3 处静默错误分类」）——
+   那是行为变更，须独立评估；若修了，`test_board_of_known_divergences_locked`
+   会变红并强制确认；
+3. **组 2**（等价性测试先行，6 处逐一改）→ 跑 CI；**须等重算结束**（涉 `factor_ic_lab`）；
 4. 组 1 / 4 **不做**（方案 §二 已说明理由）；
 5. 全部完成后重跑 `scripts/audit_code_redundancy.py` 记录组数变化
    （当前：完全重复组 7 / 同构组 5；基线：13 / 7）。
 
 **预期**：同构组 5 → 3（组 2/3/5 消除；组 1/4 保留）；完全重复组 7 → 6
 （组 5 的 `board_of` 从 exact 列表消除）。
+
+> 组 5 的删除动作**不引入任何新依赖**，且不触碰回测主路径（①`ashare`）
+> —— 这是依赖图带来的最大收益：原「跨包 import」方案被否决。

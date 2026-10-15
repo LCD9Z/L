@@ -119,6 +119,41 @@ def test_board_of_zero_pads_short_codes():
     assert a("600519") == "sh_main"
 
 
+def test_board_of_third_site_is_a_distinct_value_domain():
+    """⚠️ 第三处 `board_of`（ashare/ashare_market.py）是**另一个值域**（中文板块名）。
+
+    审计只列了 2 处，实际有 3 处。第一处返回中文名且**含 B 股分类**，
+    与 tdx/tdx_native 的英文短码**不是同一函数语义** —— 因此组 5 只能
+    收敛 ②③，**不可三合一**。本测试钉死该结论，防止后来者误合并。
+    """
+    ashare = _load("ashare/ashare_market.py", "_am").board_of
+    tdx = _load("tdx/tdx_csv_adapter.py", "_tca3").board_of
+    # 值域互不相交：中文名 vs 英文短码
+    for code in ("600519", "300750", "688981", "920000"):
+        assert ashare(code) != tdx(code), f"{code}: 两个值域不应相同"
+    # ashare 侧独有的 B 股分类
+    assert ashare("900901") == "沪B股"
+    assert ashare("200011") == "深B股"
+
+
+def test_board_of_known_divergences_locked():
+    """锁定 ②③ 的**已知静默错误分类**（characterization：记录现状，不代表正确）。
+
+    ⚠️ 这些是**待决缺陷**，不是期望行为。改造时若顺手修了，本测试会变红 ——
+    变红即提示「行为已变更，须人工确认影响面」。
+    参见 `P3_PARAMETERIZATION_PLAN.md` §组5 修正。
+    """
+    tdx = _load("tdx/tdx_csv_adapter.py", "_tca4").board_of
+    # ① B 股被当成北交所（900/200 不在任何前缀列表 → 落 default "bse"）
+    assert tdx("900901") == "bse", "B 股误判为北交所的现状已改变，须评估影响面"
+    assert tdx("200011") == "bse"
+    # ② 带市场前缀的代码无法识别（只做 zfill，不剥离 sh/sz/bj）
+    assert tdx("sh600519") == "bse", "带前缀代码的现状已改变，须评估影响面"
+    # ③ 689（科创板 CDR）在 ashare 侧漏判，落「其他A股」
+    ashare = _load("ashare/ashare_market.py", "_am2").board_of
+    assert ashare("689009") == "其他A股", "689 段归属已改变，须评估影响面"
+
+
 # ---------------------------------------------------------------------------
 # 组 3：fetch_all_periods / fetch_all_disclosures（逐期抓取骨架）
 # ---------------------------------------------------------------------------
