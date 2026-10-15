@@ -126,6 +126,7 @@ known-first-party = [
     "alpha", "phase62", "regime", "tushare_client", "notify", "router",
     "fetch",
     "track",
+    "augment",      # E3 可选增强模块（隔离容器，见 CODE_WIKI/08 篇）
     "cycle_price_action", "daily_csv_adapter", "market_regime",
     "market_universe_provider", "backtest_engine",
     "walk_forward", "llm_client", 

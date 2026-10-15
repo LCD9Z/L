@@ -24,9 +24,11 @@ import csv
 import datetime as _dt
 import json
 import os
+import subprocess
+import sys
 import time
 import urllib.request
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from . import backfill as backfill_mod
 from . import daily_report
@@ -312,10 +314,42 @@ def _read_webhook(cli_value: str, path: str) -> str:
         return ""
 
 
+#: 可选增强模块（E3）的调用命令。**以子进程调用是刻意设计** ——
+#: 生产链因此不会 import augment，CODE_WIKI/08 篇守卫断言 1「除 augment 外
+#: 无模块 import augment」在结构上天然成立。
+AUGMENT_CMD: tuple = (sys.executable, "-m", "augment.cli")
+
+
+def run_augment_hook(as_of: str, cmd: Optional[List[str]] = None,
+                     timeout: int = 180) -> bool:
+    """可选增强钩子（E3）：**失败隔离**，绝不改变生产链退出码。
+
+    这是 CODE_WIKI/08 篇 §六 红线 4 的落地：augment 不可用/失败/超时
+    一律记warning并跳过，主流程照常 ``return 0``。
+
+    返回 True 表示旁注已生成，False 表示已跳过（两种情况都不影响生产）。
+    本函数**不抛异常**——调用方无需 try/except。
+    """
+    argv = list(cmd if cmd is not None else AUGMENT_CMD) + ["explain", "--date", as_of]
+    try:
+        proc = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.SubprocessError) as exc:
+        print(f"[augment] 跳过可选增强模块（不可用）：{type(exc).__name__}: {exc}")
+        return False
+    if proc.returncode != 0:
+        lines = (proc.stderr or "").strip().splitlines()
+        tip = lines[-1] if lines else f"退出码 {proc.returncode}"
+        print(f"[augment] 跳过可选增强模块（失败，不影响本次生产）：{tip}")
+        return False
+    print("[augment] 旁注已生成（非证据层，不参与结论）")
+    return True
+
+
 def run(vipdoc: str, top_n: int = 20, out_dir: str = "reports/daily",
         names_csv: str = "data/names.csv", events_cache: str = "data/gbbq_events.csv",
         feishu_webhook: str = "", force: bool = False,
-        feishu_top: int = 5, feishu_quiet: bool = True) -> int:
+        feishu_top: int = 5, feishu_quiet: bool = True,
+        with_augment: bool = False) -> int:
     feishu_webhook = _read_webhook(
         feishu_webhook, "data/feishu_webhook.txt")
     if not feishu_webhook:
@@ -418,6 +452,10 @@ def run(vipdoc: str, top_n: int = 20, out_dir: str = "reports/daily",
         payload["feishu_top"] = feishu_top
         feishu_push(feishu_webhook, payload)
 
+    # 可选增强模块（E3）：默认关闭；失败绝不影响本次生产退出码（08 篇红线 4）
+    if with_augment:
+        run_augment_hook(as_of)
+
     print("\n完成。报告："
           f"{os.path.join(out_dir, f'recommend_{as_of}.md')}")
     return 0
@@ -439,12 +477,16 @@ def main() -> int:
                     help="默认仅在有到期待卖/异常时推送；加此参数每天都推")
     ap.add_argument("--force", action="store_true",
                     help="即使数据未更新（as_of 与上次相同）也强制重跑")
+    ap.add_argument("--with-augment", action="store_true",
+                    help="可选增强模块（E3，默认关闭）：尾部以子进程生成旁注；"
+                         "失败不影响本次退出码")
     args = ap.parse_args()
     return run(args.vipdoc, top_n=args.top, out_dir=args.out_dir,
                names_csv=args.names, events_cache=args.events_cache,
                feishu_webhook=args.feishu_webhook, force=args.force,
                feishu_top=args.feishu_top,
-               feishu_quiet=not args.feishu_always)
+               feishu_quiet=not args.feishu_always,
+               with_augment=args.with_augment)
 
 
 if __name__ == "__main__":

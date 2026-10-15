@@ -13,10 +13,24 @@
 
 本测试确保：
 
-1. `ENTRYPOINTS.md` 存在，且声明了**恰好两个**正式入口
-2. 两个正式入口**真实可用**（`run_daily` 可导入、`run_ci.py` 存在）
+1. `ENTRYPOINTS.md` 存在，且 §二 声明的入口与 `OFFICIAL_ENTRIES`（唯一事实源）
+   在**数量与身份**上完全一致
+2. 白名单里的正式入口**真实可用**
 3. 根目录新增的 `__main__` 文件**必须**在清单里被提到（防悄悄冒出新入口）
 4. 权威交接文档 `AGENTS.md` 存在
+
+## 白名单变更留痕
+
+原断言为「**恰好 2 个**」，注释写着「收敛的意思是少，不是多」。
+2026-10-15 经用户拍板扩为 **3 个**（新增 **E3** `augment.cli`），理由：
+
+- E3 与 E1/E2 同属**确定性、可重复调用**的正式能力；
+- 但 E3 **不产出结论**，只产出旁注（`claim_tier` 恒为 `non-evidence`）；
+- 生产侧**默认关闭**，且失败隔离（不改 E1 退出码）；
+- 隔离契约见 `augment/__init__.py` 与 `CODE_WIKI/08` 篇。
+
+> **改守卫本身也必须写明理由** —— 这是「守卫的守卫」纪律的延伸。
+> 若日后要再扩白名单，请先在此处补一段同等的理由说明。
 
 ## 已知局限
 
@@ -34,8 +48,13 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 ENTRY = ROOT / "ENTRYPOINTS.md"
 
-#: 正式入口（清单 §二）—— 只允许这两个
-OFFICIAL_ENTRIES = ("tdx_native.run_daily", "run_ci.py")
+#: 正式入口白名单（§二）—— **唯一事实源**，顺序即 E 编号顺序。
+#: (E 编号, 入口)。想新增必须同时改这里与 ENTRYPOINTS.md §二，并写明理由。
+OFFICIAL_ENTRIES = (
+    ("E1", "tdx_native.run_daily"),
+    ("E2", "run_ci.py"),
+    ("E3", "augment.cli"),
+)
 
 
 def _entry_text() -> str:
@@ -48,27 +67,35 @@ def test_entrypoints_doc_exists():
     assert ENTRY.is_file(), "ENTRYPOINTS.md 缺失"
 
 
-def test_declares_exactly_two_official_entries():
-    """正式入口必须恰好两个 —— 多了就不是「收敛」。"""
+def test_declared_entries_match_whitelist():
+    """§二 列出的 E 编号必须与 OFFICIAL_ENTRIES 在**数量与身份**上一致。
+
+    原形态断言「恰好 2 个」（「收敛的意思是少，不是多」）。扩为 3 个的理由
+    已写在模块 docstring「白名单变更留痕」一节 —— 改守卫也要留痕。
+    """
     text = _entry_text()
-    # 在 §二 节里数 E1/E2 标记
+    # 在 §二 节里数 E 标记
     m = re.search(r"## 二、正式入口.*?(?=\n## )", text, re.S)
     assert m, "找不到 §二 正式入口节"
-    section = m.group(0)
-    ids = re.findall(r"\*\*(E\d+)\*\*", section)
-    assert len(ids) == 2, (
-        f"正式入口应为恰好 2 个，实测 {len(ids)} 个：{ids}\n"
-        "→ 收敛的意思是「少」，不是「多列几个都算正式」")
+    ids = re.findall(r"\*\*(E\d+)\*\*", m.group(0))
+    expected = [eid for eid, _ in OFFICIAL_ENTRIES]
+    assert ids == expected, (
+        f"§二 实际列出 {ids}，白名单为 {expected}\n"
+        "→ 数量与身份都必须一致。想新增正式入口，"
+        "先改 OFFICIAL_ENTRIES 并在模块 docstring 写明理由。")
 
 
 def test_official_entries_exist():
-    """两个正式入口必须真实可用。"""
+    """白名单里的正式入口必须真实可用。"""
     import importlib
-    try:
-        importlib.import_module("tdx_native.run_daily")
-    except Exception as exc:                          # noqa: BLE001
-        pytest.fail(f"tdx_native.run_daily 不可导入: {type(exc).__name__}: {exc}")
-    assert (ROOT / "run_ci.py").is_file(), "run_ci.py 不存在"
+    for eid, entry in OFFICIAL_ENTRIES:
+        if entry.endswith(".py"):
+            assert (ROOT / entry).is_file(), f"{eid} {entry} 不存在"
+            continue
+        try:
+            importlib.import_module(entry)
+        except Exception as exc:                          # noqa: BLE001
+            pytest.fail(f"{eid} {entry} 不可导入: {type(exc).__name__}: {exc}")
 
 
 def test_root_main_files_are_all_listed():

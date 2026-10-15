@@ -8,9 +8,9 @@
 
 | 指标 | 值 |
 |------|----|
-| 子包数 | **20** |
-| 已入包模块 | **90**（约 12,385 行） |
-| 根目录 `.py` | **57**（约 6,261 行） |
+| 子包数 | **21** |
+| 已入包模块 | **92**（约 12,703 行） |
+| 根目录 `.py` | **57**（约 6,262 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -89,6 +89,36 @@ A 股市场结构与确定性特征层。
 | `ashare/ashare_flow_engine.py` | 54 |
 | `ashare/ashare_market.py` | 99 |
 | `ashare/ashare_universe.py` | 59 |
+
+### `augment/`　（2 模块，约 276 行）
+
+**职责**：augment — A 线（LLM 母体）作为**可选增强模块**的隔离容器。
+
+<details><summary>包级说明与红线（点击展开）</summary>
+
+```
+augment — A 线（LLM 母体）作为**可选增强模块**的隔离容器。
+
+⚠️ 隔离红线（设计见 CODE_WIKI/08 篇 §二、§六，与本包同效力）
+
+1. **单向只读**：只读 ``reports/`` 与 ``data/``；**只写** ``reports/augment/``。
+2. **claim_tier 强制**：所有落盘产物恒为 ``"non-evidence"`` ——
+   ``contract.AugmentNote`` 以 ``ClassVar`` 表达，调用方**结构上**无法传入其他值。
+3. **不进裁决链**：``release_gate.py`` / ``validation/`` / 任何 ``*_VERDICT.md`` /
+   ``tracking.csv`` 不得使用本包产物。
+4. **失败隔离**：本包任何异常都不得改变生产链（E1 ``run_daily``）的退出码。
+5. **入口**：只经 E3（``python -m augment.cli``）调用；生产侧默认关闭。
+
+本包**不产出结论**，只产出旁注。它存在的意义是给 A 线（LLM）能力一个
+**有界的正式角色**，而不是让 LLM 进入选股或裁决。
+```
+
+</details>
+
+| 模块 | 行数 |
+|------|-----:|
+| `augment/cli.py` | 149 |
+| `augment/contract.py` | 127 |
 
 ### `console/`　（2 模块，约 254 行）
 
@@ -586,7 +616,7 @@ Stage-2 Alpha 重排 / 富集 / 消融实验。
 | `tdx/tdx_inventory.py` | 22 |
 | `tdx/tdx_lifecycle.py` | 82 |
 
-### `tdx_native/`　（10 模块，约 1,824 行）
+### `tdx_native/`　（10 模块，约 1,866 行）
 
 **职责**：tdx_native 测试包：把五因子研究接入通达信原生 `.day` 数据。
 
@@ -607,7 +637,7 @@ tdx_native 测试包：把五因子研究接入通达信原生 `.day` 数据。
 | `tdx_native/fetch_names.py` | 120 |
 | `tdx_native/five_factor.py` | 85 |
 | `tdx_native/gbbq_reader.py` | 81 |
-| `tdx_native/run_daily.py` | 451 |
+| `tdx_native/run_daily.py` | 493 |
 | `tdx_native/screen.py` | 219 |
 | `tdx_native/smoke_test.py` | 110 |
 
@@ -774,7 +804,7 @@ TuShare 数据接入（可选依赖）。
 | `phase41_data_workbench.py` | 123 | 0 | 2 |
 | `pool_manager.py` | 166 | 1 | 1 |
 | `portfolio_backtest.py` | 189 | 1 | 3 |
-| `professional_committee.py` | 89 | 1 | 1 |
+| `professional_committee.py` | 90 | 1 | 1 |
 | `prompt_engine.py` | 187 | 0 | 3 |
 | `real_alpha_pipeline.py` | 206 | 0 | 4 |
 | `real_data_collector.py` | 115 | 0 | 1 |
