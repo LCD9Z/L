@@ -37,10 +37,19 @@ def covered_names() -> set[str]:
     cov: set[str] = set()
     for t in (ROOT / "tests").rglob("test_*.py"):
         src = t.read_text(encoding="utf-8", errors="ignore")
-        # 常规 import
+        # 常规 import（含 `import x.y as z`）
         for m in re.findall(r"^\s*(?:from|import)\s+([A-Za-z_][\w.]*)", src, re.M):
             cov.add(m.split(".")[0])
             cov.add(m)
+        # ⚠️ `from pkg import mod` / `from pkg import mod as alias`：
+        # 上面只捕获了 `pkg`，会**漏判**被导入的子模块 ⇒ 必须再取导入名
+        for pkg, names in re.findall(
+                r"^\s*from\s+([A-Za-z_][\w.]*)\s+import\s+([^\n#]+)", src, re.M):
+            for raw in names.split(","):
+                name = raw.strip().split(" as ")[0].strip()
+                if name.isidentifier():
+                    cov.add(name)
+                    cov.add(f"{pkg}.{name}")
         # importlib.import_module("x.y")
         for m in re.findall(r"import_module\(\s*[\"']([\w.]+)", src):
             cov.add(m.split(".")[0])
