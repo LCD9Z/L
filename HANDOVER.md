@@ -292,7 +292,15 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 | [`IC_DECAY_PREREG.md`](IC_DECAY_PREREG.md) | H-DECAY 前瞻期衰减登记（结果：IC 单调增强，非衰减） |
 | [`IMPACT_COST_PREREG.md`](IMPACT_COST_PREREG.md) · [`TURNOVER_CAPACITY_PREREG.md`](TURNOVER_CAPACITY_PREREG.md) | 冲击成本 / 容量登记 |
 | `reports/tdx_ic_full.json` · `reports/tdx_ic_800.json` | 全市场 vs 800 只抽样的 IC 对照（样本稳健性证据） |
-| `reports/decay_h1.json` · `decay_h5.json` · `decay_h10.json` · `decay_h20.json` · `decay_h60.json` | IC 衰减曲线原始结果 |
+| `reports/decay_h1.json` · `decay_h60.json` · **`decay_h5_ic.json`** · **`decay_h10_ic.json`** · **`decay_h20_ic.json`** | **五因子合成 IC 衰减**（主干口径：通达信 `D:/new_tdx/vipdoc`、**1500 只**；10 键，含 `composite_ic` 的 S5_all / S4 / S3 / S2 分解） |
+| `reports/decay_h5.json` · `decay_h10.json` · `decay_h20.json` · `decay_h40.json` | **分组 / 子周期衰减**（副本口径：`D:/tdx_dataset_v3`、**400 只**；4 键 `full/quintiles/subperiods/args`） |
+
+> ⚠️ **上两行是两组不同的实验，不可混用或交叉引用**（2026-10-15 拆分）。
+> A2 合并（`86956c8`）曾把 `decay_h5/h10/h20` 判为「同型」并取副本版，
+> 使同族产物出现两种结构（`h1`/`h60` 为 10 键、`h5`/`h10`/`h20` 为 4 键），
+> 而本表原按「IC 衰减曲线原始结果」**一并登记** → 登记与产物不符。
+> 现按方案「改名保留两份」拆分：主干那份改名为 `*_ic.json` 恢复入库，
+> 副本那份保留原名。**引用任一份前先查它的 `source` 与键结构。**
 | `reports/f4_p1~p3.json` · `reports/v2_p1~p3.json` | H-F4 / H-V2 组合层结果 |
 
 ---

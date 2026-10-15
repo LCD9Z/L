@@ -32,7 +32,7 @@
    文件名不出现在代码里。此时以**引用它的报告**中的命令行为准。
 3. **同一份证据可能被多份报告引用** —— 这属正常（如 `five_factor_ab_v2.json` 被 4 份引用）。
 
-**当前跟踪 126 份证据。**
+**当前跟踪 129 份证据。**
 
 ---
 
@@ -56,7 +56,7 @@
 | `cost_model_check.json` ⚠️ | 1,452 | `c844f528f28a` | BENCHMARK_ALIGNMENT.md<br>COST_BASELINE_PENDING_RECOMPUTE.md<br>STEP1_3_EXECUTION_REPORT.md | `run_multiple_testing_audit.py` |
 | `cost_model_check_with_p.json` | 1,765 | `976d7fa2da14` | BENCHMARK_ALIGNMENT.md<br>COST_BASELINE_PENDING_RECOMPUTE.md<br>P0_P1_EXECUTION_REPORT.md | — |
 | `cross_decade/CORR.json` | 2,833 | `f43f68059e9e` | AGENTS.md<br>CROSS_DECADE_REVIEW_RESPONSE.md<br>CROSS_DECADE_VERDICT.md<br>DATA_ASSET_REGISTRY.md<br>FACTOR_ORTHOGONALITY_PREREG.md<br>FACTOR_SUBSET_PREREG.md | `factor_corr_by_window.py` |
-| `cross_decade/ORTH.json` | 8,997 | `b1fddcf0b6b1` | DATA_ASSET_REGISTRY.md<br>FACTOR_ORTHOGONALITY_PREREG.md<br>FACTOR_ORTHOGONALITY_VERDICT.md<br>REVIEW_ROUND2_PACKAGE.md<br>XSOURCE_VALIDATION_PREREG.md | `run_factor_orthogonality.py`<br>`run_xsrc_ic.py` |
+| `cross_decade/ORTH.json` | 8,997 | `b1fddcf0b6b1` | DATA_ASSET_REGISTRY.md<br>FACTOR_ORTHOGONALITY_PREREG.md<br>FACTOR_ORTHOGONALITY_VERDICT.md<br>REVIEW_ROUND2_PACKAGE.md<br>XSOURCE_VALIDATION_PREREG.md<br>XSOURCE_VALIDATION_VERDICT.md | `run_factor_orthogonality.py`<br>`run_xsrc_ic.py` |
 | `cross_decade/R.json` | 9,924 | `bde915cfd519` | AGENTS.md<br>CROSS_DECADE_ADDENDUM.md<br>CROSS_DECADE_REVIEW_RESPONSE.md<br>CROSS_DECADE_VERDICT.md<br>DATA_ASSET_REGISTRY.md<br>FACTOR_ORTHOGONALITY_PREREG.md<br>FACTOR_SUBSET_PREREG.md | `factor_corr_by_window.py` |
 | `cross_decade/VERDICT.json` | 806 | `4a6e2f30d934` | CROSS_DECADE_ADDENDUM.md<br>CROSS_DECADE_AUDIT.md<br>DATA_ASSET_REGISTRY.md<br>EXTERNAL_AUDIT_ADOPTION.md | `run_xsrc_ic.py`<br>`summarize_cross_decade.py` |
 | `cross_decade/W1.json` | 9,677 | `9a8113be0468` | CROSS_DECADE_ADDENDUM.md<br>PIT_SNAPSHOT_P0_REPORT.md | `gen_evidence_index.py` |
@@ -72,9 +72,12 @@
 | `daily_screen_2026-09-19.json` | 4,746 | `798f50c6f931` | BENCHMARK_ALIGNMENT.md<br>HANDOVER.md<br>STEP1_3_EXECUTION_REPORT.md | — |
 | `decay_h1.json` | 2,372 | `9ec2095d4a36` | BENCHMARK_ALIGNMENT.md<br>HANDOVER.md | — |
 | `decay_h10.json` | 11,993 | `ded0486f1d6d` | BENCHMARK_ALIGNMENT.md<br>HANDOVER.md | — |
+| `decay_h10_ic.json` | 2,756 | `db98f9647190` | HANDOVER.md | — |
 | `decay_h20.json` | 11,859 | `b3021856a13c` | BENCHMARK_ALIGNMENT.md<br>HANDOVER.md | — |
-| `decay_h40.json` | 11,770 | `0466fe78aaff` | （暂无报告直接引用） | — |
+| `decay_h20_ic.json` | 2,732 | `fdb88be7f67a` | HANDOVER.md | — |
+| `decay_h40.json` | 11,770 | `0466fe78aaff` | HANDOVER.md | — |
 | `decay_h5.json` | 11,901 | `3fef6931292f` | BENCHMARK_ALIGNMENT.md<br>HANDOVER.md | — |
+| `decay_h5_ic.json` | 2,763 | `f16047a25e69` | HANDOVER.md | — |
 | `decay_h60.json` | 2,310 | `683bc5b862b3` | BENCHMARK_ALIGNMENT.md<br>HANDOVER.md | — |
 | `delisted/cand_bj_253.json` | 13,530 | `5035385cf666` | （暂无报告直接引用） | — |
 | `delisted/cand_shsz_346.json` | 18,025 | `28bee1c6b5b5` | PIT_SNAPSHOT_P0_REPORT.md | — |
@@ -92,7 +95,7 @@
 | `five_factor_ab_main.json` ⚠️ | 2,186 | `d0999ddd4ff9` | BENCHMARK_ALIGNMENT.md | — |
 | `five_factor_ab_smoke.json` | 958 | `63e9cf676f61` | BENCHMARK_ALIGNMENT.md | — |
 | `five_factor_ab_smoke2.json` | 1,581 | `a063f2d01acc` | BENCHMARK_ALIGNMENT.md | — |
-| `five_factor_ab_v2.json` ⚠️ | 5,164 | `5df9351e0b5f` | BENCHMARK_ALIGNMENT.md<br>COST_BASELINE_PENDING_RECOMPUTE.md<br>EXPERT_FILTER_AND_HF4_HV2_REPORT.md<br>IMPACT_AND_CAPACITY_REPORT.md<br>P005_3_3_BENCHMARK_PREREG.md<br>TURNOVER_CAPACITY_PREREG.md | `gen_evidence_index.py` |
+| `five_factor_ab_v2.json` ⚠️ | 5,164 | `5df9351e0b5f` | BENCHMARK_ALIGNMENT.md<br>COST_BASELINE_PENDING_RECOMPUTE.md<br>EXPERT_FILTER_AND_HF4_HV2_REPORT.md<br>FACTOR_SUBSET_VERDICT.md<br>IMPACT_AND_CAPACITY_REPORT.md<br>P005_3_3_BENCHMARK_PREREG.md<br>TURNOVER_CAPACITY_PREREG.md<br>TURNOVER_CAPACITY_VERDICT.md | `gen_evidence_index.py` |
 | `fixedpool_v2.json` | 1,480 | `32064baa08d3` | （暂无报告直接引用） | `run_multiple_testing_audit.py` |
 | `fixedpool_v3.json` | 1,480 | `3dfc8c4d79f5` | （暂无报告直接引用） | `run_multiple_testing_audit.py` |
 | `form_screen_eval.json` | 5,483 | `b1dd45d37ea0` | BENCHMARK_ALIGNMENT.md<br>FORM_SCREEN_VERDICT.md<br>reports/form_screen_eval.md | `evaluate_form_screen.py` |
@@ -103,8 +106,8 @@
 | `horizon_study.json` ⚠️ | 6,047 | `40c805f3e44b` | BENCHMARK_ALIGNMENT.md<br>COST_BASELINE_PENDING_RECOMPUTE.md<br>HORIZON_NET_EFFECT_REPORT.md<br>SCORE_TURNOVER_DEFECT_REPORT.md<br>WORKLOG.md | `run_horizon_study.py` |
 | `horizon_study_turnover_fixed.json` ⚠️ | 5,968 | `65d635d22311` | BENCHMARK_ALIGNMENT.md<br>COST_BASELINE_PENDING_RECOMPUTE.md<br>SCORE_TURNOVER_DEFECT_REPORT.md<br>WORKLOG.md | — |
 | `ic_diag_smoke.json` | 3,159 | `13a1c4d2fa34` | BENCHMARK_ALIGNMENT.md | — |
-| `ic_diagnosis.json` | 3,164 | `0406cd83909d` | BENCHMARK_ALIGNMENT.md<br>EXTERNAL_REVIEW_2026_10_06.md<br>IC_DIAGNOSIS_PREREG.md<br>IC_DIAGNOSIS_REPORT.md | — |
-| `impact_cost.json` ⚠️ | 6,444 | `bb88751fe5da` | COST_BASELINE_PENDING_RECOMPUTE.md<br>IMPACT_AND_CAPACITY_REPORT.md<br>IMPACT_COST_PREREG.md | — |
+| `ic_diagnosis.json` | 3,164 | `0406cd83909d` | BENCHMARK_ALIGNMENT.md<br>EXTERNAL_REVIEW_2026_10_06.md<br>IC_DIAGNOSIS_PREREG.md<br>IC_DIAGNOSIS_REPORT.md<br>IC_DIAGNOSIS_VERDICT.md | — |
+| `impact_cost.json` ⚠️ | 6,444 | `bb88751fe5da` | COST_BASELINE_PENDING_RECOMPUTE.md<br>IMPACT_AND_CAPACITY_REPORT.md<br>IMPACT_COST_PREREG.md<br>IMPACT_COST_VERDICT.md | — |
 | `impact_p1.json` | 1,834 | `f52a6592be3f` | BENCHMARK_ALIGNMENT.md<br>STEP1_3_EXECUTION_REPORT.md | — |
 | `impact_p3.json` ⚠️ | 1,841 | `a6b5754cda9c` | BENCHMARK_ALIGNMENT.md<br>STEP1_3_EXECUTION_REPORT.md | — |
 | `industry_ic_attribution.json` | 58,556 | `318ab564785f` | BENCHMARK_ALIGNMENT.md | `run_industry_ic_attribution.py` |
@@ -134,11 +137,11 @@
 | `t1b_p1.json` ⚠️ | 1,884 | `e3ba7033a3b7` | BENCHMARK_ALIGNMENT.md<br>STEP1_3_EXECUTION_REPORT.md | — |
 | `t1b_p2.json` | 1,877 | `8b3e3444f865` | BENCHMARK_ALIGNMENT.md<br>STEP1_3_EXECUTION_REPORT.md | — |
 | `tail_exclusion_with_p.json` | 4,164 | `28927b7c2e42` | BENCHMARK_ALIGNMENT.md<br>COST_BASELINE_PENDING_RECOMPUTE.md<br>FACTOR_HORIZON_DECAY_REPORT.md<br>P0_P1_EXECUTION_REPORT.md | `run_horizon_study.py` |
-| `tc_t0.json` ⚠️ | 6,432 | `595ad74d9161` | COST_BASELINE_PENDING_RECOMPUTE.md<br>IMPACT_AND_CAPACITY_REPORT.md<br>TURNOVER_CAPACITY_PREREG.md | — |
+| `tc_t0.json` ⚠️ | 6,432 | `595ad74d9161` | COST_BASELINE_PENDING_RECOMPUTE.md<br>IMPACT_AND_CAPACITY_REPORT.md<br>TURNOVER_CAPACITY_PREREG.md<br>TURNOVER_CAPACITY_VERDICT.md | — |
 | `tc_t1_p1.json` | 1,814 | `aaa8cb918759` | BENCHMARK_ALIGNMENT.md | — |
 | `tc_t1_p2.json` ⚠️ | 1,819 | `c570a18f212a` | BENCHMARK_ALIGNMENT.md | — |
 | `tc_t1_p3.json` | 1,147 | `f9005f5d5aba` | BENCHMARK_ALIGNMENT.md | — |
-| `tc_t2.json` ⚠️ | 6,433 | `c3174caffcca` | COST_BASELINE_PENDING_RECOMPUTE.md<br>IMPACT_AND_CAPACITY_REPORT.md<br>TURNOVER_CAPACITY_PREREG.md | — |
+| `tc_t2.json` ⚠️ | 6,433 | `c3174caffcca` | COST_BASELINE_PENDING_RECOMPUTE.md<br>IMPACT_AND_CAPACITY_REPORT.md<br>TURNOVER_CAPACITY_PREREG.md<br>TURNOVER_CAPACITY_VERDICT.md | — |
 | `tc_t2_p1.json` ⚠️ | 1,816 | `53bf527154ea` | BENCHMARK_ALIGNMENT.md | — |
 | `tdx_ic_800.json` | 1,558 | `fae02eab688a` | BENCHMARK_ALIGNMENT.md<br>HANDOVER.md | — |
 | `tdx_ic_full.json` | 2,339 | `8c103cfc5a27` | BENCHMARK_ALIGNMENT.md<br>CROSS_DECADE_AUDIT.md<br>CROSS_DECADE_PREREG.md<br>CROSS_DECADE_REVIEW_PACKAGE.md<br>CROSS_DECADE_VERDICT.md<br>EXPERT_FILTER_AND_HF4_HV2_REPORT.md<br>FACTOR_SUBSET_PREREG.md<br>HANDOVER.md | `summarize_cross_decade.py` |
@@ -163,7 +166,7 @@
 | `v3_rolling_eval_ew.json` ⚠️ | 5,684 | `0e26a4060d66` | BENCHMARK_ALIGNMENT.md<br>COST_BASELINE_PENDING_RECOMPUTE.md | — |
 | `v3_rolling_eval_ew_full.json` ⚠️ | 6,197 | `1becb18f2bf5` | BENCHMARK_ALIGNMENT.md<br>COST_BASELINE_PENDING_RECOMPUTE.md<br>P0_P1_EXECUTION_REPORT.md | `run_multiple_testing_audit.py` |
 | `valuation_weight_ab.json` | 2,192 | `1ee76356ac9c` | BENCHMARK_ALIGNMENT.md<br>COST_BASELINE_PENDING_RECOMPUTE.md<br>SIX_ISLANDS_WIRING_REPORT.md | `run_valuation_weight_ab.py` |
-| `xsource/XSRC.json` | 4,109 | `96a75c3749e7` | XSOURCE_VALIDATION_PREREG.md | `run_xsrc_ic.py` |
+| `xsource/XSRC.json` | 4,109 | `96a75c3749e7` | XSOURCE_VALIDATION_PREREG.md<br>XSOURCE_VALIDATION_VERDICT.md | `run_xsrc_ic.py` |
 
 ---
 
@@ -218,7 +221,6 @@
 - `cross_decade/W3.json`
 - `cross_decade/W4.json`
 - `cross_decade/W5.json`
-- `decay_h40.json`
 - `delisted/cand_bj_253.json`
 - `delisted/tencent_universe_6170.json`
 - `external_v3/_raw_crosscheck.json`

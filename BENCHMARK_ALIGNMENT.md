@@ -80,7 +80,7 @@
 | `reports/expert_filter_study.json` | `D:/tdx_dataset_v3` | 09-30 17:53 | 同上 |
 | `reports/cost_model_check_with_p.json` | `D:/tdx_dataset_v3` | 09-22 04:35 | 同上 |
 | `reports/industry_ic_attribution.json` | `D:/tdx_dataset_v3` | 09-30 20:17 | 同上 |
-| `reports/decay_h5/h10/h20/h40.json` | `D:/tdx_dataset_v3` | 09-26 | 同上 |
+| `reports/decay_h5/h10/h20/h40.json` | `D:/tdx_dataset_v3` | 09-26 | 同上（⚠️ **另有主干口径** `decay_h5_ic` / `h10_ic` / `h20_ic.json`：通达信 1500 只、含 `composite_ic`；2026-10-15 由 A2 冲突拆分恢复，两组**不可混用**） |
 | `reports/contrarian_ab_with_p.json` | —（无 `args.dataset`） | 09-23 22:24 | 数据源亦待确认 |
 
 **副本侧实测统计**（`reports/*.json`，排除 `.partial`，共 **46** 份）：
@@ -276,8 +276,11 @@
 | `daily_screen_2026-09-19.json` | 无字段 |
 | `decay_h1.json` | 无字段 |
 | `decay_h10.json` | 无字段 |
+| `decay_h10_ic.json` | 无字段（主干口径；2026-10-15 A2 拆分恢复） |
 | `decay_h20.json` | 无字段 |
+| `decay_h20_ic.json` | 无字段（同上） |
 | `decay_h5.json` | 无字段 |
+| `decay_h5_ic.json` | 无字段（同上） |
 | `decay_h60.json` | 无字段 |
 | `form_screen_eval.json` | 无字段 |
 | `ic_diag_smoke.json` | 无字段 |
