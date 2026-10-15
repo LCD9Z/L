@@ -61,7 +61,15 @@ def _status(text: str) -> str:
     # 主格式：**状态**：xxx（值可被 ** 包裹，两侧文档两种变体都存在 ——
     # 2026-10-14 A2 兼容：原正则 `[^\n|*]+` 解析不了 `**状态**：**值**`，
     # 曾把 6 份有状态字段的预注册误判为「缺状态」）
-    m = re.search(r"\*\*状态\*\*\s*[：:]\s*\**([^\n|*]+?)\**", text)
+    #
+    # ⚠️ 2026-10-15 回归修复（A2 合并引入）：
+    # A2 兼容版写成 `\**([^\n|*]+?)\**` —— 捕获组**非贪婪**且尾部 `\**` **可匹配 0 个
+    # 星号**，于是捕获组只吃 1 个字符：「已完成（…）」→「已」。
+    # 而判定用的是 `any(k in st for k in REQUIRES_ARTIFACT)`，
+    # `"已执行" in "已"` = False → **9 份「已执行/已完成」预注册全部逃过产物校验**，
+    # 本测试文件的核心守卫**静默失效**（坏正则判定需产物 0 份 vs 修复后 9 份）。
+    # 修法：先**可选**吃掉包裹用的开头 `**`，再用**贪婪** `[^\n|*]+`。
+    m = re.search(r"\*\*状态\*\*\s*[：:]\s*(?:\*\*)?([^\n|*]+)", text)
     if m:
         return m.group(1).strip().rstrip("。;；")
     # 表格格式（少数文档用）
@@ -84,6 +92,36 @@ def _has_verdict(name: str) -> bool:
 
 def test_prereegs_exist():
     assert _preregs(), "未找到任何 *_PREREG*.md（守卫失效）"
+
+
+def test_status_parser_handles_all_known_variants():
+    """⚠️ 守卫的守卫：`_status` 不得被回归（2026-10-15 补）。
+
+    A2 合并曾引入非贪婪正则，把「已完成（…）」截成「已」，
+    使 `test_executed_prereegs_have_artifacts` 静默失效（需产物 0 份 vs 实际 9 份）。
+    本用例钉死四种已知写法，防止同类回归再次无声发生。
+    """
+    cases = [
+        ("> **状态**：已完成（2026-10-13 出结果）", "已完成（2026-10-13 出结果）"),
+        ("> **状态**：**已执行**", "已执行"),
+        ("> **状态**：已执行 —— 判决见 X_VERDICT.md", "已执行 —— 判决见 X_VERDICT.md"),
+        ("| **状态** | 已执行 |", "已执行"),
+        ("> **状态**：待执行", "待执行"),
+    ]
+    bad = []
+    for text, expected in cases:
+        got = _status(text)
+        if got != expected:
+            bad.append(f"{text!r} -> {got!r}（应 {expected!r}）")
+    assert bad == [], ("_status 解析回归：\n  " + "\n  ".join(bad))
+
+
+def test_status_parser_does_not_truncate_to_one_char():
+    """截断成单字符会让 `k in st` 恒 False —— 产物校验被整片跳过。"""
+    st = _status("> **状态**：已完成（2026-10-13 出结果）")
+    assert len(st) >= 3, f"状态被截断为 {st!r}（长度 {len(st)}）"
+    assert any(k in st for k in REQUIRES_ARTIFACT), (
+        f"状态 {st!r} 未命中 REQUIRES_ARTIFACT —— 产物校验将被跳过")
 
 
 def test_executed_prereegs_have_artifacts():
