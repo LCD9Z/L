@@ -15,7 +15,8 @@ ROLES = [
 ]
 
 
-def build_committee_prompt(stock_code: str, company: str, fact_sheet: Dict, prior_reports: List[str] | None = None) -> str:
+def build_committee_prompt(stock_code: str, company: str,
+                         fact_sheet: Dict | None, prior_reports: List[str] | None = None) -> str:
     from agents import pack_data
     reports = "\n\n".join(prior_reports or []) or "[前序报告未提供]"
     machine_checks = json.dumps(deterministic_checks(fact_sheet), ensure_ascii=False, indent=2)
@@ -56,7 +57,7 @@ def build_committee_prompt(stock_code: str, company: str, fact_sheet: Dict, prio
 """
 
 
-def deterministic_checks(fact_sheet: Dict) -> Dict:
+def deterministic_checks(fact_sheet: Dict | None) -> Dict:
     """不调用LLM的硬门槛，给委员会提供可复核的机器审计结果。"""
     q = (fact_sheet or {}).get("quote", {})
     meta = (fact_sheet or {}).get("meta", {})
@@ -85,5 +86,5 @@ def deterministic_checks(fact_sheet: Dict) -> Dict:
     return {"checks": checks, "hard_fail": hard_fail, "pass": not hard_fail}
 
 
-def committee_context(fact_sheet: Dict, prior_reports: List[str] | None = None) -> str:
+def committee_context(fact_sheet: Dict | None, prior_reports: List[str] | None = None) -> str:
     return json.dumps(deterministic_checks(fact_sheet), ensure_ascii=False, indent=2)
