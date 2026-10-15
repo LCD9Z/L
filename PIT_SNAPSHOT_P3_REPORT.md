@@ -79,8 +79,13 @@
   920/4/8 段同为 0 只）→ **本侧 PIT 快照（baostock 源）不含该段**。
   **2026-10-14 主干 P010 评审修正（Q1(b)）**：主干侧通达信 vipdoc **实测覆盖 920 段
   350 只、全部有历史**（`920000`=1,403 条等）→ 正确表述是「**baostock 源不覆盖，
-  该段数据需改用其他源（如通达信）**」，**不得**写成「永久缺失」
+  该段数据需改用其他源**」，**不得**写成「永久缺失」
   （「源覆盖差」与「数据不存在」是两件事，按「空结果 ≠ 无对象」纪律分开）。
+  ⚠️ **2026-10-15 补正（可行性调研）**：**「改用通达信」不成立** —— 通达信 `.day`
+  只有 OHLCV，而 L3 的核心是**估值比率**（`L3_FIELDS` = close/peTTM/pbMRQ/psTTM/
+  pcfNcfTTM/turn/tradestatus/isST）⇒ 该源**无法提供 L3 所需字段**。
+  可行源实测为 **tushare `daily_basic`**（BSE 350 只覆盖、含 pe_ttm/pb/ps_ttm/
+  turnover_rate；频率限制 1 次/分钟）→ 详见 `PIT_L3_920_BACKFILL_FEASIBILITY.md`。
   清单：`D:/pit_snapshots/meta/l3_zero_data_codes_2026-10-13.txt`。
   **两种零数据形态分开记账**（P010 Q1.3）：`sh./sz.` 前缀 success+0 行 = 源无数据；
   `bj.` 前缀 `10004011` = 源不接受符号格式 —— `_fetch_l3` 的
