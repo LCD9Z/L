@@ -370,6 +370,7 @@ python scripts/gen_layout_doc.py --check
 | 8 | ~~`build_certified_dataset_v2.py` 引用未定义名 `prev_day`~~ | **已修（2026-09-19）** | 停牌区间推导中 `prev_day` 仅在循环体内赋值，循环后仍被引用。当前路径"恰好安全"但静态上不可保证。已循环外初始化。发现方式：`ruff` F821 |
 | 9 | ~~`_rows_iter` 闭包未绑定循环变量 `code`~~ | **已修（2026-09-19）** | 发现方式：`ruff` B023。已加 `code=code` 默认参数绑定 |
 | 10 | ~~财务数据源公告日 88.4% 不可信~~ | **已兜底（2026-09-19）** | 东财 `最新公告日期` 在 2016-01~2025-06 **全部期数**上系统性偏移 **+1 年**（茅台 2016Q1 EPS 3.89 确为 2016Q1，却标注 2017-04-25）；仅最近约 4 期正确。**财务数值本身正确，只有公告日错**。已由 `pit.pit_fundamentals.resolve_availability` 兜底：公告日超法定截止日 45 天即判不可信 → 退回法定披露截止日。**残留风险**：真实延迟披露且超窗口者会略早可用（2025-09 后各期 1.6%~4.2%）。彻底解决需改用带真实披露日的源 |
+| 11 | `pool_manager._extract_stage`：逻辑串含「周期阶段：」但**其后无括号**时，返回值**丢失最后一个字符** | 待修（2026-10-15 由新增单测暴露） | `pool_manager.py:36-41`：两个 `find` 都未命中时 `j` 为 **-1**，而 `logic[i+len(mark):j]` 用负数切片 ⇒ 末字符被静默切掉。复现：`python -c "import pool_manager as p; print(repr(p._extract_stage('周期阶段：楔形下跌 量能萎缩')))"` → `'楔形下跌 量能萎'`（期望 `'楔形下跌 量能萎缩'`）。**影响面**：仅该形态触发；实测 `~/.ai-stock-god/watchlist.json` 与 `candidate_pool.json` **当前均不存在** ⇒ 生产中暂不可触发。已用 `tests/test_pool_manager.py::test_extract_stage_without_paren_drops_last_char` 锁定现状（修好后该测试会变红，须先评估影响面） |
 | 6 | ~~`dbb198a` 之前门禁为红：ruff 51 项 / mypy 57 项 / pytest 2 项~~ | **已修（2026-09-30）** | 根因是 `tdx_native` 产品化提交（`d7625ff`）**未过门禁即入库**，使 `run_ci.py` 失去「一条命令验证状态」的作用。已全部清零并补 40 项守卫测试。**教训：提交前必须跑 `run_ci.py`** |
 | 7 | ~~`DIRECTORY_LAYOUT.md` 缺 `tdx_native` 子包~~ | **已修（2026-09-30）** | 新增子包后未重跑 `scripts/gen_layout_doc.py`；`test_layout_doc_in_sync.py` 已捕获。**新增/删除子包后必须重跑生成器** |
 | 8 | ~~`reports/daily_screen_2026-09-19.json` 含 CRLF 行尾~~ | **已修（2026-09-30）** | 该旧产物由 Windows 文本模式写出；已转 LF。**注意：`test_line_endings_are_lf` 扫描工作区全部文本文件（不看 git 跟踪状态），未跟踪的产物同样会被扫到** |
@@ -528,7 +529,7 @@ python scripts/gen_layout_doc.py --check
 | 优先级 | 任务 | 预估工时 | 假设与说明 |
 |:---:|------|:---:|------|
 | **1** | **新的经济逻辑假设（追求 Alpha）** | **3~5 天** | **当前唯一的主攻方向**。含逻辑调研 0.5 天 → 事前登记 0.5 天 → 因子实现 1 天 → IC 检验 0.5 天 → 组合层面 + 基准对照 1~2 天。**前提：必须提出新逻辑，禁止调现有因子权重/阈值**（原则 5） |
-| 2 | 为剩余 9 个无覆盖模块补单测 | **1~1.5 天** | 优先 `pool_manager`、`v3_data_bus`、`professional_committee`；纯标注类（`log_utils`）可略 |
+| 2 | 为**无直接覆盖模块**补单测 | **3~5 天** | ⚠️ **2026-10-15 复核：实测 43 个**（HANDOVER 原记「剩余 9 个」已过时）；口径见 `scripts/list_uncovered_modules.py`（只看测试里的直接 import）。✅ 已完成：`orchestrator`(21) · `pool_manager`(22，本轮)。下一步优先 `v3_data_bus`、`professional_committee`；纯标注类（`log_utils`）可略 |
 | 3 | 巨潮披露日早年覆盖补强 | **0.5 天** | 2016~2021 年覆盖 73~83%，余 12.8% 走法定截止日兜底。可试逐股接口补齐（`stock_zh_a_disclosure_report_cninfo`），但**已确认缺口多为当时未上市的公司**，收益可能有限 |
 | 4 | ADX 叠加的**绝对水平** p 值 | **1~2 小时** | Δ 型已用配对检验补完（§7.13）；`adx_attr_w1~w4.json` 只存了 const05 变体，overlay/baseline 的绝对超额 t/p 需重跑 `run_regime_overlay_study.py` |
 | 5 | 补齐数据库迁移机制 | **0.5 天** | 当前无迁移脚本；若 schema 需变更则必须先做 |
@@ -543,7 +544,7 @@ python scripts/gen_layout_doc.py --check
 | **1** | **新的经济逻辑假设（追求 Alpha）** | **3~5 天** | 含：逻辑调研 0.5 天 → 事前登记 0.5 天 → 因子实现 1 天 → IC 检验 0.5 天 → 组合层面 + 基准对照 1~2 天（多窗口回测）。**前提：必须提出新逻辑，禁止调现有 7 因子权重/阈值** |
 | 2 | ARK 付费模型凭据验收 | **0.5 天** | 阻塞于用户提供凭据；含接通 + 一次真实调用 + 结果留档 |
 | 3 | ~~修复 `tdx_ab_stage2` verdict 文案~~ | **✅ 已完成** | 根因是 `params` 未记录 `slip_mode`。已修脚本 + 加守卫测试（见 [5.3](#53-已知缺陷与复现步骤) 第 1 条） |
-| 4 | ~~为 10 个无直接覆盖模块补单测~~ → **剩余 9 个** | **1~1.5 天** | ✅ `orchestrator` 已完成（21 项，并修掉一个严重缺陷）。剩余优先 `pool_manager`、`v3_data_bus`、`professional_committee`；纯标注类（`log_utils`）可略 |
+| 4 | ~~为 10 个无直接覆盖模块补单测~~ → **实测 43 个**（2026-10-15 复核，原记「剩余 9 个」过时） | **3~5 天** | ✅ `orchestrator`(21) · `pool_manager`(22，含暴露 1 个边界缺陷) 已完成；剩余优先 `v3_data_bus`、`professional_committee`；纯标注类（`log_utils`）可略 |
 | 5 | `disallow_untyped_defs` 全量收紧 | **2~3 天** | 569 处纯标注补全，**无缺陷捕获收益**，建议最后做 |
 | 6 | 其余外部集成验收 | **1 天** | 需凭据；每项含真实调用 + 留档 |
 | 7 | 补齐数据库迁移机制 | **0.5 天** | 当前无迁移脚本；若 schema 需变更则必须先做 |
