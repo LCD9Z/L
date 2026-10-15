@@ -27,7 +27,6 @@ __pycache__/
 # 判定规则：未跟踪的 = 可重生成的中间产物；已跟踪的 = 证据快照。
 reports/*
 !reports/*.json
-reports/_*.json
 runtime_logs/
 *.log
 *.partial
@@ -42,6 +41,14 @@ runtime_logs/
 !reports/
 reports/*
 !reports/*.json
+# ⚠️ `_` 前缀探针必须放在 `!reports/*.json` **之后**（2026-10-16 修，顺序是硬约束）：
+# gitignore **后规则优先** —— 若写在它之前（原第 30 行），会被上一行的
+# `!reports/*.json` 覆盖，`reports/_*.json` 实际**不被忽略**，
+# 于是探针 / 重算中间产物会被 `git add -A` 顺带入库。
+# 实例：`_turnover_fix_probe.json` 即因此意外 tracked（副本侧实测
+# `git check-ignore -v` 返回 `!reports/*.json` 命中「不忽略」而发现）。
+# 守卫：tests/test_gitignore_rules.py（含反向验证，防回归）
+reports/_*.json
 !reports/*.md
 !reports/EVIDENCE_INDEX.md
 !reports/external_v3/
