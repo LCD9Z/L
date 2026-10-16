@@ -14,6 +14,25 @@
 ⚠️ **动手前先确认 cwd** —— IDE 工作目录可能还指向已失效的 `Desktop\1.0`，
 那时所有相对路径都会落空。计划任务 `TDXDaily` 已改指 `D:\hunhe\trunk\run_daily.bat`。
 
+## Windows junction 修复（2026-10-16）
+
+`~/.workbuddy[ai]/binaries/python/versions/<ver>` 是指向**应用 vendor 目录**的
+**Junction**。应用更新失败时会被改指到**不存在的 vendor 路径** →
+CI 的 `mypy` 等步骤挂（`ruff` 仍过，它不依赖 Python，是**判据**）。
+
+**安全修法**（不触碰目标内容）：
+
+```powershell
+[System.IO.Directory]::Delete($link, $false)    # 非递归 → 只删链接
+New-Item -ItemType Junction -Path $link -Target "<系统 Python 安装目录>"
+```
+⚠️ **禁止对 junction 用递归删除** —— 会连目标内容一起删。
+⚠️ 这是**绕过**：应用更新装成后 junction 会被覆盖回正确目标，改动自然失效（无害）；
+**根治仍是完成应用更新**。
+⚠️ 修 junction 只恢复 CI 能力，**不等于 GUI 能启动**（后者是会话权限问题，需人工双击）。
+
+已修：`~/.workbuddy-ai/.../3.13.12` → `C:\Users\T430\AppData\Local\Programs\Python\Python313`。
+
 ## 本项目的「接口契约」坑（踩过 ≥2 次，务必先查）
 
 ### `tdx_native.day_reader.scan_paths()` 返回三元组顺序是 **(code, market, path)**
