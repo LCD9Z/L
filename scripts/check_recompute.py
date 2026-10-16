@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -41,6 +42,26 @@ META_KEYS = frozenset({"args", "runtime_sec", "prereg", "benchmark", "source",
 #: 收益/超额类字段（V3 方向判定；成本升 ⇒ 这些值应**下降**）
 RETURN_KEYS = ("total_return_pct", "annualized_excess", "annualized_excess_pct",
                "net_return", "excess_delta_pp", "benchmark_return_pct")
+
+#: 产物文件名 = ``<名>_<窗口>.json``，窗口恒为 ``YYYY-MM-DD``。
+#: ⚠️ 2026-10-16 修：原用 ``glob(f"{name}_*.json")`` 前缀匹配，会把**同族产物互相吞并**
+#: —— ``combo_study_h20`` 会吞 ``combo_study_h20_fixed_*``、``tc_t2`` 会吞 ``tc_t2_p1_*``，
+#: 使不属于该产物的窗口被计入对账。改为按 ``<名>_<窗口>`` 精确切分
+#: （产品名不含 ``YYYY-MM-DD``，切分无歧义）。
+NAME_WIN_RE = re.compile(r"^(?P<name>.+)_(?P<win>\d{4}-\d{2}-\d{2})$")
+
+
+def parse_stem(stem: str) -> Optional[Tuple[str, str]]:
+    """把 ``<名>_<窗口>`` 切成 (名, 窗口)；不匹配（如 ``.partial``）返回 None。"""
+    m = NAME_WIN_RE.match(stem)
+    return (m.group("name"), m.group("win")) if m else None
+
+
+def files_for(name: str) -> List[Path]:
+    """返回 ``name`` 的全部重算产物（**精确名匹配**，不吞同族产物）。"""
+    out = [p for p in RECALC.glob("*.json")
+           if (parsed := parse_stem(p.stem)) and parsed[0] == name]
+    return sorted(out)
 
 
 def index_by_window(obj: Any, out: Dict[str, List[Dict[str, Any]]]) -> None:
@@ -86,7 +107,7 @@ def check_one(name: str, verbose: bool) -> Tuple[int, int, int]:
     if not old_p.exists():
         print(f"  ✗ {name}: 原产物不存在")
         return 1, 0, 0
-    news = sorted(RECALC.glob(f"{name}_*.json"))
+    news = files_for(name)
     if not news:
         print(f"  · {name}: 无重算产物（未跑）")
         return 0, 0, 0
@@ -135,7 +156,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--verbose", action="store_true", help="逐字段列出差异")
     args = ap.parse_args(argv)
 
-    names = sorted({p.name.rsplit("_", 1)[0] for p in RECALC.glob("*.json")})
+    names = sorted({
+        parsed[0]
+        for p in RECALC.glob("*.json")
+        if (parsed := parse_stem(p.stem))
+    })
     if args.only:
         names = [n for n in names if n == args.only] or [args.only]
     if not names:
