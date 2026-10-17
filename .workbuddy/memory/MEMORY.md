@@ -209,3 +209,25 @@ for code, mkt, p in day_reader.scan_paths('D:/new_tdx/vipdoc'):   # ✅
 
 **推论（CI 结论）**：mypy 步失败会让后面的 pytest **根本不跑**，
 所以「CI 6/6 PASS」必须带**运行批次 / 跑到第几步**，否则等于没证明。
+
+## 「谁更新」必须比**内容**，不能比 `size`/`mtime`（2026-10-18）
+
+跨侧/跨副本对比时最常犯的误判：只看 `size + mtime` 就宣布「A 侧更新」。
+**`size` 之差恰好等于行数时，几乎必然是行尾差异（CRLF vs LF）**，不是内容不同。
+
+实例：`data/gbbq_events.csv` trunk 2,613,053 B / 副本 2,549,444 B，差 **63,609 = 行数**；
+`names.csv` 差 47,934 ≈ 行数 47,935 —— 去掉 `\r` 后 md5 **完全相同**，git 索引本就是 LF。
+
+**做法**：
+1. 先算「去行尾后的 md5」对比，不同才继续比内容；
+2. `git hash-object <path>` 与 `git ls-files -s` 的 sha 对比，可直接判定内容是否一致
+   （属性归一已内含，无需手写 CRLF 逻辑）；
+3. 转行尾后若 `git status` 仍报 `M`，先看 `git diff` 是否为空 ——
+   空即「索引 stat 缓存脏」（存的是旧 size），`git add` 刷新即可，**不是内容变更**；
+4. `Get-ScheduledTaskInfo.NextRun` 对 **Disabled** 任务仍是缓存值，不能用它判断「还在跑」，
+   应看 `Get-ScheduledTask` 的 `State`。
+
+**推论（守卫覆盖面）**：扩展名白名单本身就是一种静默失效面 ——
+`test_line_endings_are_lf` 不含 `.csv`，导致 9 个 CRLF csv 长期无人发现。
+**新增文件类型时，先问「守卫覆盖这个后缀吗」**；扩守卫时要把过程产物排除在外，
+否则日常运行后恒红，规范就变成噪声。

@@ -294,17 +294,28 @@ def test_line_endings_are_lf():
 
     背景：在 Windows 上用 Python 文本模式写文件会把 \\n 转成 \\r\\n，
     导致仓库出现混合行尾、产生大量无意义 diff。本测试守卫该问题。
+
+    **CSV 的范围限定（2026-10-18 补）**：只对**输入/规范层**（`data/`、
+    `reports/external_*`）要求 LF。`reports/` 下其余 csv 是日常流程产物，
+    由 Windows `csv` 模块默认写成 CRLF 且已被 `.gitignore` 忽略；
+    若一并纳入，守卫会在每次日常运行后恒红 —— 那等于把「规范」变成噪声。
+    见 `tests/test_pit_snapshot_store.py:236` 对「规范层必须 LF」的同一口径。
     """
     exts = (".py", ".md", ".json", ".txt", ".yml", ".yaml", ".ini", ".toml")
+    csv_lf_roots = ("data/", "reports/external_")
     offenders = []
     for path in glob.glob("**/*", recursive=True):
         if not os.path.isfile(path):
             continue
-        if path.endswith(exts) or os.path.basename(path) in (".gitignore", ".env.example"):
-            with open(path, "rb") as f:
-                raw = f.read()
-            if b"\r\n" in raw:
-                offenders.append(path)
+        norm = path.replace("\\", "/")
+        is_text = norm.endswith(exts) or os.path.basename(norm) in (".gitignore", ".env.example")
+        is_csv_scope = norm.endswith(".csv") and norm.startswith(csv_lf_roots)
+        if not (is_text or is_csv_scope):
+            continue
+        with open(path, "rb") as f:
+            raw = f.read()
+        if b"\r\n" in raw:
+            offenders.append(norm)
     assert offenders == [], f"以下文件含 CRLF 行尾: {offenders[:10]}"
 
 

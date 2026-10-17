@@ -1480,3 +1480,17 @@ A2 合并时在 `mypy.ini` 显式登记的债务（主侧脚本类型推断松�
 | 验证 | 8 份全部纯 LF；blockquote 与表格间有空行（CommonMark 正确渲染） |
 | 提交 | `cc5a472` |
 | 回执 | §二十一 |
+
+### 19.15 看门狗停用确认 · `data/` CSV 定主干版本 · 行尾守卫补盲区（2026-10-18）
+
+| 项 | 内容 |
+|---|---|
+| 触发 | 用户「看门狗还没停用吗？定主干的那个版本」 |
+| 看门狗 | `RecomputeCopyWatchdog` **State=Disabled / Enabled=False**；最后一次运行 **10-18 06:31:06**（`POSTDONE: already done, skip`），此后无新运行。`NextRun=07:31` 只是禁用前的缓存显示，Disabled 任务不会执行 |
+| **上轮误判更正** | 上轮判「`data/` 副本那份更新」**错了** —— 当时只用 size + mtime。实测**去掉行尾后 md5 完全相同**（`gbbq_events` `62d11b3d…`、`names` `df000bcf…`），git 索引本就是 LF（len 2,549,444 / 869,177，CR=0）。**真实差异只是工作树行尾**：trunk CRLF、副本 LF |
+| 裁定执行 | 内容取**主干**（与副本逐字节相同）；行尾按 `.gitattributes` `* text=auto eol=lf` 统一 **LF** ⇒ trunk 两份 CSV 由 CRLF 转 LF |
+| 零内容变更 | 归一后 sha 与索引一致（`21b872dc…` / `4427b748…`），`git diff` 空，**无需提交**；只需 `git add` 刷新索引 stat 缓存（否则 status 会因 size 字段不符误报 `M`） |
+| 守卫盲区 | `test_line_endings_are_lf` 白名单**不含 `.csv`** ⇒ 这两份 CRLF 长期未被抓（全仓 9 个 CRLF csv，7 个在 `.gitignore` 内）。扩为「文本类 + `data/`、`reports/external_*` 下的 csv」，避开 `reports/daily` 等过程产物（否则日常运行后恒红） |
+| 反向验证 | 植入 CRLF 到 `data/names.csv` ⇒ 守卫报 `['data/names.csv']` **且只报这一个**（过程产物未误抓）；恢复后回归绿 |
+| 备份 | `/d/hunhe/_log_out/bak_csv_20261018/`（CRLF 原件 + LF 件） |
+| 现状 | 两仓 `data/` 两份 CSV **逐字节相同**；`data/` 权威问题结案 |
