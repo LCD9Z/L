@@ -278,3 +278,22 @@ V4 无结构异常。**V3 方向异常 6 份 14 处**（收益/超额**上升**�
 跨线卖出恒按 0.5‰）—— 见 `HANDOVER.md` §5.3 #16，守卫 `tests/test_contrarian_costs.py`（含反向验证）。
 
 **本册不构成投资建议。**
+
+---
+
+## 十、P014 备注整改与 P013-④ 落实（2026-10-17）
+
+**P014**（`03_已确认/P014成本重算裁定落实_验收确认_主干_2026-10-17.md`）验收通过，
+三条不阻塞备注已全部关闭，另补落实悬空的 **P013-④ `_baseline`**。
+
+| 项 | 结果 |
+|---|---|
+| ① CI 红灯（缺 `grep.exe`） | `tests/test_data_contracts_num.py` 改**纯 Python 扫描**（`_scan_local_num_defs`），新增 2 条反向验证；实测无 `grep` 的 PATH 下旧实现 `FileNotFoundError`、新实现 34 项全过 |
+| ② 白名单换基线复核 | 新增 `ATTRIBUTED_BASELINE = {main: 8db1c65, copy: 2b9f97d, recorded_at: 2026-10-17}` + 2 条守卫（与任务表双向零漂移 / 基线时点可追溯） |
+| ③ 文案与计数 | WIKI L9 旧措辞已改；**副本 `.partial` 实测全树 15 个**（`_recalc` 9 + `reports/` 根 6），§十 的「7」与 P014 的「9」均为较窄口径 |
+| **P013-④ `_baseline`** | **已实现**：新产物由 `stamp_baseline()` 内嵌 `{commit, as_of, source}`（幂等）；已落 **43 份**用 `--baseline-index f8f020d` 生成旁挂索引 `reports/_recalc/_baseline_index.json`，**不重写产物字节/mtime**（聚合 md5 前后一致） |
+
+**质量门**：`run_ci.py` 6/6 PASS；pytest **1,494 项、失败 0**。
+**判据**：`_baseline` 只解决「哪份代码产出本产物」的可追溯性，**不改任何数字**，不影响 §九 终版对账结论。
+
+**本册不构成投资建议。**

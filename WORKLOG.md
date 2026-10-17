@@ -1439,3 +1439,16 @@ A2 合并时在 `mypy.ini` 显式登记的债务（主侧脚本类型推断松�
 | 守卫 | `tests/test_check_recompute_caliber.py` 8 项（含 2 条**固化反向验证**：关规则即退化）；`tests/test_trade_costs_rules.py` 四形态参数化 6 项（`20230825`/`2023-08-25`/`20230829`/`2023-08-29`/`None`/`""`） |
 | 文档 | 登记册 §一（触发形态）+ §3.2→§3.3 + §六（主侧 28/28）+ §八（v2/v3 基准收口）+ **§九**（终版对账与裁定）· `HANDOVER.md` §5.3 **#16** · 回执 §九/§十 · 07 篇 L1 |
 | 状态 | 主侧 **28/28**；副本侧 **15/15 跨线**（37 非跨线 P2 可选）；计划任务 `RecomputeCopyCrossing` 保持 **Disabled**；不 push |
+
+### 19.12 P014 备注整改 + P013-④ `_baseline` 落地（2026-10-17）
+
+| 项 | 内容 |
+|---|---|
+| 依据 | `03_已确认/P014…验收确认` §三（三条不阻塞备注）+ 副本巡检悬空项 P013-④ |
+| ① CI 红灯 | `test_data_contracts_num` 改**纯 Python 扫描**：原 `subprocess` 调 `grep` 在无 `grep.exe` 的 Windows shell 抛 `FileNotFoundError`（**环境缺失伪装成断言失败**）。新增 `_scan_local_num_defs()` + 2 条反向验证；实测无 grep 环境旧实现报错、新实现 34 项全过 |
+| ② 白名单复核 | `ATTRIBUTED_BASELINE = {main: 8db1c65, copy: 2b9f97d, recorded_at: 2026-10-17}`；守卫 2 项：白名单 ↔ `MAIN_TASKS ∪ COPY_TASKS` **双向零漂移**、基线时点可追溯。换基线必须改常量 ⇒ **复核落在 diff 里** |
+| ③ 文案与计数 | WIKI L9 旧措辞改为「跨线已全量重算并验收，引用须注明只覆盖跨线窗口」。**副本 `.partial` 全树 15 个**（`_recalc` 9 + `reports/` 根 6），§十「7」与 P014「9」均较窄口径 |
+| **P013-④** | 新产物 `stamp_baseline()` 内嵌 `_baseline{commit, as_of, source}`（**幂等**，不覆盖已有）；已落 43 份用 `--baseline-index f8f020d` 建旁挂索引，**不重写产物字节/mtime**（聚合 md5 前后一致） |
+| 守卫 | `tests/test_recompute_baseline_stamp.py` 5 项（幂等 / 索引不动产物与 mtime / sha 形态）；`test_check_recompute_caliber.py` +2；`test_data_contracts_num.py` +2 |
+| 质量门 | `run_ci.py` **6/6 PASS**；pytest **1,494 项 · 失败 0** |
+| 状态 | P014 三条备注**全部关闭**；P013-④ **已实现**；不 push |
