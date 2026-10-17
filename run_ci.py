@@ -65,6 +65,11 @@ def _run(cmd: List[str]) -> int:
     env.setdefault("FETCH_RATE_PER_SEC", "0")
     env.setdefault("PYTHONDONTWRITEBYTECODE", "1")
     env.setdefault("LOG_LEVEL", "WARNING")
+    # 强制子进程 UTF-8：本仓库源码/配置（mypy.ini、pytest.ini）含中文注释，
+    # 在中文 Windows 的 cmd/shell 下默认编码为 cp936，mypy 用 configparser 读
+    # mypy.ini 会抛 UnicodeDecodeError（Git Bash 因 LANG 不同反而正常）——
+    # 属「同一套代码换个 shell 就红」的环境脆弱性，2026-10-17 与 grep 问题同批修。
+    env.setdefault("PYTHONUTF8", "1")
     proc = subprocess.run(cmd, cwd=str(ROOT), env=env)
     return proc.returncode
 

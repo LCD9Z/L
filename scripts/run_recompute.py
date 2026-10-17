@@ -34,6 +34,12 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "reports" / "_recalc"
 PY = sys.executable
 
+#: 已落产物的**回溯基线**（按侧）：主侧 = 任务落地提交（登记册 §六），
+#: 副本侧 = 10-17 验收回执文首基线。中间 docs/memory 类提交不改成本代码，故不取 mtime HEAD。
+#: ⚠️ 必须与 `scripts/check_recompute.py::ATTRIBUTED_BASELINE` 的 main/copy 一致，
+#: 由 `tests/test_recompute_baseline_stamp.py::test_baseline_constants_match_check_recompute` 守卫。
+BASELINE_BY_SIDE = {"main": "8db1c65", "copy": "2b9f97d"}
+
 #: 印花税分段生效日（与 `gen_evidence_index.STAMP_DUTY_CUT` 一致）。
 #: 窗口**起点**早于该日 ⇒ 窗口内交易跨越生效日 ⇒ 受印花税缺陷影响。
 #: ⚠️ 2026-10-15 实测：单窗口耗时 7~43 分钟（combo_study 5 组合 ≈ 43 min），
@@ -208,30 +214,56 @@ def git_short_sha() -> str:
         return "unknown"
 
 
+def json_style(raw: str) -> tuple[Optional[Any], str]:
+    """探测 JSON 文本的**原生字节风格**：``(indent, trailing)``。
+
+    ``indent``：``None`` = 单行；整数/``"\\t"`` = 缩进单位（取第二行前导空白）。
+    ``trailing``：文件尾部的换行串（可能为空）。重写产物时必须沿用，
+    否则「只加一个字段」会顺手把整份文件的格式改掉。
+    """
+    trailing = raw[len(raw.rstrip("\r\n")):]
+    body = raw[:len(raw) - len(trailing)]
+    lines = body.splitlines()
+    indent: Optional[Any] = None
+    if len(lines) > 1:
+        nxt = lines[1]
+        lead = nxt[:len(nxt) - len(nxt.lstrip(" \t"))]
+        if lead:
+            indent = "\t" if lead[0] == "\t" else len(lead)
+    return indent, trailing
+
+
 def stamp_baseline(task: Dict[str, Any], window: str,
                    commit: Optional[str] = None) -> Optional[str]:
-    """给**新落盘**产物补 ``_baseline``（P013-④）：HEAD 短 sha + 生成时间戳。
+    """给**新落盘**产物补 ``_baseline``（P013-④ 原文：生成时写 HEAD 短 sha + 时间戳）。
 
     幂等：已有 ``_baseline`` 的产物不覆盖（防重跑抹掉原始基线）。
-    返回写入的 commit；不适用时返回 ``None``。
+    ``git`` 不可用（sha = ``unknown``）时**不落戳** —— 否则会把 ``unknown`` 永久写死，
+    幂等逻辑反而阻断日后补戳。
+    重写沿用产物**原生缩进与尾换行**（实测 `_recalc` 产物为 ``indent=1``、无尾换行）。
+    返回写入的 commit；不适用（无产物 / 已有戳 / sha 不可用 / 解析失败）时返回 ``None``。
     """
     p = out_path(task, window)
     if not p.exists():
         return None
     try:
-        data = json.loads(p.read_text(encoding="utf-8"))
+        raw = p.read_text(encoding="utf-8")
+        data = json.loads(raw)
     except (OSError, json.JSONDecodeError):
         return None
     if not isinstance(data, dict) or "_baseline" in data:
         return None
     sha = commit or git_short_sha()
+    if sha == "unknown":
+        return None
     data["_baseline"] = {
         "commit": sha,
         "as_of": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "source": "run_recompute",
     }
-    p.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n",
-                 encoding="utf-8", newline="\n")
+    indent, trailing = json_style(raw)
+    p.write_text(json.dumps(data, ensure_ascii=False, indent=indent) + trailing,
+                 encoding="utf-8", newline="")
     return sha
 
 
@@ -289,36 +321,46 @@ def progress(tasks: List[Dict[str, Any]], side: str) -> str:
     return f"{label}进度：{done}/{total} 窗口"
 
 
-def write_baseline_index(commit: str, tasks: List[Dict[str, Any]]) -> Path:
-    """为**已落盘**产物登记基线（P013-④「已落窗口由验收环节补记基线」）。
+def write_baseline_index(tasks_by_side: Dict[str, List[Dict[str, Any]]]) -> Path:
+    """为**已落盘**产物回溯补记基线，写入 ``reports/_recalc/_baseline_index.json``。
 
-    ⚠️ **不重写产物字节、不改 mtime** —— 既有 43 份是证据，只在其**旁**建立索引
-    ``reports/_recalc/_baseline_index.json``。这样既满足「可追溯基线」，又不触碰
-    证据本身（禁令 3）。
+    **基线取值按侧，不按 mtime**：主侧取任务落地提交 ``8db1c65``（登记册 §六），
+    副本侧取 ``2b9f97d``（10-17 验收回执文首基线）。中间若干「docs(memory)」类提交
+    不改成本代码，故**取任务落地提交**而非产物 mtime 当时的 HEAD。
+
+    ⚠️ **不改产物字节、不改 mtime** —— 既有 43 份是证据，本索引只是**旁挂**登记
+    （2026-10-17 自创的证据保全方案），不是产物自证。
     """
     entries: Dict[str, Dict[str, Any]] = {}
-    for t in tasks:
-        for w in t["windows"]:
-            p = out_path(t, w)
-            if not p.exists():
-                continue
-            entries[p.name] = {
-                "product": t["name"],
-                "window": w,
-                "commit": commit,
-                "as_of": time.strftime("%Y-%m-%dT%H:%M:%S",
-                                       time.localtime(p.stat().st_mtime)),
-                "mtime_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ",
-                                           time.gmtime(p.stat().st_mtime)),
-                "size": p.stat().st_size,
-                "origin": "backfilled",   # 与产物内嵌 `_baseline`（origin=run_recompute）区分
-            }
+    for side, tasks in tasks_by_side.items():
+        commit = BASELINE_BY_SIDE[side]
+        for t in tasks:
+            for w in t["windows"]:
+                p = out_path(t, w)
+                if not p.exists():
+                    continue
+                entries[p.name] = {
+                    "product": t["name"],
+                    "side": side,
+                    "window": w,
+                    "commit": commit,
+                    "as_of": time.strftime("%Y-%m-%dT%H:%M:%S",
+                                           time.localtime(p.stat().st_mtime)),
+                    "mtime_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                               time.gmtime(p.stat().st_mtime)),
+                    "size": p.stat().st_size,
+                    "origin": "backfilled",   # 与产物内嵌 `_baseline`（origin=run_recompute）区分
+                }
     out = OUT_DIR / "_baseline_index.json"
-    out.write_text(json.dumps({"_note": "P013-④ 已落窗口基线补记；产物字节未改动",
-                               "_default_commit": commit,
-                               "entries": entries},
-                              ensure_ascii=False, indent=1) + "\n",
-                   encoding="utf-8", newline="\n")
+    out.write_text(json.dumps({
+        "_note": (
+            "P013-④ 已落窗口基线**回溯补记**（非产物自证）：main 侧依据 COST_BASELINE "
+            "册 §六 = 8db1c65，copy 侧依据 10-17 验收回执 = 2b9f97d；中间文档/测试提交"
+            "不影响成本代码，故取任务落地提交。产物字节与 mtime 未改动。"),
+        "baseline_by_side": dict(BASELINE_BY_SIDE),
+        "entries": entries},
+        ensure_ascii=False, indent=1) + "\n",
+        encoding="utf-8", newline="\n")
     return out
 
 
@@ -333,8 +375,8 @@ def main(argv: Optional[List[str]] = None) -> int:
                     help="不跳过已完成窗口（默认跳过）")
     ap.add_argument("--crossing-only", action="store_true",
                     help=f"只跑窗口起点 < {CROSSING_CUT} 的窗口（受印花税缺陷影响者）")
-    ap.add_argument("--baseline-index", default=None, metavar="SHA",
-                    help="为已落盘产物补记基线索引（P013-④；不重写产物字节）")
+    ap.add_argument("--baseline-index", action="store_true",
+                    help="为已落盘产物回溯补记基线索引（按侧取值；不重写产物字节）")
     args = ap.parse_args(argv)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -342,9 +384,15 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.baseline_index:
         # 一次覆盖**两侧**全部已落盘产物（43 份 = 主 28 + 副本 15），与 --side 无关
-        p = write_baseline_index(args.baseline_index, MAIN_TASKS + COPY_TASKS)
-        n = len(json.loads(p.read_text(encoding="utf-8"))["entries"])
-        print(f"基线索引已写入 {p.relative_to(ROOT)}（{n} 份产物，commit={args.baseline_index}）")
+        p = write_baseline_index({"main": MAIN_TASKS, "copy": COPY_TASKS})
+        data = json.loads(p.read_text(encoding="utf-8"))
+        ents = data["entries"]
+        groups: Dict[str, int] = {}
+        for e in ents.values():
+            groups[f"{e['side']}:{e['commit']}"] = groups.get(f"{e['side']}:{e['commit']}", 0) + 1
+        print(f"基线索引已写入 {p.relative_to(ROOT)}（{len(ents)} 份产物，按侧取值）")
+        for k, n in sorted(groups.items()):
+            print(f"  {k:18} {n:2} 份")
         return 0
 
     if args.list:
