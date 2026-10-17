@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 _spec = importlib.util.spec_from_file_location(
     "check_recompute", ROOT / "scripts" / "check_recompute.py")
+assert _spec is not None and _spec.loader is not None
 cr = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(cr)
 

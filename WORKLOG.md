@@ -1426,3 +1426,16 @@ A2 合并时在 `mypy.ini` 显式登记的债务（主侧脚本类型推断松�
 | 验证 | ① `0a81a5f` 自身记录的量化影响（C5_V0 -7.46→+5.21，+12.67pp）与 V3 异常幅度吻合；② 共用 `A_baseline` 臂的 `tc_t1_p2` 与 `v2_p1` 数值变化逐位一致（-13.103→-9.055）；③ 对照组 `ss_p1`：SS_style_switch（不走 `score_history`）逐位不变，SS_inv_falsify（走 `score_history`）降 12pp——同一产物内两臂方向相反，锁定根因 |
 | 处置 | COST_BASELINE 册新增 §七 归因记录；07 篇 L9「6 份跨窗口结论冻结」解除，改为「基线演进已归因，跨窗口比较待非跨线窗口重算后统一引用」；非跨线窗口补跑由 P013 A/B 档一并裁定 |
 | 关联提交 | `0a81a5f`（根因）· `bfd4c52`（impact_stats，中性）· `a3a7f88`（ATR止损/weight_func，默认关闭）· `86956c8`（A2 合并新增参数，默认关闭） |
+
+### 19.11 L1 副本侧重算收口 + 缺陷未触发定性 + 新缺陷 #16（2026-10-17）
+
+| 项 | 内容 |
+|---|---|
+| 任务 | 副本侧 15 跨线窗口验收，落实回执 §九 A–G 裁定（§十 执行任务书 C→A→B→D→E） |
+| 副本侧执行 | **15/15 跨线窗口完成、零失败**（`rolling_eval` 6 窗口经「人工修正通道」还原 `--benchmark/--min-rows-asset/--skip-audit` 后重跑；v3 基准按预注册 §六 新建 `benchmark_ew.csv`） |
+| ⭐ 关键发现 | **D1 印花税缺陷在当前全部数据通道下未触发**：修复前 `str(trade_date) >= str("2023-08-28")` 仅在 `trade_date` **无横杠**时恒真；certified CSV `date` 带横杠、三条成本链 `trade_date` 均取自 `bar['date']`、`tdx_native/` 不 import 成本链 ⇒ **触发面 = 0**。24 份重算差异 **100% 为 A2 代码基线演进（D2，主因 `0a81a5f` 候选池修复）**，不含印花税修复成分。`stamp_duty_stale` 24 份机器清单**保留为保守哨兵** |
+| 新缺陷 #16 | `run_contrarian_portfolio._trade_return` 调 `_trade_cost` **不传 `trade_date`** ⇒ 跨线卖出恒按 0.5‰（应 1‰），单边成本低估 0.5‰，**修复前后均错**。已修（传 `str(entry_bar["date"])`/`str(exit_bar["date"])`）+ 守卫 `tests/test_contrarian_costs.py`（**反向验证**：改回不传日期则 2 项失败）。Tier B `contrarian_ab_with_p.json` 窗口 `2024-01-02~`/`2025-01-02~` 全在线后 ⇒ **不受影响**，移入登记册 §3.3 |
+| 对账口径拆分 | `check_recompute.py`：① `BENCHMARK_KEYS` 移出 `RETURN_KEYS`（基准替换不计 V3）；② `ew_*` 族记 **CALIBER**（仅当新侧含外部基准字段，否则仍计 V1）；③ `ATTRIBUTED_TO_BASELINE` 白名单（主 12 + 副本 12）已归因上升单列、不计 V3。**终版汇总**：`V1 真实缺键 0 · CALIBER 6 · 差异 36 · V3 未归因上升 0 · ATTRIBUTED 49 · 基准替换 6` |
+| 守卫 | `tests/test_check_recompute_caliber.py` 8 项（含 2 条**固化反向验证**：关规则即退化）；`tests/test_trade_costs_rules.py` 四形态参数化 6 项（`20230825`/`2023-08-25`/`20230829`/`2023-08-29`/`None`/`""`） |
+| 文档 | 登记册 §一（触发形态）+ §3.2→§3.3 + §六（主侧 28/28）+ §八（v2/v3 基准收口）+ **§九**（终版对账与裁定）· `HANDOVER.md` §5.3 **#16** · 回执 §九/§十 · 07 篇 L1 |
+| 状态 | 主侧 **28/28**；副本侧 **15/15 跨线**（37 非跨线 P2 可选）；计划任务 `RecomputeCopyCrossing` 保持 **Disabled**；不 push |

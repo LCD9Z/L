@@ -66,3 +66,20 @@ def test_transfer_fee_can_be_disabled_for_legacy_comparison():
     c = Costs(transfer_fee_rate=0.0, stamp_duty_change_date="0001-01-01")
     # 还原旧成本模型：无过户费、全程 0.5‰ 印花税（生效日设为最早，任何日期都用现行税率）
     assert _trade_cost(100_000.0, "sell", c, "2023-07-03") == pytest.approx(80.0)
+
+
+@pytest.mark.parametrize("trade_date,expected", [
+    ("20230825", 0.001),    # 无横杠（通达信原生 .day 形态）——修复前会触发的形态
+    ("2023-08-25", 0.001),  # 带横杠（certified CSV 形态，现有全部数据通道）
+    ("20230829", 0.0005),
+    ("2023-08-29", 0.0005),
+    (None, 0.0005),         # 未传日期 → 现行（缺陷 #16 曾长期走此分支）
+    ("", 0.0005),
+])
+def test_stamp_rate_invariant_to_date_format(trade_date, expected):
+    """日期形态无关性（2026-10-17 裁定 D）。
+
+    带横杠与不带横杠必须同判；`_norm_date` 修复后两形态一致。
+    无横杠分支保留为**形态守卫**：防未来原生 `.day` 直接接入成本链。
+    """
+    assert _stamp_rate(Costs(), trade_date) == pytest.approx(expected)
