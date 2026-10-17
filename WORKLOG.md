@@ -1448,7 +1448,7 @@ A2 合并时在 `mypy.ini` 显式登记的债务（主侧脚本类型推断松�
 | ① CI 红灯 | `test_data_contracts_num` 改**纯 Python 扫描**：原 `subprocess` 调 `grep` 在无 `grep.exe` 的 Windows shell 抛 `FileNotFoundError`（**环境缺失伪装成断言失败**）。新增 `_scan_local_num_defs()` + 2 条反向验证；实测无 grep 环境旧实现报错、新实现 34 项全过 |
 | ② 白名单复核 | `ATTRIBUTED_BASELINE = {main: 8db1c65, copy: 2b9f97d, recorded_at: 2026-10-17}`；守卫 2 项：白名单 ↔ `MAIN_TASKS ∪ COPY_TASKS` **双向零漂移**、基线时点可追溯。换基线必须改常量 ⇒ **复核落在 diff 里** |
 | ③ 文案与计数 | WIKI L9 旧措辞改为「跨线已全量重算并验收，引用须注明只覆盖跨线窗口」。**副本 `.partial` 全树 15 个**（`_recalc` 9 + `reports/` 根 6），§十「7」与 P014「9」均较窄口径 |
-| **P013-④** | 新产物 `stamp_baseline()` 内嵌 `_baseline{commit, as_of, source}`（**幂等**，不覆盖已有）；已落 43 份用 `--baseline-index f8f020d` 建旁挂索引，**不重写产物字节/mtime**（聚合 md5 前后一致） |
+| **P013-④** | 新产物 `stamp_baseline()` 内嵌 `_baseline{commit, as_of, source}`（**幂等**，不覆盖已有；git 不可用不落戳；沿用原生缩进/尾换行）；已落 43 份用 `--baseline-index`（无值 flag）建旁挂索引 = `main:8db1c65`×28 + `copy:2b9f97d`×15，**不重写产物字节/mtime**。索引属**自创保全方案**，P013 原文只要求新产物内嵌 |
 | 守卫 | `tests/test_recompute_baseline_stamp.py` 5 项（幂等 / 索引不动产物与 mtime / sha 形态）；`test_check_recompute_caliber.py` +2；`test_data_contracts_num.py` +2 |
 | 质量门 | `run_ci.py` **6/6 PASS**；pytest **1,494 项 · 失败 0** |
 | 状态 | P014 三条备注**全部关闭**；P013-④ **已实现**；不 push |
