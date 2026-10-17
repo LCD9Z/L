@@ -78,16 +78,38 @@ COPY_TASKS: List[Dict[str, Any]] = [
      "args": ["--dataset", "D:/tdx_dataset_v2", "--exclude-ret20-top", "0.2",
               "--max-participation", "0.05"],
      "windows": ["2023-07-03", "2024-01-02", "2024-07-01", "2025-01-02", "2025-07-01"]},
+    # ⚠️ 2026-10-17 修正（人工裁定「为副本 rolling_eval 补 --benchmark」）。
+    #   原三项的 args 反推失真（只留 --dataset / --max-stocks），漏了
+    #   max_stocks(v2=400) / min_rows_asset / survivorship_evidence / benchmark
+    #   ⇒ 审计恒判 `preflight: LIMITED_OR_FAIL`
+    #   （issues=['benchmark','insufficient_per_asset_history']）⇒ 6 个跨线窗口
+    #   永久 `exit=2`。此处按两处凭据逐项还原：
+    #     ① 主侧同款 `MAIN_TASKS['v2_ew_bench_part1']`（同 v2 数据集，原跑即
+    #        `--max-stocks 400 --min-rows-asset 504 --benchmark .../benchmark_ew.csv --skip-audit`）；
+    #     ② 副本原产物 `reports/{v2,v3}_rolling_eval_ew*.json` 的 `args` 字段。
+    #   阻塞机理（实测）：`run_tdx_rolling_eval.py:128` 兜底 `bench = <ds>/benchmark.csv`，
+    #   而 `bench_meta = bench + ".metadata.json"`；数据集里该 metadata 实际名为
+    #   `benchmark.metadata.json` ⇒ 找不到 ⇒ 审计 `benchmark` 不过。
+    #   基准来源见 `P005_3_3_BENCHMARK_PREREG.md` §六 与 `BENCHMARK_ALIGNMENT.md` §一/§四。
     {"name": "v2_rolling_eval_ew", "script": "scripts/run_tdx_rolling_eval.py",
-     "args": ["--dataset", "D:/tdx_dataset_v2"],
+     "args": ["--dataset", "D:/tdx_dataset_v2", "--max-stocks", "400",
+              "--min-rows-asset", "504",
+              "--survivorship-evidence", "D:/tdx_dataset_v2/evidence.json",
+              "--benchmark", "D:/tdx_dataset_v2/benchmark_ew.csv", "--skip-audit"],
      "windows": ["2023-01-03", "2023-07-03", "2024-01-02", "2024-07-01",
                  "2025-01-02", "2025-07-01"]},
     {"name": "v3_rolling_eval_ew", "script": "scripts/run_tdx_rolling_eval.py",
-     "args": ["--dataset", "D:/tdx_dataset_v3", "--max-stocks", "1000"],
+     "args": ["--dataset", "D:/tdx_dataset_v3", "--max-stocks", "1000",
+              "--min-rows-asset", "504",
+              "--survivorship-evidence", "D:/tdx_dataset_v3/evidence.json",
+              "--benchmark", "D:/tdx_dataset_v3/benchmark_ew.csv", "--skip-audit"],
      "windows": ["2023-01-03", "2023-07-03", "2024-01-02", "2024-07-01",
                  "2025-01-02", "2025-07-01"]},
     {"name": "v3_rolling_eval_ew_full", "script": "scripts/run_tdx_rolling_eval.py",
-     "args": ["--dataset", "D:/tdx_dataset_v3", "--max-stocks", "1000"],
+     "args": ["--dataset", "D:/tdx_dataset_v3", "--max-stocks", "1000",
+              "--min-rows-asset", "504",
+              "--survivorship-evidence", "D:/tdx_dataset_v3/evidence.json",
+              "--benchmark", "D:/tdx_dataset_v3/benchmark_ew.csv", "--skip-audit"],
      "windows": ["2023-01-03", "2023-07-03", "2024-01-02", "2024-07-01",
                  "2025-01-02", "2025-07-01"]},
 ]
