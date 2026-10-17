@@ -75,6 +75,16 @@ ATTRIBUTED_TO_BASELINE = frozenset({
     "v3_rolling_eval_ew", "v3_rolling_eval_ew_full",
 })
 
+#: 白名单的**适用基线**（P014 备注 2）。「24 份差异 100% 为 A2 基线演进」这一归因
+#: 只对**下列基线**成立；换基线重跑同名产物时，必须先人工复核归因是否仍成立，
+#: 复核后在原处更新时间戳 —— 让「复核」动作在 diff 中可见，而不是静默沿用旧白名单。
+#: 守卫：`tests/test_check_recompute_caliber.py::test_attributed_whitelist_*`
+ATTRIBUTED_BASELINE = {
+    "main": "8db1c65",   # 主侧 MAIN_TASKS 落地提交
+    "copy": "2b9f97d",   # 副本侧最近一次基线（精确名切分）
+    "recorded_at": "2026-10-17",
+}
+
 #: 产物文件名 = ``<名>_<窗口>.json``，窗口恒为 ``YYYY-MM-DD``。
 #: ⚠️ 2026-10-16 修：原用 ``glob(f"{name}_*.json")`` 前缀匹配，会把**同族产物互相吞并**
 #: —— ``combo_study_h20`` 会吞 ``combo_study_h20_fixed_*``、``tc_t2`` 会吞 ``tc_t2_p1_*``，

@@ -88,19 +88,57 @@ def test_module_num_is_the_standard(module_name: str):
     )
 
 
+def _scan_local_num_defs(root: Path, skip: str = "test_data_contracts_num.py") -> List[str]:
+    """纯 Python 扫描本地 ``def _num(`` 定义，返回 ``路径:行号: 行内容`` 列表。
+
+    不依赖外部 ``grep``：P014 备注 1 —— 原实现用 ``subprocess`` 调 ``grep``，
+    在无 ``grep.exe`` 的 Windows shell（cmd/PowerShell）下抛
+    ``FileNotFoundError``，把环境缺失误报成断言失败。
+    """
+    needle = "def _num" + "("  # 拼接：避免扫描到本文件的字面量自身
+    hits: List[str] = []
+    for p in sorted(root.rglob("*.py")):
+        if p.name == skip or ".git" in p.parts:
+            continue
+        try:
+            text = p.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        for i, line in enumerate(text.splitlines(), 1):
+            if needle in line:
+                hits.append(f"{p.relative_to(root).as_posix()}:{i}: {line.strip()}")
+    return hits
+
+
 def test_all_num_sites_covered_by_test():
     """防站点清单与仓库现实漂移：仓库内不得再出现本地 ``def _num(``。
 
     ⚠️ 模式用拼接（``"def _num" + "("``）避免匹配到本测试自身的字符串字面量；
     ⚠️ ``_num_or_blank`` 是**输出格式化**函数（run_pit_snapshot_ingest），
     与本标准的**解析**语义不同，不在收敛范围。
+    ⚠️ 纯 Python 扫描（不用 ``grep``）：跨平台，且环境缺工具时**不会**伪装成
+    断言失败（P014 备注 1）。
     """
-    import subprocess
+    hits = _scan_local_num_defs(ROOT)
+    assert hits == [], "仍有本地 _num 定义:\n" + "\n".join(hits)
 
-    # --exclude 自身：本文件的 docstring/字面量含模式串，不排除会自匹配
-    out = subprocess.run(
-        ["grep", "-rn", "def _num" + "(", "--include=*.py",
-         "--exclude=test_data_contracts_num.py", "."],
-        cwd=ROOT, capture_output=True, text=True,
-    )
-    assert out.stdout.strip() == "", f"仍有本地 _num 定义:\n{out.stdout}"
+
+def test_scanner_catches_local_num_definition(tmp_path):
+    """反向验证：扫描器**必须**抓到植入的违规定义（否则守卫是空的）。
+
+    P014 备注 1 要求「改守卫必须附反向验证并留痕」。
+    """
+    bad = tmp_path / "sub" / "offender.py"
+    bad.parent.mkdir(parents=True)
+    bad.write_text("def _num" + "(x):\n    return x\n", encoding="utf-8")
+    hits = _scan_local_num_defs(tmp_path)
+    assert len(hits) == 1, f"扫描器未抓到植入的违规定义，命中={hits}"
+    assert hits[0].startswith("sub/offender.py:1:")
+
+
+def test_scanner_skips_self_and_non_py(tmp_path):
+    """反向验证之二：自排除与扩展名过滤生效（防整库扫描误伤自身字面量）。"""
+    (tmp_path / "test_data_contracts_num.py").write_text(
+        "def _num" + "(x):\n    return x\n", encoding="utf-8")
+    (tmp_path / "notes.txt").write_text("def _num" + "(x):\n", encoding="utf-8")
+    assert _scan_local_num_defs(tmp_path) == []

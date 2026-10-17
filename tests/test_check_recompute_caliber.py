@@ -170,3 +170,38 @@ def test_attributed_non_whitelisted_product_still_v3(tmp_path):
         "brand_new_prod", False, root=tmp_path, recalc=recalc)
     assert v3 == 1, "未登记归因的产物上升必须计 V3"
     assert attr == 0
+
+
+# ---- 白名单基线守卫（P014 备注 2）----
+
+def _task_names(module_path: Path, list_attr: str):
+    spec = importlib.util.spec_from_file_location(
+        f"_rr_{list_attr}", module_path)
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return {t["name"] for t in getattr(mod, list_attr)}
+
+
+def test_attributed_whitelist_matches_task_tables():
+    """白名单必须与 MAIN/COPY 任务表**零漂移**：成员不存在或多出都失败。
+
+    P014 备注 2：白名单是**产物名永久**清单；新增/改名任务时若不更新此处，
+    该任务的上升会被静默计入 V3（或反之，旧名残留使归因覆盖不到）。
+    """
+    rr = ROOT / "scripts" / "run_recompute.py"
+    tasks = _task_names(rr, "MAIN_TASKS") | _task_names(rr, "COPY_TASKS")
+    missing = cr.ATTRIBUTED_TO_BASELINE - tasks
+    extra = tasks - cr.ATTRIBUTED_TO_BASELINE
+    assert not missing, f"白名单含任务表中不存在的产物（改名/删除后残留）: {sorted(missing)}"
+    assert not extra, f"任务表有产物未登记归因（其上升会计 V3，须补裁定或确认）: {sorted(extra)}"
+
+
+def test_attributed_baseline_recorded():
+    """基线时点必须可追溯（换基线重跑时人工复核的锚点）。"""
+    assert set(cr.ATTRIBUTED_BASELINE) == {"main", "copy", "recorded_at"}
+    assert cr.ATTRIBUTED_BASELINE["recorded_at"] == "2026-10-17"
+    for k in ("main", "copy"):
+        sha = cr.ATTRIBUTED_BASELINE[k]
+        assert len(sha) == 7 and all(c in "0123456789abcdef" for c in sha), \
+            f"{k} 基线应为 7 位短 sha，实为 {sha!r}"
