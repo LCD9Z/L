@@ -140,3 +140,40 @@ def test_baseline_index_per_side_and_readonly(tmp_path, monkeypatch):
     assert (main_rec["side"], main_rec["commit"]) == ("main", "8db1c65")
     assert (copy_rec["side"], copy_rec["commit"]) == ("copy", "2b9f97d")
     assert main_rec["origin"] == "backfilled"
+
+
+def test_baseline_index_prefers_embedded(tmp_path, monkeypatch):
+    """产物已自证时**照抄**，不得被「按侧取值」覆盖（2026-10-18 修）。
+
+    反向验证：旧实现对全部产物一律写侧别提交 ⇒ 本条会在
+    `commit`/`origin` 两处失败，证明该守卫确实抓得住「批量赋值忽略逐份事实」。
+    """
+    monkeypatch.setattr(rr, "OUT_DIR", tmp_path)
+    stamped = _mk_product(tmp_path, "demo_prod", "2023-01-03",
+                          payload={"_baseline": {"commit": "a4be6ab",
+                                                 "as_of": "2026-10-17T08:01:02",
+                                                 "source": "run_recompute"},
+                                   "total_return_pct": -1.5})
+    plain = _mk_product(tmp_path, "demo_prod", "2023-07-03")
+    before = {p.name: (p.read_bytes(), p.stat().st_mtime) for p in (stamped, plain)}
+
+    idx = rr.write_baseline_index({"main": [TASK], "copy": []})
+
+    assert before == {p.name: (p.read_bytes(), p.stat().st_mtime) for p in (stamped, plain)}
+    ents = json.loads(idx.read_text(encoding="utf-8"))["entries"]
+    rec = ents["demo_prod_2023-01-03.json"]
+    assert (rec["commit"], rec["origin"]) == ("a4be6ab", "embedded")
+    assert rec["embedded_as_of"] == "2026-10-17T08:01:02"
+    back = ents["demo_prod_2023-07-03.json"]
+    assert (back["commit"], back["origin"]) == ("8db1c65", "backfilled")
+    assert "embedded_as_of" not in back
+
+
+def test_baseline_index_embedded_unknown_not_trusted(tmp_path, monkeypatch):
+    """`_baseline.commit == "unknown"` 不得当真值（否则把 git 缺失写成基线）。"""
+    monkeypatch.setattr(rr, "OUT_DIR", tmp_path)
+    _mk_product(tmp_path, "demo_prod", "2023-01-03",
+                payload={"_baseline": {"commit": "unknown"}, "total_return_pct": -1.5})
+    idx = rr.write_baseline_index({"main": [TASK], "copy": []})
+    rec = json.loads(idx.read_text(encoding="utf-8"))["entries"]["demo_prod_2023-01-03.json"]
+    assert (rec["commit"], rec["origin"]) == ("8db1c65", "backfilled")

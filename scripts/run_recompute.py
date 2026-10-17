@@ -322,24 +322,42 @@ def progress(tasks: List[Dict[str, Any]], side: str) -> str:
 
 
 def write_baseline_index(tasks_by_side: Dict[str, List[Dict[str, Any]]]) -> Path:
-    """为**已落盘**产物回溯补记基线，写入 ``reports/_recalc/_baseline_index.json``。
+    """为**已落盘**产物登记基线，写入 ``reports/_recalc/_baseline_index.json``。
 
-    **基线取值按侧，不按 mtime**：主侧取任务落地提交 ``8db1c65``（登记册 §六），
-    副本侧取 ``2b9f97d``（10-17 验收回执文首基线）。中间若干「docs(memory)」类提交
-    不改成本代码，故**取任务落地提交**而非产物 mtime 当时的 HEAD。
+    **取值分两层，产物自证优先**（2026-10-18 修）：
+    ① 产物已有内嵌 ``_baseline``（`stamp_baseline()` 落的）→ **照抄**，``origin="embedded"``；
+       这是产物自己说的生成时 HEAD，比任何按侧推断都准，**不得被按侧值覆盖**；
+    ② 无内嵌（P013-④ 之前的旧产物）→ 按侧**回溯补记**：主侧 ``8db1c65``（登记册 §六）、
+       副本侧 ``2b9f97d``（10-17 验收回执文首），``origin="backfilled"``。
+       中间若干「docs(memory)」类提交不改成本代码，故取任务落地提交而非 mtime 当时 HEAD。
 
-    ⚠️ **不改产物字节、不改 mtime** —— 既有 43 份是证据，本索引只是**旁挂**登记
+    ⚠️ 2026-10-18 教训：旧实现对**全部**产物一律按侧写死，把 37 份**自证产物**
+    （内嵌 a4be6ab / da7f6ac）也盖成 ``2b9f97d``+``origin=backfilled`` ——
+    与 2026-10-17「43 份统一记 f8f020d」**同型**：批量赋值忽略逐份事实。
+
+    ⚠️ **不改产物字节、不改 mtime** —— 本索引只是**旁挂**登记
     （2026-10-17 自创的证据保全方案），不是产物自证。
     """
     entries: Dict[str, Dict[str, Any]] = {}
     for side, tasks in tasks_by_side.items():
-        commit = BASELINE_BY_SIDE[side]
+        side_commit = BASELINE_BY_SIDE[side]
         for t in tasks:
             for w in t["windows"]:
                 p = out_path(t, w)
                 if not p.exists():
                     continue
-                entries[p.name] = {
+                commit, origin, embedded_as_of = side_commit, "backfilled", None
+                try:
+                    doc = json.loads(p.read_text(encoding="utf-8"))
+                except (json.JSONDecodeError, UnicodeDecodeError, OSError):
+                    doc = None
+                emb = doc.get("_baseline") if isinstance(doc, dict) else None
+                if isinstance(emb, dict):
+                    sha = str(emb.get("commit") or "").strip()
+                    if sha and sha != "unknown":
+                        commit, origin = sha, "embedded"
+                        embedded_as_of = emb.get("as_of")
+                rec = {
                     "product": t["name"],
                     "side": side,
                     "window": w,
@@ -349,14 +367,18 @@ def write_baseline_index(tasks_by_side: Dict[str, List[Dict[str, Any]]]) -> Path
                     "mtime_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ",
                                                time.gmtime(p.stat().st_mtime)),
                     "size": p.stat().st_size,
-                    "origin": "backfilled",   # 与产物内嵌 `_baseline`（origin=run_recompute）区分
+                    "origin": origin,   # embedded = 产物自证；backfilled = 按侧回溯补记
                 }
+                if embedded_as_of:
+                    rec["embedded_as_of"] = embedded_as_of
+                entries[p.name] = rec
     out = OUT_DIR / "_baseline_index.json"
     out.write_text(json.dumps({
         "_note": (
-            "P013-④ 已落窗口基线**回溯补记**（非产物自证）：main 侧依据 COST_BASELINE "
-            "册 §六 = 8db1c65，copy 侧依据 10-17 验收回执 = 2b9f97d；中间文档/测试提交"
-            "不影响成本代码，故取任务落地提交。产物字节与 mtime 未改动。"),
+            "P013-④ 基线登记，**两种来源**：origin=embedded 者照抄产物内嵌 `_baseline`"
+            "（生成时 HEAD，产物自证）；origin=backfilled 者按侧回溯补记（main 依据 "
+            "COST_BASELINE 册 §六 = 8db1c65，copy 依据 10-17 验收回执 = 2b9f97d；"
+            "中间文档/测试提交不影响成本代码，故取任务落地提交）。产物字节与 mtime 未改动。"),
         "baseline_by_side": dict(BASELINE_BY_SIDE),
         "entries": entries},
         ensure_ascii=False, indent=1) + "\n",
@@ -383,16 +405,18 @@ def main(argv: Optional[List[str]] = None) -> int:
     all_tasks = COPY_TASKS if args.side == "copy" else MAIN_TASKS
 
     if args.baseline_index:
-        # 一次覆盖**两侧**全部已落盘产物（43 份 = 主 28 + 副本 15），与 --side 无关
+        # 一次覆盖**两侧**全部已落盘产物（当前 80 份 = 主 28 + 副本 52），与 --side 无关
         p = write_baseline_index({"main": MAIN_TASKS, "copy": COPY_TASKS})
         data = json.loads(p.read_text(encoding="utf-8"))
         ents = data["entries"]
         groups: Dict[str, int] = {}
         for e in ents.values():
-            groups[f"{e['side']}:{e['commit']}"] = groups.get(f"{e['side']}:{e['commit']}", 0) + 1
-        print(f"基线索引已写入 {p.relative_to(ROOT)}（{len(ents)} 份产物，按侧取值）")
+            key = f"{e['side']}:{e['commit']}:{e['origin']}"
+            groups[key] = groups.get(key, 0) + 1
+        print(f"基线索引已写入 {p.relative_to(ROOT)}（{len(ents)} 份产物；"
+              f"embedded = 产物自证 / backfilled = 按侧补记）")
         for k, n in sorted(groups.items()):
-            print(f"  {k:18} {n:2} 份")
+            print(f"  {k:34} {n:2} 份")
         return 0
 
     if args.list:

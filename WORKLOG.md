@@ -1452,3 +1452,19 @@ A2 合并时在 `mypy.ini` 显式登记的债务（主侧脚本类型推断松�
 | 守卫 | `tests/test_recompute_baseline_stamp.py` **8 项**（幂等 / `unknown` 不落戳 / 原生缩进与尾换行保真 / 索引不动产物与 mtime / 两文件基线常量交叉一致）；`test_check_recompute_caliber.py` +2；`test_data_contracts_num.py` +2 |
 | 质量门 | `run_ci.py` **6/6 PASS**；pytest **1,497 项 · 失败 0**（R1–R3 整改后终值，见回执 §十五；1,494 为整改前快照） |
 | 状态 | P014 三条备注**全部关闭**；P013-④ **已实现**；不 push |
+
+### 19.13 副本侧 52/52 完成 · 80 份基线齐 · 索引口径修正（2026-10-18）
+
+| 项 | 内容 |
+|---|---|
+| 依据 | 用户 2026-10-17「接手副本工作，要一套完整的新基线」⇒ 裁定 G 由「P2 可选」改为**必跑**（回执 §19.1） |
+| 执行 | `run_recompute.py --side copy` 全量（无 `--crossing-only`），**在 trunk 跑**（副本仓 13 份旧基线会让 `is_done` 误判）；分离进程 + 计划任务看门狗每 30 分钟巡检（规避工具后台 job 25–40 分钟静默死亡） |
+| 结果 | **52/52 窗口 · 失败 0**；2026-10-17 16:09:33 → **10-18 00:30:56**，历时 **8h21m**（原估 18–26 h） |
+| 产物 | trunk `reports/_recalc/` **80 份**（main 28 + copy 52）+ 1 旁挂索引；`f8f020d` 命中 **0** |
+| 对账 | `check_recompute.py` **退出码 0**：V1 真实缺键 0 · CALIBER 18 · 有差异窗口 52 · V3 未归因上升 **0** · ATTRIBUTED 68 · 基准替换 18 |
+| **索引口径修正** | 00:31 看门狗自动重建索引时，旧 `write_baseline_index()` 把 80 份**一律按侧写死**（copy 全 `2b9f97d` + `origin=backfilled`），**覆盖了 37 份已自证产物**（内嵌 `a4be6ab`×11 / `da7f6ac`×26）—— 与 10-17「43 份统一记 `f8f020d`」**同型**。改为**产物自证优先**：有内嵌 `_baseline.commit`（非 `unknown`）则照抄并记 `origin=embedded` + `embedded_as_of`；无内嵌才按侧补记 |
+| 守卫 | `test_recompute_baseline_stamp.py` **+2（共 10 项）**；**反向验证**：加载 `HEAD` 版旧实现跑同一输入 ⇒ `(8db1c65, backfilled)`，新断言必红 |
+| 顺带修 | `tests/test_audit_family_schema.py` mypy `union-attr`（`_spec`/`loader` 未断言，`da7f6ac` 引入，CI 在 mypy 步即停） |
+| 质量门 | `run_ci.py` **6/6 PASS**（syntax/ruff/mypy/compat/pytest/credentials，exit 0）；pytest **1,503 项 · 失败 0**（1,497 = 10-17 快照；`da7f6ac` +4、本节点 +2） |
+| 聚合 md5 | 80 份 = **`471ac482acb7b1c17b5f7ae807b0437d`**（`md5sum -b` 与纯 Python 两法一致）；§十 的 `45f57fe3…` 为 43 份时代快照 |
+| 状态 | 副本侧**数据层已齐**；副本仓镜像（13 旧 + 1 孤儿 + 9 `.partial`）与成本口径回写**仍待裁定** |
