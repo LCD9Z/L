@@ -291,9 +291,22 @@ V4 无结构异常。**V3 方向异常 6 份 14 处**（收益/超额**上升**�
 | ① CI 红灯（缺 `grep.exe`） | `tests/test_data_contracts_num.py` 改**纯 Python 扫描**（`_scan_local_num_defs`），新增 2 条反向验证；实测无 `grep` 的 PATH 下旧实现 `FileNotFoundError`、新实现 34 项全过 |
 | ② 白名单换基线复核 | 新增 `ATTRIBUTED_BASELINE = {main: 8db1c65, copy: 2b9f97d, recorded_at: 2026-10-17}` + 2 条守卫（与任务表双向零漂移 / 基线时点可追溯） |
 | ③ 文案与计数 | WIKI L9 旧措辞已改；**副本 `.partial` 实测全树 15 个**（`_recalc` 9 + `reports/` 根 6），§十 的「7」与 P014 的「9」均为较窄口径 |
-| **P013-④ `_baseline`** | **已实现**：新产物由 `stamp_baseline()` 内嵌 `{commit, as_of, source}`（幂等；git 不可用时不落戳；沿用原生缩进/尾换行）；已落 **43 份**用 `--baseline-index`（无值 flag）建旁挂索引 `reports/_recalc/_baseline_index.json` = `main:8db1c65`×28 + `copy:2b9f97d`×15（**按侧取任务落地提交**），**不重写产物字节/mtime**（聚合 md5 前后一致 `45f57fe39a0bb…`）。⚠️ 索引为**自创证据保全方案**，非 P013 要求；P013 原文只要求新产物内嵌 |
+| **P013-④ `_baseline`** | **已实现**：新产物由 `stamp_baseline()` 内嵌 `{commit, as_of, source}`（幂等；git 不可用时不落戳；沿用原生缩进/尾换行）；已落 **43 份**用 `--baseline-index`（无值 flag）建旁挂索引 `reports/_recalc/_baseline_index.json` = `main:8db1c65`×28 + `copy:2b9f97d`×15（**按侧取任务落地提交**），**不重写产物字节/mtime**（聚合 md5 前后一致 `45f57fe39a0bb…`，算法见文末「聚合 md5 复现」）。⚠️ 索引为**自创证据保全方案**（原令未规定实现形式）。**2026-10-17 §十六 更正**：P013 正式通报（`01_提案/P013_L1重算_主干裁定通报.md` §三-4）原令「已落 11 窗口由验收环节补记基线 `f8f020d`」的对象是**裁定时副本已自跑的 11+1 份产物**；本册所记 trunk 43 份为另一物理批次（主干代跑），**不在该令对象内**，故按侧取值。此前「P013 无补记要求／引证失实」为 §十四 审查误判，已在回执 §十六 撤回 |
 
-**质量门**：`run_ci.py` 6/6 PASS；pytest **1,494 项、失败 0**。
+**质量门**：`run_ci.py` 6/6 PASS；pytest **1,497 项、失败 0**（R1–R3 整改后终值；1,494 为整改前快照）。
+
+**聚合 md5 复现**（`45f57fe39a0bb1e081d6011ea477c182`，43 份产物，2026-10-17 主干独立复算通过）：
+
+```bash
+cd /d/hunhe/trunk
+md5sum -b reports/_recalc/*.json | grep -v '_baseline_index' | md5sum
+# => 45f57fe39a0bb1e081d6011ea477c182  -
+```
+
+即：对 `reports/_recalc/` 下**除 `_baseline_index.json` 外的全部 43 份 `*.json`**（按文件名升序），
+取 `md5sum -b` 输出行 `"<md5hex> *reports/_recalc/<文件名>\n"` 原样拼接，再对整段 UTF-8 文本取 md5。
+无 `grep` 环境的等价实现：`python -c "import hashlib,pathlib as P;fs=sorted(p for p in P.Path('reports/_recalc').glob('*.json') if p.name!='_baseline_index.json');print(hashlib.md5(''.join(f\"{hashlib.md5(p.read_bytes()).hexdigest()} *reports/_recalc/{p.name}\\n\" for p in fs).encode()).hexdigest())"`（43 份·文件名升序·LF 行尾）。
+
 **判据**：`_baseline` 只解决「哪份代码产出本产物」的可追溯性，**不改任何数字**，不影响 §九 终版对账结论。
 
 **本册不构成投资建议。**
