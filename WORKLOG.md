@@ -1467,4 +1467,16 @@ A2 合并时在 `mypy.ini` 显式登记的债务（主侧脚本类型推断松�
 | 顺带修 | `tests/test_audit_family_schema.py` mypy `union-attr`（`_spec`/`loader` 未断言，`da7f6ac` 引入，CI 在 mypy 步即停） |
 | 质量门 | `run_ci.py` **6/6 PASS**（syntax/ruff/mypy/compat/pytest/credentials，exit 0）；pytest **1,503 项 · 失败 0**（1,497 = 10-17 快照；`da7f6ac` +4、本节点 +2） |
 | 聚合 md5 | 80 份 = **`471ac482acb7b1c17b5f7ae807b0437d`**（`md5sum -b` 与纯 Python 两法一致）；§十 的 `45f57fe3…` 为 43 份时代快照 |
-| 状态 | 副本侧**数据层已齐**；副本仓镜像（13 旧 + 1 孤儿 + 9 `.partial`）与成本口径回写**仍待裁定** |
+| 状态 | 副本侧**数据层已齐**；副本仓镜像（13 旧 + 1 孤儿 + 9 `.partial`）**仍待裁定**；成本口径回写**已执行**（见 §19.14） |
+
+### 19.14 成本口径回写：8 份正式文档加注（2026-10-18）
+
+| 项 | 内容 |
+|---|---|
+| 裁定 | 用户选定**加注**（旧值保留 + 旁注指向新基线），不改数字 |
+| 关键发现 | README.md §多窗口稳健性检验 数据源为 2026-09-12 基于 `tdx_dataset`（v1）的评估，**不在**本次重算范围（重算覆盖 v2/v3）→ README 也加注 |
+| 执行 | 8 份文档在受影响表格前插入统一加注：`README` / `TDX_EVALUATION`（标 v1 不在范围）/ `CHANGELOG` / `STEP1_3` / `RERUN_CORRECTED` / `P0_P1` / `TAIL_EXCLUSION` / `ALPHA_CAPABILITY_GAP`（指向 `reports/_recalc/` 新基线） |
+| 不动 | `WORKLOG.md`（过程日志不改写历史）；`reports/*.json` 原产物（历史基线保留） |
+| 验证 | 8 份全部纯 LF；blockquote 与表格间有空行（CommonMark 正确渲染） |
+| 提交 | `cc5a472` |
+| 回执 | §二十一 |
