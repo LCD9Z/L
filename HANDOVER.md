@@ -83,7 +83,7 @@
 **工程验收**（一条命令）：
 
 ```bash
-cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
+cd D:/hunhe/trunk && python run_ci.py     # 期望 6/6 PASS
 ```
 
 | 检查 | 通过标准 |
@@ -124,7 +124,7 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 |----|-----|
 | 仓库 | `https://github.com/LCD9Z/L.git`（私有） |
 | 分支 | `main` |
-| 本地路径 | `C:\Users\T430\Desktop\1.0`（**唯一开发目录**） |
+| 本地路径 | `D:\hunhe\trunk`（**唯一活主干**）。`Desktop\1.0` 已是**空目录**、`Desktop\1.0_FROZEN_2026-10-15` 为冻结史料，均不得当工作目录 |
 | 只读基线 | `C:\Users\T430\Desktop\4.3`、`C:\Users\T430\Desktop\v3.4_work`（**禁止修改**） |
 | 派生数据 | `D:\tdx_dataset`（约 200MB，刻意不放在源码目录） |
 | ⚠️ 推送 | 远端 tracking 已失效（`upstream is gone`）；推送需 `git_auth_run.py --no-proxy`，见 [6.1](#61-踩坑清单) 第 9 条 |
@@ -337,7 +337,7 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py     # 期望 6/6 PASS
 ### 5.2 验收清单（接手后先跑一遍）
 
 ```bash
-cd C:/Users/T430/Desktop/1.0
+cd D:/hunhe/trunk
 
 # ① 一条命令覆盖全部（推荐）
 python run_ci.py                    # 期望 6/6 PASS
@@ -531,36 +531,31 @@ python scripts/gen_layout_doc.py --check
 | 7 | 财务数据源真实披露日 | ✅ 巨潮 `实际披露` 接入，A 股池内覆盖 86.8%、实际使用口径 98.4% |
 | 8 | 修复 `tdx_ab_stage2` verdict 文案 | ✅ 已修 + 守卫测试 |
 | — | 缓存备份处置 | ✅ 已结案（保留现状） |
+| — | ~~门禁欠账（ruff 51 / mypy 57 / pytest 2）~~ | ✅ 已完成（2026-09-30）：根因 `d7625ff` 未过门禁即入库；已清零并补 `tdx_native` 守卫 40 项，见 [5.3](#53-已知缺陷与复现步骤) 第 6~8 条 |
+| — | ~~`tdx_native` 零测试覆盖~~ | ✅ 已完成（2026-09-30）：`tests/test_tdx_native.py`（40 项），覆盖 4 个高风险模块 |
 | — | 长跑脚本分段落盘 | ✅ `research_artifacts` + 5 脚本接入 + 22 项守卫（本轮新增） |
 
 ### 7.2 未完成
 
+> ⚠️ **2026-10-18 合并**：本节原有**两份待办表**（编号 1–8 与 1–9 重叠、同一任务状态互相矛盾，
+> 且三行「已结案 / 已完成」被夹在两张表中间，破坏表格渲染）。现合并为**单一表**，
+> 已完成项移入 §7.1，编号统一重排为 **1–10**。
+
 | 优先级 | 任务 | 预估工时 | 假设与说明 |
 |:---:|------|:---:|------|
-| **1** | **新的经济逻辑假设（追求 Alpha）** | **3~5 天** | **当前唯一的主攻方向**。含逻辑调研 0.5 天 → 事前登记 0.5 天 → 因子实现 1 天 → IC 检验 0.5 天 → 组合层面 + 基准对照 1~2 天。**前提：必须提出新逻辑，禁止调现有因子权重/阈值**（原则 5） |
-| 2 | 为**无直接覆盖模块**补单测 | **2~3 天** | ⚠️ **2026-10-15 复核：实测 29 个**（HANDOVER 原记「剩余 9 个」已过时；首次盘点曾报 43，因脚本漏判 `from pkg import mod` 而虚高，已修）；口径见 `scripts/list_uncovered_modules.py`（只看测试里的直接 import）。✅ 已完成：`orchestrator`(21) · `pool_manager`(22，本轮)。下一步优先 `v3_data_bus`、`professional_committee`；纯标注类（`log_utils`）可略 |
+| **1** | **新的经济逻辑假设（追求 Alpha）** | **3~5 天** | **当前唯一的主攻方向**。逻辑调研 0.5 天 → 事前登记 0.5 天 → 因子实现 1 天 → IC 检验 0.5 天 → 组合层面 + 基准对照 1~2 天（多窗口回测）。**前提：必须提出新逻辑，禁止调现有因子权重/阈值**（原则 5） |
+| 2 | 为**无直接覆盖模块**补单测 | **2~3 天** | ⚠️ **2026-10-18 复测：28 个**（`scripts/list_uncovered_modules.py` 实测：源码 149 · 有覆盖 121 · 无直接覆盖 28；10-15 曾记 29，已漂 1）。✅ 已完成：`orchestrator`(21) · `pool_manager`(22) · `v3_data_bus`(24) · `professional_committee`(22) · `risk/expert_filter`(33)，共 122 项、暴露 4 个缺陷。纯标注类（`log_utils`）可略 |
 | 3 | 巨潮披露日早年覆盖补强 | **0.5 天** | 2016~2021 年覆盖 73~83%，余 12.8% 走法定截止日兜底。可试逐股接口补齐（`stock_zh_a_disclosure_report_cninfo`），但**已确认缺口多为当时未上市的公司**，收益可能有限 |
-| 4 | ADX 叠加的**绝对水平** p 值 | **1~2 小时** | Δ 型已用配对检验补完（§7.13）；`adx_attr_w1~w4.json` 只存了 const05 变体，overlay/baseline 的绝对超额 t/p 需重跑 `run_regime_overlay_study.py` |
+| 4 | ADX 叠加的**绝对水平** p 值 | **1~2 小时** | Δ 型已用配对检验补完（§7.13）；`reports/adx_attr_w1~w4.json` 只存了 const05 变体，overlay/baseline 的绝对超额 t/p 需重跑 `run_regime_overlay_study.py` |
 | 5 | 补齐数据库迁移机制 | **0.5 天** | 当前无迁移脚本；若 schema 需变更则必须先做 |
 | 6 | ARK 付费模型凭据验收 | **0.5 天** | **阻塞于用户提供凭据**；含接通 + 一次真实调用 + 结果留档 |
 | 7 | 其余外部集成验收 | **1 天** | **阻塞于凭据**；每项含真实调用 + 留档 |
 | 8 | `disallow_untyped_defs` 全量收紧 | **2~3 天** | 569 处纯标注补全，**无缺陷捕获收益**，建议最后做 |
+| 9 | **L3 跟踪样本积累（非工时类）** | **持续** | `tracking.csv` 当前 20 行全 pending（TDX 客户端数据停在 0928）。需**每交易日 15:05 后**开一次通达信更新 `.day`，再 `python -m tdx_native.run_daily`。样本到期后才能校准推荐质量 |
+| 10 | 北交所数据接入 | **0.5~1 天** | 阻塞于 pytdx：`get_security_list` 的 `market=2` 在 20 台服务器均不可用。备选：从本地 `bj/lday` 目录直接扫（`scan_stocks` 已支持 `bj`） |
 
-**建议顺序**：**1（主攻）** → 2 → 3 → 4 → 5 → 6/7（待凭据）→ 8
-| — | 缓存备份处置 | **已结案（保留）** | 2026-09-16 已核验 `_1.0_cache_backup_…`（9.8M，纯缓存）与 `_backup_1.0`（9.1M，完全冗余）均为零信息损失；因环境批量删除护栏拦截，**用户决定保持现状**。其中的研究证据已抢救入库（`AB_STUDIES_EVIDENCE.md`） |
-| — | ~~门禁欠账（ruff 51 / mypy 57 / pytest 2）~~ | **✅ 已完成（2026-09-30）** | 根因是 `d7625ff` 未过门禁即入库。已清零并补 `tdx_native` 守卫测试 40 项；见 [5.3](#53-已知缺陷与复现步骤) 第 6~8 条 |
-| — | ~~`tdx_native` 零测试覆盖~~ | **✅ 已完成（2026-09-30）** | `tests/test_tdx_native.py`（40 项），覆盖 4 个高风险模块 |
-| **1** | **新的经济逻辑假设（追求 Alpha）** | **3~5 天** | 含：逻辑调研 0.5 天 → 事前登记 0.5 天 → 因子实现 1 天 → IC 检验 0.5 天 → 组合层面 + 基准对照 1~2 天（多窗口回测）。**前提：必须提出新逻辑，禁止调现有 7 因子权重/阈值** |
-| 2 | ARK 付费模型凭据验收 | **0.5 天** | 阻塞于用户提供凭据；含接通 + 一次真实调用 + 结果留档 |
-| 3 | ~~修复 `tdx_ab_stage2` verdict 文案~~ | **✅ 已完成** | 根因是 `params` 未记录 `slip_mode`。已修脚本 + 加守卫测试（见 [5.3](#53-已知缺陷与复现步骤) 第 1 条） |
-| 4 | ~~为 10 个无直接覆盖模块补单测~~ → **实测 29 个**（2026-10-15 复核，原记「剩余 9 个」过时） | **2~3 天** | ✅ `orchestrator`(21) · `pool_manager`(22) · `v3_data_bus`(24) · `professional_committee`(22) · `risk/expert_filter`(33) 已完成（共 122 项，暴露 4 个缺陷）；剩余优先 `v3_data_bus`、`professional_committee`；纯标注类（`log_utils`）可略 |
-| 5 | `disallow_untyped_defs` 全量收紧 | **2~3 天** | 569 处纯标注补全，**无缺陷捕获收益**，建议最后做 |
-| 6 | 其余外部集成验收 | **1 天** | 需凭据；每项含真实调用 + 留档 |
-| 7 | 补齐数据库迁移机制 | **0.5 天** | 当前无迁移脚本；若 schema 需变更则必须先做 |
-| 8 | **L3 跟踪样本积累（非工时类）** | **持续** | `tracking.csv` 当前 20 行全 pending（TDX 客户端数据停在 0928）。需**每交易日 15:05 后**开一次通达信更新 `.day`，再 `python -m tdx_native.run_daily`。样本到期后才能校准推荐质量 |
-| 9 | 北交所数据接入 | **0.5~1 天** | 阻塞于 pytdx：`get_security_list` 的 `market=2` 在 20 台服务器均不可用。备选：从本地 `bj/lday` 目录直接扫（`scan_stocks` 已支持 `bj`） |
+**建议顺序**：**1（主攻）** → 2 → 3 → 4 → 9（并行，每日维护）→ 5（仅 schema 变更前必做）→ 6/7（待凭据）→ 10 → 8（最后）。
 
-**建议顺序**：2 → 1（主攻方向）→ 8（并行，每日维护）→ 4 → 7 → 9 → 6 → 5。
 
 > **运行前提（重要）**：`tdx_native` 的日度推荐与回填都依赖**本地 TDX 客户端数据**
 > （`D:/new_tdx/vipdoc`）。若客户端未更新，`run_daily` 会因**未收盘保护**或
@@ -572,7 +567,7 @@ python scripts/gen_layout_doc.py --check
 长任务可能在任意时刻中断。按以下顺序重建状态，**不要凭印象继续**：
 
 ```bash
-cd C:/Users/T430/Desktop/1.0
+cd D:/hunhe/trunk
 
 git log --oneline -8      # ① 看最后提交，确认做到哪一步
 git status --short        # ② 有无未提交变更（有则上次中断在提交前）
@@ -592,6 +587,7 @@ python run_ci.py          # ③ 一条命令验证状态是否绿
 - **本文件 HEAD 可能过期** —— 以 `git log` 实际结果为准。
 - **踩坑清单（[6.1](#61-踩坑清单)）务必先读** —— 每次踩的坑都在上面有前例。
 - **未提交变更 = 中断风险**。若 `git status` 非空，先跑 `python run_ci.py` 判断完整性。
+- **历史报告里的 `Desktop/1.0` 不一定是错的** —— `AOCI_INDEX_DEFECT_REPORT.md`、`BRANCH_MERGE_REPORT.md`、`GITHUB_REFERENCE_INTEGRATION_REPORT.md` 等是**当时事实的记录**，按「只追加不改写」保留原样。**只有本文件（现行操作指引）必须指向 `D:\hunhe\trunk`**，已由 `tests/test_handover_current_paths.py` 守卫。
 
 **降低中断损失**：①分小步提交（每个可验证的小改动就提交）；②提交信息写清"为什么"；
 ③改动前确认工作区干净。
