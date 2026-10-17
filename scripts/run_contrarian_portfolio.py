@@ -144,9 +144,9 @@ def _trade_return(bars, i, costs: Costs, position_value: float,
     if shares <= 0:
         return None
     gross_buy = shares * entry_px
-    total_buy = gross_buy + _trade_cost(gross_buy, "buy", costs)
+    total_buy = gross_buy + _trade_cost(gross_buy, "buy", costs, str(entry_bar["date"]))
     gross_sell = shares * exit_px
-    proceeds = gross_sell - _trade_cost(gross_sell, "sell", costs)
+    proceeds = gross_sell - _trade_cost(gross_sell, "sell", costs, str(exit_bar["date"]))
     return (proceeds - total_buy) / total_buy
 
 
