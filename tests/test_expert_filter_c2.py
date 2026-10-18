@@ -22,7 +22,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 import pytest
 
@@ -44,7 +44,7 @@ def _days(n: int, start: date = date(2020, 1, 1)) -> List[str]:
     return [(start + timedelta(days=i)).isoformat() for i in range(n)]
 
 
-def _bars(days: List[str], turnovers: List[Optional[float]],
+def _bars(days: List[str], turnovers: Sequence[Optional[float]],
           close: float = 10.0) -> List[Dict[str, Any]]:
     return [{"date": d, "close": close, "turnover": t, "limit_ratio": 0.1}
             for d, t in zip(days, turnovers, strict=True)]

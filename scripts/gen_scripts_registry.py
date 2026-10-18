@@ -145,8 +145,13 @@ def _evidence(stem: str) -> List[str]:
     if _hits(stem, (("ENTRYPOINTS.md", _entrypoints_section()),)):
         ev.append("ENTRYPOINTS.md")
     # 去重保序
-    seen = set()
-    return [x for x in ev if not (x in seen or seen.add(x))]
+    seen: set = set()
+    out: List[str] = []
+    for x in ev:
+        if x not in seen:
+            seen.add(x)
+            out.append(x)
+    return out
 
 
 def collect() -> List[Dict[str, Any]]:

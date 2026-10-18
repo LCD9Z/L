@@ -294,8 +294,8 @@ def main(argv: List[str] | None = None) -> int:
     print(f"待移动 {len(todo)} 份；已归档 {len(ARCHIVE) - len(todo) - len(problems)} 份")
     if problems:
         print("⚠️ 问题：")
-        for p in problems:
-            print("   " + p)
+        for prob in problems:
+            print("   " + prob)
 
     # 扫描移动前的 md 清单（含旧父目录）
     before: List[Tuple[Path, Path]] = []
@@ -327,21 +327,21 @@ def main(argv: List[str] | None = None) -> int:
 
     if not args.apply:
         print("\n[dry-run] 待移动：")
-        for n in todo:
-            print(f"   {n} → docs/archive/{RENAME.get(n, n)}")
+        for name in todo:
+            print(f"   {name} → docs/archive/{RENAME.get(name, name)}")
         print("\n[dry-run] 未执行。加 --apply 生效。")
         return 0
 
     # 1) 移动
     ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
-    for n in todo:
-        src = ROOT / n
-        dst = ARCHIVE_DIR / RENAME.get(n, n)
+    for name in todo:
+        src = ROOT / name
+        dst = ARCHIVE_DIR / RENAME.get(name, name)
         if dst.exists():
             print(f"⚠️ 目标已存在，跳过：{dst.name}")
             continue
         shutil.move(str(src), str(dst))
-        print(f"moved {n} → docs/archive/{dst.name}")
+        print(f"moved {name} → docs/archive/{dst.name}")
 
     # 2) 写回链接（按新位置）
     changed = 0
