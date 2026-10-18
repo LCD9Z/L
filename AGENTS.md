@@ -141,6 +141,10 @@ C20 分散（top_n=20） + V1 尾部剔除（剔除当日 ret20 最高 20%）
 > 根目录 **75 份**：导航/规范 **12** · 预注册与判定 **46** · 登记册 **1** ·
 > 其余 **16**。登记值同步改为 75。
 >
+> **同日 20:2x 再追加一份**：`REGIME_ATTRIBUTION_PREREG.md`（regime 分层归因的
+> 预注册——**只做归因不改交易**，与既有 `regime_overlay_study` 的「减仓少亏」区分）——
+> 属「预注册与判定」档，判定落盘后同步改 77。
+>
 > **纪律**：往根目录新增 `.md` 必须先想清楚它属于哪一档 ——
 > 守卫 `tests/test_doc_layout.py::test_root_md_allowlist` 会拒绝未登记的新文件，
 > `test_md_relative_links_resolve` 会拒绝任何悬空链接。
