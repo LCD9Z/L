@@ -4,7 +4,7 @@
 > 改了脚本或引用关系后跑一次 `python scripts/gen_scripts_registry.py`；
 > 守卫 `tests/test_scripts_registry.py` 会重算判据并比对，不一致即失败。
 
-**总数 84**　·　`active` 50　·　`one-off` 33　·　`deprecated` 1
+**总数 84**　·　`active` 51　·　`one-off` 32　·　`deprecated` 1
 
 ## 一、状态判据（可自动重算）
 
@@ -55,7 +55,7 @@
 | 33 | `run_analysis.py` | run_analysis.py - AI股神系统 · 分析入口（L2 落地） | `python scripts/run_analysis.py` | `daily_stock_pick.py`、`prompt_engine.py` | `active` |
 | 34 | `run_astock_reconciliation.py` | 抽样对账：`a-stock-data` 的行情层 vs 我方通达信原生 `.day`。 | `python scripts/run_astock_reconciliation.py` | —（无可执行引用） | `one-off` |
 | 35 | `run_backtest.py` | 单股日线回测 CLI（L1 遗留）：给定 code + 区间，跑 `backtest_engine.backtest`。 | `python scripts/run_backtest.py` | —（无可执行引用） | `one-off` |
-| 36 | `run_c2_ab.py` | C2 条件 A/B —— 产业策略师「风格拥挤度 gate」与估值分析师「上轨排除」。 | `python scripts/run_c2_ab.py` | —（无可执行引用） | `one-off` |
+| 36 | `run_c2_ab.py` | C2 条件 A/B —— 产业策略师「风格拥挤度 gate」与估值分析师「上轨排除」。 | `python scripts/run_c2_ab.py` | `tests/test_c2_ab_variants.py` | `active` |
 | 37 | `run_combo_study.py` | 组合层研究：**尾部剔除 × 持仓分散度** 的联合效果。 | `python scripts/run_combo_study.py` | —（无可执行引用） | `one-off` |
 | 38 | `run_concentration_study.py` | 持仓分散度研究：提高分散度能否降低抽样噪声？ | `python scripts/run_concentration_study.py` | `tests/test_annualization_conventions.py`、`tests/test_research_artifacts.py`、`tests/test_study_common.py` | `active` |
 | 39 | `run_contrarian_portfolio.py` | 组合层面对照实验：基线动量(A) vs H-C1 反转复合(B)，**同一框架** A/B。 | `python scripts/run_contrarian_portfolio.py` | `tests/test_annualization_conventions.py`、`tests/test_contrarian_costs.py`、`tests/test_research_artifacts.py` +4 | `active` |
@@ -108,9 +108,9 @@
 ## 三、治理结论
 
 - **无 `__main__` 守卫**：1 个 —— `_study_common.py`
-- **零可执行引用**（既无测试、无生产代码、不在正式清单）：34 个
+- **零可执行引用**（既无测试、无生产代码、不在正式清单）：33 个
 
-  `_audit_l3_tail_gap.py`、`build_equal_weight_benchmark.py`、`build_equalweight_benchmark.py`、`csv_to_tdx_day.py`、`enumerate_delisted_universe.py`、`fetch_baostock_klines.py`、`fetch_delisted_klines.py`、`fetch_fundamentals.py`、`list_uncovered_modules.py`、`merge_delisted_into_dataset.py`、`migrate_tracking_records.py`、`patch_limit_ratio.py`、`rerun_studies_corrected.py`、`run_adjusted_factor_study.py`、`run_alpha_gap_probe.py`、`run_astock_reconciliation.py`、`run_backtest.py`、`run_c2_ab.py`、`run_combo_study.py`、`run_daily_screening.py`、`run_delta_statistics_audit.py`、`run_factor_study.py`、`run_feishu_acceptance.py`、`run_fundamental_factor_study.py`、`run_horizon_study.py`、`run_limit_structure_study.py`、`run_multiple_testing_audit.py`、`run_pipeline.py`、`run_stop_loss_ab.py`、`run_survivorship_study.py`、`run_tdx_evaluation.py`、`run_valuation_weight_ab.py`、`scan_silent_failures.py`、`summarize_cross_decade.py`
+  `_audit_l3_tail_gap.py`、`build_equal_weight_benchmark.py`、`build_equalweight_benchmark.py`、`csv_to_tdx_day.py`、`enumerate_delisted_universe.py`、`fetch_baostock_klines.py`、`fetch_delisted_klines.py`、`fetch_fundamentals.py`、`list_uncovered_modules.py`、`merge_delisted_into_dataset.py`、`migrate_tracking_records.py`、`patch_limit_ratio.py`、`rerun_studies_corrected.py`、`run_adjusted_factor_study.py`、`run_alpha_gap_probe.py`、`run_astock_reconciliation.py`、`run_backtest.py`、`run_combo_study.py`、`run_daily_screening.py`、`run_delta_statistics_audit.py`、`run_factor_study.py`、`run_feishu_acceptance.py`、`run_fundamental_factor_study.py`、`run_horizon_study.py`、`run_limit_structure_study.py`、`run_multiple_testing_audit.py`、`run_pipeline.py`、`run_stop_loss_ab.py`、`run_survivorship_study.py`、`run_tdx_evaluation.py`、`run_valuation_weight_ab.py`、`scan_silent_failures.py`、`summarize_cross_decade.py`
 
 > `one-off` / 零引用**不等于该删** —— 它们是历史凭据，删掉会破坏可追溯性。
 > 本节的作用是让「谁在用」从**猜**变成**查**。
