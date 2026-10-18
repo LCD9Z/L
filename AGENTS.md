@@ -121,6 +121,15 @@ C20 分散（top_n=20） + V1 尾部剔除（剔除当日 ret20 最高 20%）
 > 根目录 **68 份**：导航/规范 **12** · 预注册与判定 **40** · 其余 **16**。
 > 登记值同步改为 68。
 >
+> **同日 16:4x 再追加三份**：`EVIDENCE_CHAIN_PREREG.md` +
+> `EVIDENCE_CHAIN_VERDICT.md`（A5+A6+A12 的预注册与判定，survey §8.7 第 3 档）
+> + `REJECTED_EXPERIMENTS.md`（A12 拒绝实验登记册）—— 前两份属
+> 「预注册与判定」档，登记册属「登记册」档（在册维护）：表一逐条对应
+> `run_multiple_testing_audit.py` 的计数清单，守卫
+> `tests/test_rejected_registry.py` 锁「条目数 = n_trials 来源」。
+> 根目录 **71 份**：导航/规范 **12** · 预注册与判定 **42** · 登记册 **1** ·
+> 其余 **16**。登记值同步改为 71。
+>
 > **纪律**：往根目录新增 `.md` 必须先想清楚它属于哪一档 ——
 > 守卫 `tests/test_doc_layout.py::test_root_md_allowlist` 会拒绝未登记的新文件，
 > `test_md_relative_links_resolve` 会拒绝任何悬空链接。

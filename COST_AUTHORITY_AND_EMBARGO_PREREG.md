@@ -356,3 +356,10 @@ HEAD：208d017    时刻：12:39:47
    `backtest_engine.py`、`track/costs.py`、两个新测试文件、
    `tests/test_doc_layout.py`、`AGENTS.md`、本文件）尚未 commit，
    等全量测试结果出来后一并提交。
+
+## 偏离登记
+
+| 项目 | 预注册值 | 实际值 | 理由 | 影响 |
+|---|---|---|---|---|
+| `embargo_days` 默认值 | 取自 horizon | **0**（启用时 `max(embargo_days, horizon)` 兜底） | 跑之前的作用对象检查：主 pipeline 本就纯样本外，默认值是口径不是旋钮 | 默认值逐位不变（判据 B-6 守住） |
+| 改造 B 定位 | 给主 pipeline 加 embargo | 加固零调用方的公开 API | `split_chronological` 零调用方；主 pipeline 无标签泄漏 | 无（判读不变，VERDICT §四） |

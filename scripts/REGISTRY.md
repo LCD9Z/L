@@ -4,7 +4,7 @@
 > 改了脚本或引用关系后跑一次 `python scripts/gen_scripts_registry.py`；
 > 守卫 `tests/test_scripts_registry.py` 会重算判据并比对，不一致即失败。
 
-**总数 87**　·　`active` 55　·　`one-off` 31　·　`deprecated` 1
+**总数 87**　·　`active` 56　·　`one-off` 30　·　`deprecated` 1
 
 ## 一、状态判据（可自动重算）
 
@@ -80,7 +80,7 @@
 | 58 | `run_industry_ic_attribution.py` | 行业分层 IC 归因：直接检验「IC 强显著但组合不赚钱」的产业解释。 | `python scripts/run_industry_ic_attribution.py` | `tests/test_pit_snapshot_scripts.py` | `active` |
 | 59 | `run_l3_valuation_reconciliation.py` | L3 估值历史的**抽样对账**（设计文档规定的「接入前必过闸门」）。 | `python scripts/run_l3_valuation_reconciliation.py` | `tests/test_pit_snapshot_scripts.py` | `active` |
 | 60 | `run_limit_structure_study.py` | H-D4 检验：涨跌停结构（一字涨停占比）是否预示负面收益。 | `python scripts/run_limit_structure_study.py` | —（无可执行引用） | `one-off` |
-| 61 | `run_multiple_testing_audit.py` | 多重检验校正审计：把「跑了很多次」算进已发布结论的显著性里。 | `python scripts/run_multiple_testing_audit.py` | —（无可执行引用） | `one-off` |
+| 61 | `run_multiple_testing_audit.py` | 多重检验校正审计：把「跑了很多次」算进已发布结论的显著性里。 | `python scripts/run_multiple_testing_audit.py` | `tests/test_rejected_registry.py` | `active` |
 | 62 | `run_pipeline.py` | V3.4 market-wide runner. | `python scripts/run_pipeline.py` | —（无可执行引用） | `one-off` |
 | 63 | `run_pit_gap_check.py` | PIT 快照断更检测 + 告警。 | `python scripts/run_pit_gap_check.py` | `tests/test_pit_snapshot_scripts.py` | `active` |
 | 64 | `run_pit_snapshot_ingest.py` | PIT 快照采集：L1 上市/退市日（baostock）+ L2 申万行业变迁史（申万官网 xls）。 | `python scripts/run_pit_snapshot_ingest.py` | `tests/test_data_contracts_num.py`、`tests/test_pit_snapshot_scripts.py` | `active` |
@@ -111,9 +111,9 @@
 ## 三、治理结论
 
 - **无 `__main__` 守卫**：1 个 —— `_study_common.py`
-- **零可执行引用**（既无测试、无生产代码、不在正式清单）：32 个
+- **零可执行引用**（既无测试、无生产代码、不在正式清单）：31 个
 
-  `_audit_l3_tail_gap.py`、`build_equal_weight_benchmark.py`、`build_equalweight_benchmark.py`、`csv_to_tdx_day.py`、`enumerate_delisted_universe.py`、`fetch_baostock_klines.py`、`fetch_delisted_klines.py`、`fetch_disclosure_eastmoney.py`、`list_uncovered_modules.py`、`merge_delisted_into_dataset.py`、`migrate_tracking_records.py`、`patch_limit_ratio.py`、`rerun_studies_corrected.py`、`run_adjusted_factor_study.py`、`run_alpha_gap_probe.py`、`run_astock_reconciliation.py`、`run_backtest.py`、`run_combo_study.py`、`run_daily_screening.py`、`run_delta_statistics_audit.py`、`run_factor_study.py`、`run_feishu_acceptance.py`、`run_horizon_study.py`、`run_limit_structure_study.py`、`run_multiple_testing_audit.py`、`run_pipeline.py`、`run_stop_loss_ab.py`、`run_survivorship_study.py`、`run_tdx_evaluation.py`、`run_valuation_weight_ab.py`、`scan_silent_failures.py`、`summarize_cross_decade.py`
+  `_audit_l3_tail_gap.py`、`build_equal_weight_benchmark.py`、`build_equalweight_benchmark.py`、`csv_to_tdx_day.py`、`enumerate_delisted_universe.py`、`fetch_baostock_klines.py`、`fetch_delisted_klines.py`、`fetch_disclosure_eastmoney.py`、`list_uncovered_modules.py`、`merge_delisted_into_dataset.py`、`migrate_tracking_records.py`、`patch_limit_ratio.py`、`rerun_studies_corrected.py`、`run_adjusted_factor_study.py`、`run_alpha_gap_probe.py`、`run_astock_reconciliation.py`、`run_backtest.py`、`run_combo_study.py`、`run_daily_screening.py`、`run_delta_statistics_audit.py`、`run_factor_study.py`、`run_feishu_acceptance.py`、`run_horizon_study.py`、`run_limit_structure_study.py`、`run_pipeline.py`、`run_stop_loss_ab.py`、`run_survivorship_study.py`、`run_tdx_evaluation.py`、`run_valuation_weight_ab.py`、`scan_silent_failures.py`、`summarize_cross_decade.py`
 
 > `one-off` / 零引用**不等于该删** —— 它们是历史凭据，删掉会破坏可追溯性。
 > 本节的作用是让「谁在用」从**猜**变成**查**。

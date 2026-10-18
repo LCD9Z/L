@@ -117,11 +117,15 @@ def test_root_count_is_reported():
     （A8 公告日第二源 + ② 证券代码映射表 + dataset_fingerprint 的
     预注册与判定，属「预注册与判定」档，非过程记录）。变更理由已写入
     AGENTS.md §4。
+    16:4x 68 → 71，新增 `EVIDENCE_CHAIN_PREREG.md` + `EVIDENCE_CHAIN_VERDICT.md`
+    （A5+A6+A12 的预注册与判定）+ `REJECTED_EXPERIMENTS.md`（A12 登记册，
+    survey §8.4-A12；条目数与 n_trials 来源对账，属「登记册」档）。
+    变更理由已写入 AGENTS.md §4。
     本次改的是**常数**，判据本身（「根目录 md 数必须等于登记值」）未变；
     反向验证：把常量改成 64 时本测试必须失败，且失败信息含 `len(_root_mds())`。
     """
-    assert len(_root_mds()) == 68, (
-        f"根目录 md 数 = {len(_root_mds())}，与登记的 68 不符。\n"
+    assert len(_root_mds()) == 71, (
+        f"根目录 md 数 = {len(_root_mds())}，与登记的 71 不符。\n"
         "新增结论源文档请改本断言并在提交信息里说明；"
         "过程记录请归档到 docs/archive/。")
 
