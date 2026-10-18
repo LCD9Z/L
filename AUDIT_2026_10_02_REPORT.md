@@ -155,7 +155,7 @@ ST 股不被剔除。现在计数并在缺失率 >5% 时显式告警。
 `.gitignore` 忽略整个 `reports/`，导致 **59 份实验原始 JSON 全部未入库**。
 已改为放行 `reports/*.json` / `*.md`，继续忽略 `reports/daily/`（可再生产物）。
 
-新建 [`reports/EVIDENCE_INDEX.md`](EVIDENCE_INDEX.md)，逐份标注：
+新建 [`reports/EVIDENCE_INDEX.md`](reports/EVIDENCE_INDEX.md)，逐份标注：
 对应哪个实验、哪个预注册、几窗口、什么对照臂、有什么缺口。
 
 ### 3.2 补 CHANGELOG 停更【已修】

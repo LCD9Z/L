@@ -22,7 +22,7 @@
 | `scripts/merge_delisted_into_dataset.py` | 并入数据集（含 PIT universe 修正） |
 
 **已识别并入库**：**180 只**窗口内（2021-08~2026-09）退市股，
-并入 `D:/tdx_dataset_v2/stocks/`（见 [`DELISTED_UNIVERSE_REPORT.md`](DELISTED_UNIVERSE_REPORT.md)）。
+并入 `D:/tdx_dataset_v2/stocks/`（见 [`DELISTED_UNIVERSE_REPORT.md`](docs/archive/DELISTED_UNIVERSE_REPORT.md)）。
 
 **影响已被量化**（`merge_delisted_into_dataset.py` docstring）：
 

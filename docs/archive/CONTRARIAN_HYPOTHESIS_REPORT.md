@@ -1,6 +1,6 @@
 # 复合反转打分假设检验报告（H-C1）
 
-> **假设、方向、方法、判定标准**：见 [`ALPHA_HYPOTHESIS_PREREG.md`](ALPHA_HYPOTHESIS_PREREG.md)（事前登记）
+> **假设、方向、方法、判定标准**：见 [`ALPHA_HYPOTHESIS_PREREG.md`](../../ALPHA_HYPOTHESIS_PREREG.md)（事前登记）
 > **实现**：`scripts/run_contrarian_study.py`　**数据**：`D:/tdx_dataset`（已并入 180 只退市股）
 > **样本**：1,500 只 / 1,722,787 行 / 250 个调仓期 / 平均截面 1,330 只
 > **运行时间**：2026-09-14

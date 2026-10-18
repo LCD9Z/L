@@ -8,7 +8,7 @@
 > **交接范围**：2026-09-13 ~ 2026-09-30（工程改造 + 量化研究 + TDX 原生数据/推荐系统）
 > **配套阅读**：[`WORKLOG.md`](WORKLOG.md)（过程与证据）· [`CHANGELOG.md`](CHANGELOG.md)（版本演进）· [`DIRECTORY_LAYOUT.md`](DIRECTORY_LAYOUT.md)（结构全景，脚本生成）
 > **本轮新增**：[`ALPHA_CAPABILITY_GAP_ANALYSIS.md`](ALPHA_CAPABILITY_GAP_ANALYSIS.md)（能力缺口分析）·
-> [`P0_P1_EXECUTION_REPORT.md`](P0_P1_EXECUTION_REPORT.md)（P0/P1 落地执行报告）
+> [`P0_P1_EXECUTION_REPORT.md`](docs/archive/P0_P1_EXECUTION_REPORT.md)（P0/P1 落地执行报告）
 
 ---
 
@@ -259,8 +259,8 @@ cd D:/hunhe/trunk && python run_ci.py     # 期望 6/6 PASS
 |------|------|
 | [`DIRECTORY_LAYOUT.md`](DIRECTORY_LAYOUT.md) | **目录全景**（由 `scripts/gen_layout_doc.py` 自动生成，含各包红线与留根理由） |
 | [`CHANGELOG.md`](CHANGELOG.md) | 版本演进（PHASE1~43 归档、v4.9 移植、历次收紧） |
-| [`AUDIT_REPORT.md`](AUDIT_REPORT.md) | 多角度静态分析审计与风险项 |
-| [`MERGE_1.0_REPORT.md`](MERGE_1.0_REPORT.md) | 1.0 合并报告（4.3 + v3.4_work）与遗留清单 |
+| [`AUDIT_REPORT.md`](docs/archive/AUDIT_REPORT.md) | 多角度静态分析审计与风险项 |
+| [`MERGE_1.0_REPORT.md`](docs/archive/MERGE_1.0_REPORT.md) | 1.0 合并报告（4.3 + v3.4_work）与遗留清单 |
 | 各子包 `__init__.py` | **每个包的职责与共同红线**（最权威、最贴近代码） |
 
 > **数据库设计文档**：无独立文档 —— schema 即 `track/schema.py`（单表 `recommendations`），
@@ -273,19 +273,19 @@ cd D:/hunhe/trunk && python run_ci.py     # 期望 6/6 PASS
 | 文档 | 结论 |
 |------|------|
 | [`ALPHA_CAPABILITY_GAP_ANALYSIS.md`](ALPHA_CAPABILITY_GAP_ANALYSIS.md) | **能力缺口分析**：六环框架（数据→假设→信号→组合→验证→运行），成熟度 数据 L2 / 假设 L1 / 信号 L2 / 组合 L1 / **验证 L3** / 运行 L1；含两项实测（基准错配、因子冗余）与 P0~P3 补足路线 |
-| [`P0_P1_EXECUTION_REPORT.md`](P0_P1_EXECUTION_REPORT.md) | **P0/P1 落地执行报告**：4 项 P0 全部完成、P1 前 2 项完成、2 项受阻（附核查证据）；含 4 个额外缺陷 |
+| [`P0_P1_EXECUTION_REPORT.md`](docs/archive/P0_P1_EXECUTION_REPORT.md) | **P0/P1 落地执行报告**：4 项 P0 全部完成、P1 前 2 项完成、2 项受阻（附核查证据）；含 4 个额外缺陷 |
 | [`AB_STUDIES_EVIDENCE.md`](AB_STUDIES_EVIDENCE.md) | **A/B 与 H-C1 原始结果归档说明**（含口径提醒） |
-| [`PORTFOLIO_AB_REPORT_3.md`](PORTFOLIO_AB_REPORT_3.md) | 第三阶段：反转 ≈ 指数，无可靠正超额 |
-| [`PORTFOLIO_AB_REPORT_2.md`](PORTFOLIO_AB_REPORT_2.md) | 第二阶段：优势稳健但被成本侵蚀 |
-| [`PORTFOLIO_AB_REPORT.md`](PORTFOLIO_AB_REPORT.md) | 第一阶段结果与两个推翻性隐患 |
-| [`CONTRARIAN_HYPOTHESIS_REPORT.md`](CONTRARIAN_HYPOTHESIS_REPORT.md) | H-C1 检验结果与五条限定 |
+| [`PORTFOLIO_AB_REPORT_3.md`](docs/archive/PORTFOLIO_AB_REPORT_3.md) | 第三阶段：反转 ≈ 指数，无可靠正超额 |
+| [`PORTFOLIO_AB_REPORT_2.md`](docs/archive/PORTFOLIO_AB_REPORT_2.md) | 第二阶段：优势稳健但被成本侵蚀 |
+| [`PORTFOLIO_AB_REPORT.md`](docs/archive/PORTFOLIO_AB_REPORT.md) | 第一阶段结果与两个推翻性隐患 |
+| [`CONTRARIAN_HYPOTHESIS_REPORT.md`](docs/archive/CONTRARIAN_HYPOTHESIS_REPORT.md) | H-C1 检验结果与五条限定 |
 | [`ALPHA_HYPOTHESIS_PREREG.md`](ALPHA_HYPOTHESIS_PREREG.md) | H-C1 事前登记（假设/方向/判定标准固定） |
-| [`SAMPLING_SENSITIVITY_REPORT.md`](SAMPLING_SENSITIVITY_REPORT.md) | 采样敏感性：分散化降标准差 4.2 倍但不改结论 |
-| [`CALIBRATION_DISCREPANCY_REPORT.md`](CALIBRATION_DISCREPANCY_REPORT.md) | 口径排查与**算术/几何年化**分野 |
-| [`RERUN_CORRECTED_REPORT.md`](RERUN_CORRECTED_REPORT.md) | 修正数据集后四项研究重跑 |
-| [`SURVIVORSHIP_IMPACT_REPORT.md`](SURVIVORSHIP_IMPACT_REPORT.md) | 幸存者偏差影响是不复权价的 30 倍 |
-| [`DELISTED_UNIVERSE_REPORT.md`](DELISTED_UNIVERSE_REPORT.md) | 180 只窗口内退市股识别与并入 |
-| [`ADJUSTED_FACTOR_REPORT.md`](ADJUSTED_FACTOR_REPORT.md) | 复权因子对比（预测未获支持） |
+| [`SAMPLING_SENSITIVITY_REPORT.md`](docs/archive/SAMPLING_SENSITIVITY_REPORT.md) | 采样敏感性：分散化降标准差 4.2 倍但不改结论 |
+| [`CALIBRATION_DISCREPANCY_REPORT.md`](docs/archive/CALIBRATION_DISCREPANCY_REPORT.md) | 口径排查与**算术/几何年化**分野 |
+| [`RERUN_CORRECTED_REPORT.md`](docs/archive/RERUN_CORRECTED_REPORT.md) | 修正数据集后四项研究重跑 |
+| [`SURVIVORSHIP_IMPACT_REPORT.md`](docs/archive/SURVIVORSHIP_IMPACT_REPORT.md) | 幸存者偏差影响是不复权价的 30 倍 |
+| [`DELISTED_UNIVERSE_REPORT.md`](docs/archive/DELISTED_UNIVERSE_REPORT.md) | 180 只窗口内退市股识别与并入 |
+| [`ADJUSTED_FACTOR_REPORT.md`](docs/archive/ADJUSTED_FACTOR_REPORT.md) | 复权因子对比（预测未获支持） |
 | `TDX_DATA_ASSESSMENT.md` / `TDX_EVALUATION_REPORT.md` | 数据性质评估与首次端到端实证 |
 | [`tdx_native/README.md`](tdx_native/README.md) | **TDX 原生模块用法与格式备忘**（`.day` 32B `<IIIIIfII`、gbbq 3DES、复权验证法）与结论 |
 | [`FACTOR_SUBSET_PREREG.md`](FACTOR_SUBSET_PREREG.md) | H-F4 因子子集事前登记（结果：不支持剔除 amihud20） |

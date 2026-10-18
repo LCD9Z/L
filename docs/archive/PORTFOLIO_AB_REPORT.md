@@ -1,6 +1,6 @@
 # 组合层面对照实验报告（基线动量 A vs H-C1 反转复合 B）
 
-> **事前登记**：[`PORTFOLIO_AB_PREREG.md`](PORTFOLIO_AB_PREREG.md)
+> **事前登记**：[`PORTFOLIO_AB_PREREG.md`](../../PORTFOLIO_AB_PREREG.md)
 > **实现**：`scripts/run_contrarian_portfolio.py`　**数据**：`D:/tdx_dataset`（含 180 只退市股）
 > **口径**：top_n=20 · 持有 5 日 · 每 5 日调仓 · 次日开盘建仓 / 第 5 日收盘平仓 · 含佣金+印花税+滑点
 > **运行时间**：2026-09-15

@@ -1,7 +1,7 @@
 # 🤖 AI股神团队 - 多维度智能股票分析系统
 
 > **版本 1.0** — 由 `4.3`（功能基线，内部 v3.7）与 `v3.4_work`（工程优化）合并而成。
-> 合并明细见 [`MERGE_1.0_REPORT.md`](MERGE_1.0_REPORT.md)，审计记录见 [`AUDIT_REPORT.md`](AUDIT_REPORT.md)。
+> 合并明细见 [`MERGE_1.0_REPORT.md`](docs/archive/MERGE_1.0_REPORT.md)，审计记录见 [`AUDIT_REPORT.md`](docs/archive/AUDIT_REPORT.md)。
 
 > 由 8 个AI Agent组成的精英投资团队，通过多维度分析与结构化辩论，为您提供专业的股票研究报告。
 >
@@ -226,7 +226,7 @@ python credential_scan.py       # 凭据扫描通过：已扫描 254 个文件
 > 根因：持仓仅 5 只、单仓 25%，**抽样噪声主导结果**。
 > 此前"负结果跨窗口稳定"的表述已撤回。
 >
-> 📄 详见 [`UNIVERSE_REPLICATION_REPORT.md`](UNIVERSE_REPLICATION_REPORT.md)
+> 📄 详见 [`UNIVERSE_REPLICATION_REPORT.md`](docs/archive/UNIVERSE_REPLICATION_REPORT.md)
 
 ### 多窗口稳健性检验（5 个样本外起点，未调整任何参数）
 
@@ -345,7 +345,7 @@ python scripts/run_tdx_rolling_eval.py --dataset D:/tdx_dataset \
 | `factors.factor_blind_test` | 因子盲测（流式，无未来函数） |
 | `public_daily_source` | 公开日线数据源 |
 
-📄 详见 [`V49_REFERENCE_ASSESSMENT.md`](V49_REFERENCE_ASSESSMENT.md)
+📄 详见 [`V49_REFERENCE_ASSESSMENT.md`](docs/archive/V49_REFERENCE_ASSESSMENT.md)
 
 ## 🔬 因子假设检验（经济逻辑驱动）
 
@@ -380,7 +380,7 @@ python scripts/run_tdx_rolling_eval.py --dataset D:/tdx_dataset \
 **子期间稳定性**：两个互不重叠窗口（2021-08~2023-12 / 2024-01~2026-09）
 全部 6 个因子符号一致，多数在两期均显著。
 
-📄 详见 [`FACTOR_HYPOTHESIS_REPORT.md`](FACTOR_HYPOTHESIS_REPORT.md)
+📄 详见 [`FACTOR_HYPOTHESIS_REPORT.md`](docs/archive/FACTOR_HYPOTHESIS_REPORT.md)
 
 ## 🔧 建设性验证：尾部剔除实验（事前设定）
 
@@ -407,7 +407,7 @@ python scripts/run_tdx_rolling_eval.py --dataset D:/tdx_dataset \
 
 ⚠️ **这是样本内结果**（因子与规则在同一数据上识别+验证），**不能作为策略有效性证据**。
 
-📄 详见 [`TAIL_EXCLUSION_REPORT.md`](TAIL_EXCLUSION_REPORT.md)
+📄 详见 [`TAIL_EXCLUSION_REPORT.md`](docs/archive/TAIL_EXCLUSION_REPORT.md)
 
 ## 🔁 多股票池重复验证（方法论上的关键一课）
 
@@ -429,7 +429,7 @@ python scripts/run_tdx_rolling_eval.py --dataset D:/tdx_dataset \
 真正的检验必须更换股票池。报告结论前应在 ≥3 个独立抽样上复现，
 并报告**离散度**而非仅均值。
 
-📄 详见 [`UNIVERSE_REPLICATION_REPORT.md`](UNIVERSE_REPLICATION_REPORT.md)
+📄 详见 [`UNIVERSE_REPLICATION_REPORT.md`](docs/archive/UNIVERSE_REPLICATION_REPORT.md)
 
 ## 🎯 持仓分散度研究（转折点）
 
@@ -456,10 +456,10 @@ python scripts/run_tdx_rolling_eval.py --dataset D:/tdx_dataset \
 **这是本系列实验的转折点**：此前噪声（33.89pp）远大于效应量，继续做策略实验无意义；
 现在噪声压到 1~3pp，**信噪比首次可用**。
 
-📄 详见 [`CONCENTRATION_REPORT.md`](CONCENTRATION_REPORT.md)
+📄 详见 [`CONCENTRATION_REPORT.md`](docs/archive/CONCENTRATION_REPORT.md)
 
-📄 详见 [`TDX_EVALUATION_REPORT.md`](TDX_EVALUATION_REPORT.md)（评估 + 稳健性检验 + 机制分析）
-与 [`TDX_DATA_ASSESSMENT.md`](TDX_DATA_ASSESSMENT.md)（数据性质与四项局限）。
+📄 详见 [`TDX_EVALUATION_REPORT.md`](docs/archive/TDX_EVALUATION_REPORT.md)（评估 + 稳健性检验 + 机制分析）
+与 [`TDX_DATA_ASSESSMENT.md`](docs/archive/TDX_DATA_ASSESSMENT.md)（数据性质与四项局限）。
 
 ### 数据接入工具
 

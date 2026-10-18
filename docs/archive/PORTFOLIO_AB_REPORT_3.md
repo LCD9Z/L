@@ -1,6 +1,6 @@
 # A/B 第三阶段报告：沪深 300 基准对照（判定 Alpha 的最后一环）
 
-> **事前登记**：[`PORTFOLIO_AB_PREREG_3.md`](PORTFOLIO_AB_PREREG_3.md)（唯一变更 = 加入基准）
+> **事前登记**：[`PORTFOLIO_AB_PREREG_3.md`](../../PORTFOLIO_AB_PREREG_3.md)（唯一变更 = 加入基准）
 > **前置**：[一阶段](PORTFOLIO_AB_REPORT.md) · [二阶段（动态滑点）](PORTFOLIO_AB_REPORT_2.md)
 > **实现**：`scripts/run_contrarian_portfolio.py --slippage dynamic`
 > **样本**：1000 只 · 沪深 300 基准 1,240 根

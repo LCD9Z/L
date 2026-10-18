@@ -12,7 +12,7 @@ AI股神团队 · A 股多 Agent 智能分析系统的版本演进记录。
 起点：[`ALPHA_CAPABILITY_GAP_ANALYSIS.md`](ALPHA_CAPABILITY_GAP_ANALYSIS.md) 指出项目
 「验证 L3、其余 L1~L2」——**是精密的证伪机器，还不是 Alpha 生产机器**。
 本轮执行其 P0（纯校准）与 P1（数据补齐）方案，详见
-[`P0_P1_EXECUTION_REPORT.md`](P0_P1_EXECUTION_REPORT.md) 与
+[`P0_P1_EXECUTION_REPORT.md`](docs/archive/P0_P1_EXECUTION_REPORT.md) 与
 [`WORKLOG.md`](WORKLOG.md) 第十二节。
 
 ### P0（4/4 完成）
@@ -223,7 +223,7 @@ pytest **795 项**（此前 538，+257）失败 0 错误 0 · 凭据扫描通过
 复权仍重要的场景（不受本结论影响）：回测绝对收益、长周期复利、
 单只股票价格连续性（涨跌停判定）、事件研究窗口。
 
-📄 详见 [`ADJUSTED_FACTOR_REPORT.md`](ADJUSTED_FACTOR_REPORT.md)
+📄 详见 [`ADJUSTED_FACTOR_REPORT.md`](docs/archive/ADJUSTED_FACTOR_REPORT.md)
 
 **质量基线**：`ruff` 零告警 · `mypy` 219 文件零错误 · `pytest` 481 passed + 1 skipped
 
@@ -231,7 +231,7 @@ pytest **795 项**（此前 538，+257）失败 0 错误 0 · 凭据扫描通过
 
 ## 1.0 · 第四轮收紧（2026-09-13）
 
-> 承接 1.0 的「遗留事项」清单逐条推进（详见 [MERGE_1.0_REPORT.md](MERGE_1.0_REPORT.md) 第六节）。
+> 承接 1.0 的「遗留事项」清单逐条推进（详见 [MERGE_1.0_REPORT.md](docs/archive/MERGE_1.0_REPORT.md) 第六节）。
 > 本轮的产出重点不是"把规则打开"，而是**收紧过程中暴露的既有缺陷**。
 
 ### 门禁与可复演性
@@ -738,7 +738,7 @@ Windows 克隆仍会产出 CRLF 使该守卫失败。用 `.gitattributes` 从仓
 
 ## 1.0 — 综合版本（2026-09-11）
 
-由 `4.3`（功能基线，内部 v3.7）与 `v3.4_work`（工程优化）合并而成。详见 [MERGE_1.0_REPORT.md](MERGE_1.0_REPORT.md)。
+由 `4.3`（功能基线，内部 v3.7）与 `v3.4_work`（工程优化）合并而成。详见 [MERGE_1.0_REPORT.md](docs/archive/MERGE_1.0_REPORT.md)。
 
 **新增工程能力**
 - 飞书凭据脱敏：文档硬编码 → 环境变量（`.env.example`）

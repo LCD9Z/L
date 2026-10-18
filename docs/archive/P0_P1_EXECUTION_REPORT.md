@@ -1,7 +1,7 @@
 # P0 / P1 落地执行报告
 
 > **执行时间**：2026-09-19
-> **依据**：[`ALPHA_CAPABILITY_GAP_ANALYSIS.md`](ALPHA_CAPABILITY_GAP_ANALYSIS.md) 第四节补足方案
+> **依据**：[`ALPHA_CAPABILITY_GAP_ANALYSIS.md`](../../ALPHA_CAPABILITY_GAP_ANALYSIS.md) 第四节补足方案
 > **工作目录**：`C:\Users\T430\Desktop\1.0 - 副本`（主开发目录 `1.0` 的副本）
 > **原则**：所有结论区分「已测量事实」与「判断/推断」；受阻项如实说明原因，不产出伪交付物。
 

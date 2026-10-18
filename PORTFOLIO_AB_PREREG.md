@@ -2,7 +2,7 @@
 
 > **登记时间**：2026-09-15　**状态**：待执行
 > **配套**：[`ALPHA_HYPOTHESIS_PREREG.md`](ALPHA_HYPOTHESIS_PREREG.md)（H-C1 单因子登记的延续）、
-> [`CONTRARIAN_HYPOTHESIS_REPORT.md`](CONTRARIAN_HYPOTHESIS_REPORT.md)（IC 层面结果）
+> [`CONTRARIAN_HYPOTHESIS_REPORT.md`](docs/archive/CONTRARIAN_HYPOTHESIS_REPORT.md)（IC 层面结果）
 > **实现**：`scripts/run_contrarian_portfolio.py`
 
 ---

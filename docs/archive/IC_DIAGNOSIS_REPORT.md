@@ -1,6 +1,6 @@
 # IC 虚高诊断 · 执行报告（H-ICX）
 
-> **事前登记**：[`IC_DIAGNOSIS_PREREG.md`](IC_DIAGNOSIS_PREREG.md)（2026-09-23 登记，判定标准事前固定）
+> **事前登记**：[`IC_DIAGNOSIS_PREREG.md`](../../IC_DIAGNOSIS_PREREG.md)（2026-09-23 登记，判定标准事前固定）
 > **执行时间**：2026-10-11　**实现**：`scripts/run_ic_diagnosis.py`
 > **数据源**：`D:\tdx_dataset_v2`（796 只 / min-rows 200 / h=5 / step=5，与 `v2_factor_study.json` 同参数）
 > **产物**：`reports/ic_diagnosis.json`　**运行**：118.3 s

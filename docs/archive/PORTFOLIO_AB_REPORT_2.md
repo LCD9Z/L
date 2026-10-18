@@ -1,6 +1,6 @@
 # 组合层面 A/B · 第二阶段报告（动态滑点修正）
 
-> **事前登记**：[`PORTFOLIO_AB_PREREG_2.md`](PORTFOLIO_AB_PREREG_2.md)（唯一变更 = 滑点模型）
+> **事前登记**：[`PORTFOLIO_AB_PREREG_2.md`](../../PORTFOLIO_AB_PREREG_2.md)（唯一变更 = 滑点模型）
 > **第一阶段**：[`PORTFOLIO_AB_REPORT.md`](PORTFOLIO_AB_REPORT.md)
 > **实现**：`scripts/run_contrarian_portfolio.py --slippage dynamic`
 > **运行时间**：2026-09-15　**样本**：1000 只 / 两窗口

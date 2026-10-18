@@ -655,7 +655,7 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py
 > 起点：`ALPHA_CAPABILITY_GAP_ANALYSIS.md` 识别出「验证 L3、其余 L1~L2」的能力落差，
 > 并给出 P0（4 项，纯校准）/ P1（5 项，数据补齐）补足路线。
 > 本节记录 P0 全部 4 项与 P1 前 2 项的执行过程与证据；详细报告见
-> [`P0_P1_EXECUTION_REPORT.md`](P0_P1_EXECUTION_REPORT.md)。
+> [`P0_P1_EXECUTION_REPORT.md`](docs/archive/P0_P1_EXECUTION_REPORT.md)。
 
 ### 12.1 P0-1 等权全A基准（纠正基准错配）
 
@@ -792,7 +792,7 @@ cd C:/Users/T430/Desktop/1.0 && python run_ci.py
 ## 十三、第六阶段：基本面维度打开与基准口径修正（2026-09-19 夜 ~ 09-20）
 
 > 承接第十二节。本节记录 P1-9、财务因子检验、正交化检验与等权基准全池化。
-> 详细结果见 [`P0_P1_EXECUTION_REPORT.md`](P0_P1_EXECUTION_REPORT.md) §3.5、§7.3–7.6。
+> 详细结果见 [`P0_P1_EXECUTION_REPORT.md`](docs/archive/P0_P1_EXECUTION_REPORT.md) §3.5、§7.3–7.6。
 
 ### 13.1 P1-9 数据集增量更新管线
 

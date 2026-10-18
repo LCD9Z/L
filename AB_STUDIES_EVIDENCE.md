@@ -9,10 +9,10 @@
 
 | 文件 | 对应阶段 | `verdict`（原文） | 支撑报告 |
 |------|---------|------------------|---------|
-| `tdx_contrarian_ic_summary.json` | H-C1 复合反转 **IC 层面**检验 | **强支持** | [`CONTRARIAN_HYPOTHESIS_REPORT.md`](CONTRARIAN_HYPOTHESIS_REPORT.md) |
-| `tdx_ab_stage1_summary.json` | A/B 第一阶段（固定滑点 0.05%） | B 优于 A 且扣费后为正 → 支持「存在可实现 Alpha」（待基准指数复核） | [`PORTFOLIO_AB_REPORT.md`](PORTFOLIO_AB_REPORT.md) |
-| `tdx_ab_stage2_summary.json` | A/B 第二阶段（动态滑点） | 同上 —— **verdict 文案未随脚本更新，数字已变**（B 年化被成本吃掉约 10.5pp/年） | [`PORTFOLIO_AB_REPORT_2.md`](PORTFOLIO_AB_REPORT_2.md) |
-| `tdx_ab_stage3_summary.json` | A/B 第三阶段（沪深 300 基准） | 两窗口超额符号相反 → **证据不足** | [`PORTFOLIO_AB_REPORT_3.md`](PORTFOLIO_AB_REPORT_3.md) |
+| `tdx_contrarian_ic_summary.json` | H-C1 复合反转 **IC 层面**检验 | **强支持** | [`CONTRARIAN_HYPOTHESIS_REPORT.md`](docs/archive/CONTRARIAN_HYPOTHESIS_REPORT.md) |
+| `tdx_ab_stage1_summary.json` | A/B 第一阶段（固定滑点 0.05%） | B 优于 A 且扣费后为正 → 支持「存在可实现 Alpha」（待基准指数复核） | [`PORTFOLIO_AB_REPORT.md`](docs/archive/PORTFOLIO_AB_REPORT.md) |
+| `tdx_ab_stage2_summary.json` | A/B 第二阶段（动态滑点） | 同上 —— **verdict 文案未随脚本更新，数字已变**（B 年化被成本吃掉约 10.5pp/年） | [`PORTFOLIO_AB_REPORT_2.md`](docs/archive/PORTFOLIO_AB_REPORT_2.md) |
+| `tdx_ab_stage3_summary.json` | A/B 第三阶段（沪深 300 基准） | 两窗口超额符号相反 → **证据不足** | [`PORTFOLIO_AB_REPORT_3.md`](docs/archive/PORTFOLIO_AB_REPORT_3.md) |
 
 > **注意**：`tdx_ab_stage2_summary.json` 的 `verdict` 字段与一阶段完全相同，
 > 这是**脚本的缺陷**（改滑点模型时未同步记录成本模型），不是数据重复。
@@ -50,7 +50,7 @@
 | `reports/survivorship_rerun/*.json`、其余 `tdx_*_summary.json` | **算术** | `mean(日超额) × 252` |
 
 **两组数字不可直接比较**（有波动时必然 算术 ≥ 几何）。详见
-[`CALIBRATION_DISCREPANCY_REPORT.md`](CALIBRATION_DISCREPANCY_REPORT.md) §2.3。
+[`CALIBRATION_DISCREPANCY_REPORT.md`](docs/archive/CALIBRATION_DISCREPANCY_REPORT.md) §2.3。
 
 另：`tdx_contrarian_ic_summary.json` 是**横截面 IC 证据，不是组合收益**，
 未计交易成本 —— 其组合层面的验证即上述 A/B 实验。

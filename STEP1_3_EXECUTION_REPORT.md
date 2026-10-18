@@ -58,7 +58,7 @@
 > 而后续章节的基准标注并不逐节重复。
 
 > v2 数据集的退市股构成见 §五 5.1（构建留档）；可行性论证见
-> [`DELISTED_UNIVERSE_REPORT.md`](DELISTED_UNIVERSE_REPORT.md)（识别 180 只
+> [`DELISTED_UNIVERSE_REPORT.md`](docs/archive/DELISTED_UNIVERSE_REPORT.md)（识别 180 只
 > 窗口内退市股并量化损失中位数 -87.5%）。
 
 ### 0.2 幸存者偏差对哪类结论敏感（借鉴 Phase144 V3 的方法论区分）

@@ -87,10 +87,21 @@ C20 分散（top_n=20） + V1 尾部剔除（剔除当日 ret20 最高 20%）
 | 候选过滤器调研结论 | `CANDIDATE_FILTERS_VERDICT.md` |
 | Sequoia-X 等外部项目借鉴 | `GITHUB_ASHARE_QUANT_SURVEY.md` |
 | 某个假设的原始登记 | `*_PREREG.md` |
+| 历史报告（实验过程 / 审计 / 数据评估） | [`docs/archive/README.md`](docs/archive/README.md)（**分级索引**） |
 | 每日产出 | `reports/daily/`（`reports/` 被 .gitignore 忽略，是运行产物） |
 
-**注意**：`docs/archive/` 与早期 `*_REPORT.md` 多为过程记录或已作废结论，
-引用前先确认是否为最新。
+**注意**：`docs/archive/` 里全是过程记录或已作废结论，引用前先确认是否为最新。
+
+> **2026-10-18 文档收敛**：根目录曾积压 **112 份**同级 md，本表的分级原则
+> （「结论源 vs 过程记录」）早就写了却从未执行。现按该原则把 **50 份**
+> 历史过程记录移入 `docs/archive/`（全文保留、未改一字，链接已批量重写），
+> 根目录降至 **62 份**：导航/规范 **12** · 预注册与判定 **34** · 其余 **16**
+> （正文结论 / 最新审计 / 在研 / 外部借鉴）。三个数字可用
+> `ls *.md | wc -l` 与「是否含 `_PREREG`/`_VERDICT`」直接复算。
+>
+> **纪律**：往根目录新增 `.md` 必须先想清楚它属于哪一档 ——
+> 守卫 `tests/test_doc_layout.py::test_root_md_allowlist` 会拒绝未登记的新文件，
+> `test_md_relative_links_resolve` 会拒绝任何悬空链接。
 
 ---
 

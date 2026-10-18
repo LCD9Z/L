@@ -1,7 +1,7 @@
 # sqrt 冲击成本与容量约束 · 执行报告（H-IMPACT / H-TC）
 
-> **事前登记**：[`IMPACT_COST_PREREG.md`](IMPACT_COST_PREREG.md)（H-IMPACT，2026-09-23）·
-> [`TURNOVER_CAPACITY_PREREG.md`](TURNOVER_CAPACITY_PREREG.md)（H-TC，2026-09-22）
+> **事前登记**：[`IMPACT_COST_PREREG.md`](../../IMPACT_COST_PREREG.md)（H-IMPACT，2026-09-23）·
+> [`TURNOVER_CAPACITY_PREREG.md`](../../TURNOVER_CAPACITY_PREREG.md)（H-TC，2026-09-22）
 > **执行时间**：2026-10-11　**数据源**：`D:\tdx_dataset_v2`（379 只 / 734,846 行 / 因子面板 757 天）
 > **基准**：等权全A　**配置**：C20（top_n=20、单仓 5%）+ V1（剔除当日 `ret_20` 最高 20%）
 > **产物**：`reports/impact_cost.json` · `reports/tc_t0.json` · `reports/tc_t2.json` · `reports/five_factor_ab_v2.json`
