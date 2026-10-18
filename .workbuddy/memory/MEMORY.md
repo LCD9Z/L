@@ -63,6 +63,11 @@
    `_gap_fill_potential(cn_disc)` 体内仍 `resolve_availability(r, None)`
    ⇒ 产出 89% 幻数，单看输出完全「正常」，靠与归档 12.84% 对账抓出）。
    判据：加参后 grep 函数体内该参数名的使用处，或与一个已知数值对账。
+5. **单文件绿 ≠ 全量绿**：`mypy scripts/x.py` 不做跨名字比对，`mypy .` 会因
+   「同一文件两个模块名」报错（`mypy_path=.:scripts` 让裸名与 `scripts.x` 都能解析，
+   测试里混用两种 import 即触发）。**守卫命令必须用 CI 那条全量命令**。
+   `scripts/` 下统一裸名互导；`ruff format --check` 红（394 文件）是仓库既有状态，
+   **format 不是门禁，`ruff check` 才是**——别看到红就全库重排。
 
 ## 反向验证（改守卫自身时必做）
 
