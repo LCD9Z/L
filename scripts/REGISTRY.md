@@ -4,7 +4,7 @@
 > 改了脚本或引用关系后跑一次 `python scripts/gen_scripts_registry.py`；
 > 守卫 `tests/test_scripts_registry.py` 会重算判据并比对，不一致即失败。
 
-**总数 84**　·　`active` 51　·　`one-off` 32　·　`deprecated` 1
+**总数 84**　·　`active` 52　·　`one-off` 31　·　`deprecated` 1
 
 ## 一、状态判据（可自动重算）
 
@@ -71,7 +71,7 @@
 | 49 | `run_factor_study.py` | 在 TDX 数据集上检验经济逻辑驱动的因子假设。 | `python scripts/run_factor_study.py` | —（无可执行引用） | `one-off` |
 | 50 | `run_feishu_acceptance.py` | 飞书 notify 模块真实凭据验收（不接触明文）。 | `python scripts/run_feishu_acceptance.py` | —（无可执行引用） | `one-off` |
 | 51 | `run_five_factor_ab.py` | H-F5 五因子组合 A/B 实验（事前登记见 `FIVE_FACTOR_PREREG.md`）。 | `python scripts/run_five_factor_ab.py` | `ENTRYPOINTS.md` | `active` |
-| 52 | `run_fundamental_factor_study.py` | 基本面因子横截面 IC 检验（PIT 财务数据）。 | `python scripts/run_fundamental_factor_study.py` | —（无可执行引用） | `one-off` |
+| 52 | `run_fundamental_factor_study.py` | 基本面因子横截面 IC 检验（PIT 财务数据）。 | `python scripts/run_fundamental_factor_study.py` | `tests/test_deflated_family.py` | `active` |
 | 53 | `run_horizon_study.py` | 持有期净效果研究：5 / 10 / 20 / 40 日持有的**组合层面净收益**对比。 | `python scripts/run_horizon_study.py` | —（无可执行引用） | `one-off` |
 | 54 | `run_ic_diagnosis.py` | IC 虚高诊断（H-ICX，登记见 `IC_DIAGNOSIS_PREREG.md`）。 | `python scripts/run_ic_diagnosis.py` | `ENTRYPOINTS.md` | `active` |
 | 55 | `run_industry_ic_attribution.py` | 行业分层 IC 归因：直接检验「IC 强显著但组合不赚钱」的产业解释。 | `python scripts/run_industry_ic_attribution.py` | `tests/test_pit_snapshot_scripts.py` | `active` |
@@ -108,9 +108,9 @@
 ## 三、治理结论
 
 - **无 `__main__` 守卫**：1 个 —— `_study_common.py`
-- **零可执行引用**（既无测试、无生产代码、不在正式清单）：33 个
+- **零可执行引用**（既无测试、无生产代码、不在正式清单）：32 个
 
-  `_audit_l3_tail_gap.py`、`build_equal_weight_benchmark.py`、`build_equalweight_benchmark.py`、`csv_to_tdx_day.py`、`enumerate_delisted_universe.py`、`fetch_baostock_klines.py`、`fetch_delisted_klines.py`、`fetch_fundamentals.py`、`list_uncovered_modules.py`、`merge_delisted_into_dataset.py`、`migrate_tracking_records.py`、`patch_limit_ratio.py`、`rerun_studies_corrected.py`、`run_adjusted_factor_study.py`、`run_alpha_gap_probe.py`、`run_astock_reconciliation.py`、`run_backtest.py`、`run_combo_study.py`、`run_daily_screening.py`、`run_delta_statistics_audit.py`、`run_factor_study.py`、`run_feishu_acceptance.py`、`run_fundamental_factor_study.py`、`run_horizon_study.py`、`run_limit_structure_study.py`、`run_multiple_testing_audit.py`、`run_pipeline.py`、`run_stop_loss_ab.py`、`run_survivorship_study.py`、`run_tdx_evaluation.py`、`run_valuation_weight_ab.py`、`scan_silent_failures.py`、`summarize_cross_decade.py`
+  `_audit_l3_tail_gap.py`、`build_equal_weight_benchmark.py`、`build_equalweight_benchmark.py`、`csv_to_tdx_day.py`、`enumerate_delisted_universe.py`、`fetch_baostock_klines.py`、`fetch_delisted_klines.py`、`fetch_fundamentals.py`、`list_uncovered_modules.py`、`merge_delisted_into_dataset.py`、`migrate_tracking_records.py`、`patch_limit_ratio.py`、`rerun_studies_corrected.py`、`run_adjusted_factor_study.py`、`run_alpha_gap_probe.py`、`run_astock_reconciliation.py`、`run_backtest.py`、`run_combo_study.py`、`run_daily_screening.py`、`run_delta_statistics_audit.py`、`run_factor_study.py`、`run_feishu_acceptance.py`、`run_horizon_study.py`、`run_limit_structure_study.py`、`run_multiple_testing_audit.py`、`run_pipeline.py`、`run_stop_loss_ab.py`、`run_survivorship_study.py`、`run_tdx_evaluation.py`、`run_valuation_weight_ab.py`、`scan_silent_failures.py`、`summarize_cross_decade.py`
 
 > `one-off` / 零引用**不等于该删** —— 它们是历史凭据，删掉会破坏可追溯性。
 > 本节的作用是让「谁在用」从**猜**变成**查**。

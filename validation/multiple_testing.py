@@ -378,3 +378,113 @@ def family_wise_error_rate(m: int) -> Optional[float]:
     if m is None or m < 0:
         return None
     return 1.0 - 0.95 ** m
+
+
+# ---------------------------------------------------------------------------
+# 族级紧缩：一族试验一起做 PSR / DSR / MinTRL
+# ---------------------------------------------------------------------------
+
+def deflated_family(series_by_factor: Dict[str, Sequence[Any]],
+                    alpha: float = 0.05) -> Dict[str, Any]:
+    """对一族「同一协议、同一批数据」的试验做**夏普比口径**的多重检验紧缩。
+
+    这是 :func:`deflated_sharpe_ratio` / :func:`probabilistic_sharpe_ratio` /
+    :func:`minimum_track_record_length` 的**唯一生产入口**——
+    单独调它们只能校正单次试验，校正不了「从 m 次里挑最优」这件事。
+
+    参数
+    ----
+    series_by_factor:
+        ``{试验名: 逐期序列}``。在本项目的用法里，序列是**逐期 IC 序列**，
+        于是得到的 ``sr`` 就是该因子的信息比率（ICIR，单期、**不年化**）。
+        传收益率序列同样合法——口径由调用方声明，本函数不猜。
+    alpha:
+        MinTRL 的显著性水平。
+
+    口径（与 `DSR_IC_FAMILY_PREREG.md` §3.1 一一对应，改动须先改预注册）
+    ----
+    * **C1** 喂入的是逐期序列；``sr`` 为单期、非年化。
+    * **C2** ``n_trials`` = 能算出矩的试验数（≥4 个观测且 sd>0）；
+      算不出矩的不算「试过」。
+    * **C3** ``sr_variance`` = 族内各有效试验 ``sr`` 的**总体方差**；
+      有效试验 < 2 或方差为 0 时取 0，并置
+      ``selection_bias_corrected = False``（没有离散度就没有选择偏差，
+      **不可静默当作已校正**）。
+    * **C4** 每个试验报 ``psr``（基准 0）、``dsr``（基准 ``max(0, E[max SR])``）、
+      ``expected_max_sr``，以及以 **deflated 基准** 计算的 MinTRL。
+    * **C5** 纯加法：不改调用方的任何既有字段。
+
+    返回
+    ----
+    ``{n_submitted, n_trials, sr_variance, expected_max_sr,
+    selection_bias_corrected, alpha, trials: {...}, notes: [...]}``
+
+    **不替调用方做结论**（模块共同红线）：只输出数值与标志。
+
+    局限（已写进返回的 ``notes``，调用方须原样带进产物）
+    ----------------------------------------------------
+    * ``E[max SR]`` 公式假设各次试验**独立**；同数据、同窗口、因子相关的
+      一族用独立公式会把基准抬得偏高 ⇒ DSR **偏保守**（安全方向，仍是近似）。
+    * ``sr_variance`` 只由 ``n_trials`` 个试验估计，试验少时噪声大。
+    * IC 序列不是收益率序列：``sr`` 是信息比率，不是夏普比率。
+    """
+    notes: List[str] = [
+        "E[max SR] 假设各试验独立；同数据/同窗口/相关因子的一族用独立公式"
+        "会把基准抬高 ⇒ DSR 偏保守（近似，非严格保证）",
+        "sr_variance 由 n_trials 个试验估计，试验少时噪声大",
+        "sr 为逐期序列的单期、非年化夏普（本项目用法下即 ICIR，非收益率夏普）",
+    ]
+    if not series_by_factor:
+        return {
+            "n_submitted": 0, "n_trials": 0, "sr_variance": 0.0,
+            "expected_max_sr": 0.0, "selection_bias_corrected": False,
+            "alpha": alpha, "trials": {}, "error": "empty_family",
+            "notes": notes + ["族为空"],
+        }
+
+    moments: Dict[str, Dict[str, float]] = {}
+    for name, returns in series_by_factor.items():
+        m = sharpe_moments(returns)
+        if m is None:
+            continue
+        moments[name] = m
+
+    n_trials = len(moments)
+    srs = [m["sr"] for m in moments.values()]
+    sr_variance = statistics.pvariance(srs) if n_trials >= 2 else 0.0
+    e_max = expected_max_sharpe(n_trials, sr_variance)
+    if e_max is None:                      # 正态分位数逼近失败（不应发生）
+        e_max = 0.0
+    corrected = bool(n_trials >= 2 and sr_variance > 0 and e_max > 0)
+    if not corrected:
+        notes.append(
+            f"未校正选择偏差：n_trials={n_trials}、sr_variance={sr_variance:.6g}"
+            " ⇒ expected_max_sr 置 0，dsr 退化为 psr（不要把它读成「已扣选择偏差」）")
+
+    trials: Dict[str, Any] = {}
+    for name, m in moments.items():
+        returns = series_by_factor[name]
+        psr = probabilistic_sharpe_ratio(returns, 0.0)
+        dsr = deflated_sharpe_ratio(returns, n_trials, sr_variance, 0.0)
+        mtrl_deflated = minimum_track_record_length(returns, e_max, alpha)
+        mtrl_zero = minimum_track_record_length(returns, 0.0, alpha)
+        trials[name] = {
+            "n": m["n"], "sr": m["sr"], "skew": m["skew"], "kurt": m["kurt"],
+            "psr": (psr or {}).get("psr"),
+            "dsr": (dsr or {}).get("dsr"),
+            "expected_max_sr": e_max,
+            "min_trl_required": (mtrl_deflated or {}).get("required"),
+            "min_trl_sufficient": (mtrl_deflated or {}).get("sufficient"),
+            "min_trl_vs_zero_required": (mtrl_zero or {}).get("required"),
+        }
+
+    return {
+        "n_submitted": len(series_by_factor),
+        "n_trials": n_trials,
+        "sr_variance": sr_variance,
+        "expected_max_sr": e_max,
+        "selection_bias_corrected": corrected,
+        "alpha": alpha,
+        "trials": trials,
+        "notes": notes,
+    }

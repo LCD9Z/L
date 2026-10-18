@@ -75,7 +75,11 @@ from pit.pit_fundamentals import (  # noqa: E402
     load_records,
     resolve_availability,
 )
-from validation.multiple_testing import benjamini_hochberg, bonferroni  # noqa: E402
+from validation.multiple_testing import (  # noqa: E402
+    benjamini_hochberg,
+    bonferroni,
+    deflated_family,
+)
 
 # 因子 → (先验方向, 中文说明)
 HYPOTHESES: Dict[str, Tuple[int, str]] = {
@@ -321,6 +325,20 @@ def main() -> int:
             r["p_adjusted_bonferroni"] = bres["p_adjusted"]
             r["rejected_bonferroni"] = bres["rejected"]
 
+    # ---- 夏普比口径的紧缩：一族试验一起校正「挑最优」（DSR/PSR/MinTRL）----
+    # 口径见 DSR_IC_FAMILY_PREREG.md §3.1；此处只做纯加法，不动上面任何字段。
+    deflated = deflated_family({k: series[k] for k in HYPOTHESES}, alpha=0.05)
+    for k in HYPOTHESES:
+        d = deflated["trials"].get(k)
+        if d:
+            results[k]["dsr"] = d["dsr"]
+            results[k]["psr"] = d["psr"]
+            results[k]["min_trl_sufficient"] = d["min_trl_sufficient"]
+            results[k]["min_trl_required"] = d["min_trl_required"]
+    if not deflated.get("selection_bias_corrected"):
+        print("\n⚠️ 未校正选择偏差（n_trials 或 sr_variance 不足）"
+              "⇒ dsr 退化为 psr，不得读作「已扣选择偏差」", flush=True)
+
     # ---- 控制变量：残差 IC（判断基本面溢价是否独立于市值暴露）----
     controlled: Dict[str, Any] = {}
     if control and panel_records:
@@ -377,24 +395,37 @@ def main() -> int:
     print(f"财务覆盖：{covered:,} / {seen:,} = "
           f"{(covered / seen if seen else 0):.1%}（有行情的个股-日中有财务数据者）")
     print(f"\n{'因子':<20}{'IC均值':>10}{'t':>8}{'p':>9}{'p_BH':>9}"
-          f"{'ICIR':>8}{'多空%':>9}  判定")
+          f"{'ICIR':>8}{'多空%':>9}{'DSR':>8}  判定")
     for k in names:
         r = results[k]
         if "ic_mean" not in r:
-            print(f"{k:<20}{'—':>10}{'—':>8}{'—':>9}{'—':>9}{'—':>8}{'—':>9}  "
+            print(f"{k:<20}{'—':>10}{'—':>8}{'—':>9}{'—':>9}{'—':>8}{'—':>9}{'—':>8}  "
                   f"{r.get('error')}")
             continue
         verdict = "BH 显著" if r.get("rejected_bh") else "校正后不显著"
         if r.get("rejected_bonferroni"):
             verdict = "两者皆显著"
         ls = r.get("long_short_pct")
+        dsr = r.get("dsr")
         print(f"{k:<20}{r['ic_mean']:>+10.4f}{r['t']:>8.2f}{r['p']:>9.4f}"
               f"{r.get('p_adjusted_bh', float('nan')):>9.4f}{r['icir']:>8.3f}"
-              f"{(f'{ls:+.3f}' if ls is not None else '—'):>9}  {verdict}")
+              f"{(f'{ls:+.3f}' if ls is not None else '—'):>9}"
+              f"{(f'{dsr:.4f}' if isinstance(dsr, float) else '—'):>8}  {verdict}")
 
     print(f"\n多重检验：m = {len(names)}，BH 拒绝 {bh['k']} 个，"
           f"Bonferroni 拒绝 {bonf['k']} 个")
     print(f"  未校正时族错误率 = {1 - 0.95 ** len(names):.1%}")
+    if deflated.get("selection_bias_corrected"):
+        print(f"  夏普比口径：n_trials = {deflated['n_trials']}，"
+              f"sr_variance = {deflated['sr_variance']:.6f}，"
+              f"E[max SR] = {deflated['expected_max_sr']:.4f}"
+              f"（DSR < 0.95 即「扣掉挑最优后不构成证据」）")
+        for k in names:
+            d = deflated["trials"].get(k)
+            if d and isinstance(d.get("dsr"), float):
+                print(f"    {k:<20} DSR = {d['dsr']:.4f}"
+                      f"   MinTRL = {d['min_trl_required'] if d['min_trl_required'] else '—'}"
+                      f"（{'够' if d['min_trl_sufficient'] else '不够'}）")
 
     if controlled:
         # 残差 IC 也必须校正：本步把检验次数从 7 增至 14（原始 + 控制），
@@ -496,7 +527,8 @@ def main() -> int:
                 if controlled else None),
             "multiple_testing": {"m": len(names), "bh_rejected": bh["k"],
                                  "bonferroni_rejected": bonf["k"],
-                                 "fwer_uncorrected": 1 - 0.95 ** len(names)},
+                                 "fwer_uncorrected": 1 - 0.95 ** len(names),
+                                 "deflated": deflated},
             "args": vars(args), "elapsed_sec": round(time.time() - t0, 1),
             "caveats": [
                 "roe 为 YTD 累计口径，非 TTM",
@@ -505,6 +537,10 @@ def main() -> int:
                 "检验之间不独立，BH 结果为参考下界而非严格 FDR 保证",
                 "先验方向已事前写定，不因结果调整",
                 f"残差 IC 的控制变量为 {control}；残差因子不再可单独解释",
+                "DSR/PSR/MinTRL 口径见 DSR_IC_FAMILY_PREREG.md：sr 为逐期 ICIR"
+                "（非收益率夏普、未年化）；E[max SR] 假设各试验独立，"
+                "本族试验相关 ⇒ DSR 偏保守；只作证据强度参考，"
+                "不作为否定既有 BH 结论的新门槛",
             ],
         }
         Path(args.out).write_text(json.dumps(payload, ensure_ascii=False, indent=1),
