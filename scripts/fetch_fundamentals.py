@@ -62,6 +62,47 @@ def _append_period(out: Path, period: str, records: List[Dict[str, Any]]) -> Non
             fh.write(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n")
 
 
+def _meta_for_mode(mode: str, done: Dict[str, int], failed: Dict[str, str],
+                   periods_total: int) -> Dict[str, Any]:
+    """按模式生成 meta（source 与 caveats 必须与 mode 一致）。
+
+    缺陷 #17 的根因：循环后的收尾 `_write_meta` 曾**硬编码** yjbb 版的
+    source/caveats，`--mode disclosure` 运行时把刚写对的巨潮出处覆盖掉。
+    现抽成单函数，两处调用同一来源，杜绝「一个模式两套文案」。
+    """
+    if mode == "disclosure":
+        return {
+            "source": "akshare stock_report_disclosure（巨潮资讯定期报告披露时间表）",
+            "fetched_at": _now(),
+            "periods_total": periods_total,
+            "rows_by_period": done,
+            "failed": failed,
+            "caveats": [
+                "实际披露=巨潮资讯披露时间表的实际披露日，是 PIT 的首选依据",
+                "实际披露为空的记录不产出（尚未披露）",
+                "含 首次预约/变更次数 字段，可用于诊断披露可靠性",
+                "⚠️ 巨潮披露时间表早年覆盖少于业绩报表（如 2016 年报 2,896 行 vs "
+                "业绩报表 2016Q1 的 3,693 行），故仍有部分记录走法定截止日兜底",
+            ],
+        }
+    return {
+        "source": "akshare stock_yjbb_em（东方财富业绩报表）",
+        "fetched_at": _now(),
+        "periods_total": periods_total,
+        "rows_by_period": done,
+        "failed": failed,
+        "caveats": [
+            "所处行业为抓取时点标签，非历史时点分类，用于历史回测会引入分类幸存者偏差",
+            "最新公告日期为该报告期最后一份公告日期（多次更正时取最后一份，偏保守）",
+            "同一 code×period 若出现多行，已保留公告日期最晚的一行",
+            "⚠️ 东财业绩报表**混入新三板公司**（400xxx/430xxx/831xxx/832xxx/839xxx "
+            "等代码段），实测占全部记录约 38.7%。这些记录不属于 A 股池、"
+            "不会被研究查询，但会灌大覆盖率分母 —— 统计时须先按 pool_v2.csv 过滤",
+            "尚未披露的报告期（如当前时点之后的季度）会出现在 failed 中，属预期而非数据缺陷",
+        ],
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="抓取 PIT 财务数据（业绩报表）")
     ap.add_argument("--out", default=r"D:\tdx_dataset_v3\fundamentals.jsonl")
@@ -114,47 +155,15 @@ def main() -> int:
         done[period] = len(records)
         failed.pop(period, None)
         print(f"  [{i}/{len(todo)}] {period} 写入 {len(records):,} 条", flush=True)
-        _write_meta(out, {
-            "source": ("akshare stock_report_disclosure（巨潮资讯定期报告披露时间表）"
-                       if args.mode == "disclosure"
-                       else "akshare stock_yjbb_em（东方财富业绩报表）"),
-            "fetched_at": _now(),
-            "periods_total": len(periods),
-            "rows_by_period": done,
-            "failed": failed,
-            "caveats": [
-                "实际披露=巨潮资讯披露时间表的实际披露日，是 PIT 的首选依据",
-                "实际披露为空的记录不产出（尚未披露）",
-                "含 首次预约/变更次数 字段，可用于诊断披露可靠性",
-                "⚠️ 巨潮披露时间表早年覆盖少于业绩报表（如 2016 年报 2,896 行 vs "
-                "业绩报表 2016Q1 的 3,693 行），故仍有部分记录走法定截止日兜底",
-            ] if args.mode == "disclosure" else [
-                "所处行业为抓取时点标签，非历史时点分类，用于历史回测会引入分类幸存者偏差",
-                "最新公告日期为该报告期最后一份公告日期（多次更正时取最后一份，偏保守）",
-                "同一 code×period 若出现多行，已保留公告日期最晚的一行",
-                "⚠️ 东财业绩报表**混入新三板公司**（400xxx/430xxx/831xxx/832xxx/839xxx "
-                "等代码段），实测占全部记录约 38.7%。这些记录不属于 A 股池、"
-                "不会被研究查询，但会灌大覆盖率分母 —— 统计时须先按 pool_v2.csv 过滤",
-            ],
-        })
+        _write_meta(out, _meta_for_mode(args.mode, done, failed, len(periods)))
 
     total = sum(done.values())
     # 循环结束后再写一次 meta：循环内的 _write_meta 只发生在**成功**分支，
     # 最后一期若失败则失败集不会落盘（首轮实测即如此：日志报 2 期失败、
     # meta 却记 0 期）。失败信息必须落盘，否则读者无从判断覆盖率。
-    _write_meta(out, {
-        "source": "akshare stock_yjbb_em（东方财富业绩报表）",
-        "fetched_at": _now(),
-        "periods_total": len(periods),
-        "rows_by_period": done,
-        "failed": failed,
-        "caveats": [
-            "所处行业为抓取时点标签，非历史时点分类，用于历史回测会引入分类幸存者偏差",
-            "最新公告日期为该报告期最后一份公告日期（多次更正时取最后一份，偏保守）",
-            "同一 code×period 若出现多行，已保留公告日期最晚的一行",
-            "尚未披露的报告期（如当前时点之后的季度）会出现在 failed 中，属预期而非数据缺陷",
-        ],
-    })
+    # ⚠️ 必须走 _meta_for_mode（缺陷 #17：此处曾硬编码 yjbb 文案，
+    # disclosure 模式的正确出处会被覆盖）。
+    _write_meta(out, _meta_for_mode(args.mode, done, failed, len(periods)))
     print(f"\n完成：成功 {len(done)} 期 / 共 {len(periods)} 期，累计 {total:,} 条 → {out}", flush=True)
     if failed:
         print(f"失败 {len(failed)} 期：{sorted(failed)}", flush=True)

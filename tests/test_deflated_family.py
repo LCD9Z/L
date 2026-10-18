@@ -8,9 +8,9 @@
 验证的数学事实（n_trials=1 ⇒ E[max SR]=0 ⇒ 基准相同）。
 """
 import ast
-import math
 import pathlib
 import random
+from typing import Dict
 
 import pytest
 
@@ -149,7 +149,7 @@ def _called_names(node) -> set:
 
 
 def _imported_from(tree, module_suffix: str) -> set:
-    out = set()
+    out: set = set()
     for n in ast.walk(tree):
         if isinstance(n, ast.ImportFrom) and (n.module or "").endswith(module_suffix):
             out.update(a.name for a in n.names)
@@ -197,7 +197,7 @@ def test_sharpe_corrections_have_callers_outside_tests():
     """
     targets = ("deflated_sharpe_ratio", "probabilistic_sharpe_ratio",
                "minimum_track_record_length", "expected_max_sharpe")
-    callers = {t: set() for t in targets}
+    callers: Dict[str, set] = {t: set() for t in targets}
     for py in sorted(ROOT.rglob("*.py")):
         if ".git" in py.parts or "__pycache__" in py.parts:
             continue
@@ -221,5 +221,6 @@ def test_normal_approximation_used_by_positive_control_is_sane():
     assert normal_cdf(0.0) == pytest.approx(0.5)
     assert normal_cdf(1.959963985) == pytest.approx(0.975, abs=1e-6)
     m = sharpe_moments(_series(0.3, 250, seed=71))
+    assert m is not None
     assert m["sr"] > 0
     assert m["n"] == 250

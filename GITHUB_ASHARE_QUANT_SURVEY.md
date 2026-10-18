@@ -674,3 +674,10 @@ A1~A4 仍要靠 §8.3 的 DSR / PBO / SPA + microalpha 的统计层阳性对照�
 
 **下一步若要做，建议只做 10.3-① 与 10.3-③**：二者合计改动小、
 且直接落在我们已验证的缺口上；10.3-② 涉及数据表建设，宜等公告日接入（A8）一起规划。
+
+> **2026-10-18 执行状态**：10.3-①（成本 mod 化）与 10.3-③（embargo 切分）
+> 已执行完毕，判定见 `COST_AUTHORITY_AND_EMBARGO_VERDICT.md`。
+> 10.3-② + A8 已按上一句的规划**合并单独立项**，登记
+> `DATA_CHANNEL_PREREG.md`（外加 `DSR_IC_FAMILY_VERDICT.md` §五建议的
+> dataset_fingerprint），判定见 `DATA_CHANNEL_VERDICT.md`。
+> A9（sqrt 成本）仍暂缓 —— 决策树未变（散户资金量级）。

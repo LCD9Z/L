@@ -75,6 +75,7 @@ from pit.pit_fundamentals import (  # noqa: E402
     load_records,
     resolve_availability,
 )
+from fetch.fingerprint import fingerprint_datasets  # noqa: E402
 from validation.multiple_testing import (  # noqa: E402
     benjamini_hochberg,
     bonferroni,
@@ -179,6 +180,17 @@ def main() -> int:
     # ---- PIT 财务 ----
     records = load_records(args.fundamentals)
     disc = load_disclosures(args.disclosures)
+    # 数据集指纹（DATA_CHANNEL_PREREG 组件 A）：一次 md5 + 行数 + 字节数。
+    # 披露日表是可选输入（缺失时 PIT 自动退口径），故 required=False ——
+    # 缺失记 {"missing": True}，不补造空指纹。
+    ds_fp = fingerprint_datasets(
+        {"fundamentals": args.fundamentals, "disclosure_dates": args.disclosures},
+        required={"fundamentals": True, "disclosure_dates": False})
+    _fp_desc = "；".join(
+        (f"{k} md5={v['md5'][:12]}…（{v['lines']:,} 行 / {v['bytes']:,} B）"
+         if not v.get("missing") else f"{k} 缺失（无指纹）")
+        for k, v in ds_fp.items())
+    print(f"数据集指纹：{_fp_desc}", flush=True)
     pf = PitFundamentals(records, disc)
     print(f"财务记录 {len(pf):,} 条 / {len(pf.codes()):,} 只"
           f"（真实披露日 {len(disc):,} 条）", flush=True)
@@ -516,6 +528,7 @@ def main() -> int:
             "records_non_ashare": non_pool,
             "used_availability_basis": used_basis,
             "disclosure_dates_loaded": len(disc),
+            "dataset_fingerprint": ds_fp,
             "announce_date_audit": {"suspicious_ratio": diag["suspicious_ratio"],
                                     "records_total": diag["records_total"]},
             "controlled_by": control or None,

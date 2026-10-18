@@ -113,12 +113,15 @@ def test_root_count_is_reported():
     「已执行」的预注册必须有独立判定，见 test_experiment_status）。
     14:0x 64 → 66，新增 `DSR_IC_FAMILY_PREREG.md` + `DSR_IC_FAMILY_VERDICT.md`
     （DSR 接线的预注册与判定，同样属「预注册与判定」档）。
-    （属「预注册与判定」档，非过程记录）。变更理由已写入 AGENTS.md §4。
+    15:0x 66 → 68，新增 `DATA_CHANNEL_PREREG.md` + `DATA_CHANNEL_VERDICT.md`
+    （A8 公告日第二源 + ② 证券代码映射表 + dataset_fingerprint 的
+    预注册与判定，属「预注册与判定」档，非过程记录）。变更理由已写入
+    AGENTS.md §4。
     本次改的是**常数**，判据本身（「根目录 md 数必须等于登记值」）未变；
     反向验证：把常量改成 64 时本测试必须失败，且失败信息含 `len(_root_mds())`。
     """
-    assert len(_root_mds()) == 66, (
-        f"根目录 md 数 = {len(_root_mds())}，与登记的 66 不符。\n"
+    assert len(_root_mds()) == 68, (
+        f"根目录 md 数 = {len(_root_mds())}，与登记的 68 不符。\n"
         "新增结论源文档请改本断言并在提交信息里说明；"
         "过程记录请归档到 docs/archive/。")
 

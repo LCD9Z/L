@@ -38,7 +38,7 @@ PACKAGES = {
         "pit_integrity", "pit_universe_builder", "pit_event_master",
         "pit_trading_filter", "pit_research_rows", "pit_fundamentals",
         "pit_quarterly", "statistical_industry", "pit_snapshot_store",
-        "baostock_guard",
+        "baostock_guard", "security_map",
     ],
     "tdx": ["tdx_csv_adapter", "tdx_inventory", "tdx_lifecycle"],
     "corporate": ["corporate_actions", "corporate_action_provider", "corporate_action_ingest"],
@@ -67,7 +67,7 @@ PACKAGES = {
     "notify": ["feishu_notifier", "lark_notify"],
     "router": ["provider_router", "quant_skill_router"],
     "fetch": ["transport", "common", "quote", "kline", "news", "cli", "akshare_source",
-              "fundamentals_source"],
+              "fundamentals_source", "fingerprint", "disclosure_eastmoney"],
     "track": ["costs", "schema", "store", "stats"],
     "console": ["display", "teams"],
 }

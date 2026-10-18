@@ -7,6 +7,8 @@
 """
 import pytest
 
+from typing import Dict
+
 from fetch.fundamentals_source import (
     AkshareUnavailable,
     fetch_all_periods,
@@ -228,3 +230,49 @@ def test_fetch_all_periods_reports_progress_for_every_period(patch_ak):
     fetch_all_periods(["20240331", "20240630"], delay=0,
                       on_progress=lambda *a: seen.append(a[2]))
     assert seen == ["20240331", "20240630"]
+
+
+# ---------------------------------------------------------------------------
+# 缺陷 #17 守卫：meta 的 source/caveats 必须与 mode 一致
+# ---------------------------------------------------------------------------
+
+def _load_fetch_script():
+    import importlib.util
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_fetch_fundamentals_script", root / "scripts" / "fetch_fundamentals.py")
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_meta_source_is_mode_aware():
+    """缺陷 #17：收尾 `_write_meta` 曾硬编码 yjbb 文案，disclosure 模式的
+    正确出处（巨潮）被覆盖 —— 磁盘 `disclosure_dates.meta.json` 即为受害者。
+    本守卫锁住 `_meta_for_mode`：两个模式的 source 与 caveats 都不许混。"""
+    mod = _load_fetch_script()
+    done: Dict[str, int] = {"20160331": 10}
+    failed: Dict[str, str] = {}
+    disc = mod._meta_for_mode("disclosure", done, failed, 1)
+    yjbb = mod._meta_for_mode("yjbb", done, failed, 1)
+    assert "巨潮" in disc["source"] and "stock_report_disclosure" in disc["source"]
+    assert "实际披露" in "".join(disc["caveats"])
+    assert "新三板" not in "".join(disc["caveats"])
+    assert "yjbb" in yjbb["source"] and "巨潮" not in yjbb["source"]
+    assert "新三板" in "".join(yjbb["caveats"])
+    assert "实际披露" not in "".join(yjbb["caveats"])
+
+
+def test_meta_source_modes_are_not_interchangeable():
+    """两个模式的 meta 除 source/caveats 外结构一致（可互换比对）。"""
+    mod = _load_fetch_script()
+    done: Dict[str, int] = {"20160331": 10}
+    failed: Dict[str, str] = {"20261231": "empty_records"}
+    disc = mod._meta_for_mode("disclosure", done, failed, 2)
+    yjbb = mod._meta_for_mode("yjbb", done, failed, 2)
+    assert set(disc) == set(yjbb)
+    for k in ("periods_total", "rows_by_period", "failed"):
+        assert disc[k] == yjbb[k]
+    assert disc["source"] != yjbb["source"]

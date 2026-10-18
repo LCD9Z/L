@@ -40,7 +40,6 @@ trunk 的源码被跳过。
 import marshal
 import pathlib
 
-import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 

@@ -9,8 +9,8 @@
 | 指标 | 值 |
 |------|----|
 | 子包数 | **21** |
-| 已入包模块 | **92**（约 13,035 行） |
-| 根目录 `.py` | **58**（约 6,474 行） |
+| 已入包模块 | **95**（约 13,814 行） |
+| 根目录 `.py` | **58**（约 6,480 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -243,7 +243,7 @@ A 股公司行为（corporate action）与复权因子子包。
 | `factors/factor_registry.py` | 82 |
 | `factors/factor_validation.py` | 123 |
 
-### `fetch/`　（8 模块，约 1,362 行）
+### `fetch/`　（10 模块，约 1,682 行）
 
 **职责**：L2 数据管道实现层（由 data_fetcher.py 拆分）。
 
@@ -279,6 +279,8 @@ L2 数据管道实现层（由 data_fetcher.py 拆分）。
 | `fetch/akshare_source.py` | 142 |
 | `fetch/cli.py` | 41 |
 | `fetch/common.py` | 120 |
+| `fetch/disclosure_eastmoney.py` | 224 |
+| `fetch/fingerprint.py` | 96 |
 | `fetch/fundamentals_source.py` | 292 |
 | `fetch/kline.py` | 257 |
 | `fetch/news.py` | 243 |
@@ -335,7 +337,7 @@ PHASE62 系列 —— TDX 指数 / 序列接入（v4.9 选择性移植）。
 | `phase62/phase62_series.py` | 19 |
 | `phase62/phase62_tdx_index.py` | 70 |
 
-### `pit/`　（10 模块，约 1,741 行）
+### `pit/`　（11 模块，约 2,090 行）
 
 **职责**：Point-in-time (PIT) 研究数据子集。
 
@@ -385,6 +387,7 @@ Point-in-time (PIT) 研究数据子集。
 | `pit/pit_snapshot_store.py` | 499 |
 | `pit/pit_trading_filter.py` | 57 |
 | `pit/pit_universe_builder.py` | 91 |
+| `pit/security_map.py` | 349 |
 | `pit/statistical_industry.py` | 227 |
 
 ### `regime/`　（3 模块，约 324 行）
@@ -702,7 +705,7 @@ TuShare 数据接入（可选依赖）。
 | `tushare_client/tushare_ashare_events.py` | 65 |
 | `tushare_client/tushare_provider.py` | 56 |
 
-### `validation/`　（9 模块，约 661 行）
+### `validation/`　（9 模块，约 771 行）
 
 **职责**：回测与策略结果的验证子包。
 
@@ -758,7 +761,7 @@ TuShare 数据接入（可选依赖）。
 |------|-----:|
 | `validation/benchmark.py` | 143 |
 | `validation/health_monitor.py` | 17 |
-| `validation/multiple_testing.py` | 380 |
+| `validation/multiple_testing.py` | 490 |
 | `validation/performance.py` | 16 |
 | `validation/phase13_risk.py` | 14 |
 | `validation/robustness.py` | 17 |
@@ -818,7 +821,7 @@ TuShare 数据接入（可选依赖）。
 | 模块 | 行数 | 入边 | 出边(根) |
 |------|-----:|-----:|--------:|
 | `candidate_prefilter.py` | 40 | 1 | 0 |
-| `cost_model.py` | 98 | 1 | 0 |
+| `cost_model.py` | 104 | 1 | 0 |
 | `crawl4ai_fetcher.py` | 370 | 0 | 0 |
 | `daily_csv_adapter.py` | 74 | 0 | 0 |
 | `data_contracts.py` | 123 | 1 | 0 |

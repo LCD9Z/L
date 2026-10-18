@@ -19,7 +19,6 @@
 import math
 import random
 
-import pytest
 
 from validation.multiple_testing import (
     deflated_family,
@@ -61,6 +60,7 @@ def test_s0_positive_control_genuine_signal_passes():
     r = deflated_family({"genuine": s})
     t = r["trials"]["genuine"]
     m = sharpe_moments(s)
+    assert m is not None, "合成序列竟算不出矩（样本不足？）"
     assert 0.30 < m["sr"] < 0.50, f"合成序列的 sr 漂了：{m['sr']:.3f}"
     assert t["psr"] > 0.99, f"阳性对照未过：psr={t['psr']:.4f}"
     assert t["dsr"] > 0.99, f"阳性对照未过：dsr={t['dsr']:.4f}"
@@ -139,6 +139,7 @@ def test_s3_negative_skew_lowers_psr_below_normal_approx():
     vals = [rng.gauss(0.0, 1.0) for _ in range(240)] + [-5.0] * 10
     vals = [v + 0.30 for v in vals]          # 加正漂移，使 sr > 0
     m = sharpe_moments(vals)
+    assert m is not None, "注入序列竟算不出矩（样本不足？）"
     assert m["skew"] < -0.2, f"注入不真实：skew={m['skew']:.3f} 不够负"
 
     naive = normal_cdf(m["sr"] * math.sqrt(m["n"] - 1.0))
@@ -153,6 +154,7 @@ def test_s3_negative_skew_lowers_psr_below_normal_approx():
     # 真正的区分力来自上面的偏度组（差 > 0.005，比噪声大两个量级）。
     clean = _series(0.30, 250, seed=SEED_BASE + 301)
     mc = sharpe_moments(clean)
+    assert mc is not None, "干净序列竟算不出矩（样本不足？）"
     rc = deflated_family({"clean": clean})
     naive_c = normal_cdf(mc["sr"] * math.sqrt(mc["n"] - 1.0))
     assert abs(rc["trials"]["clean"]["psr"] - naive_c) < 1e-3, (
@@ -172,12 +174,15 @@ def test_all_four_groups_are_deterministic():
         s0 = sharpe_moments(_series(0.40, 250, seed=SEED_BASE + 0))
         fam = {f"n{i}": _series(0.0, 250, seed=SEED_BASE + 100 + i)
                for i in range(30)}
-        best = max(fam, key=lambda k: sharpe_moments(fam[k])["sr"])
+        best = max(fam, key=lambda k: (sharpe_moments(fam[k]) or {}).get("sr", 0.0))
         s2 = sharpe_moments(_series(0.15, 40, seed=SEED_BASE + 200))
         rng = random.Random(SEED_BASE + 300)
         vals = [v + 0.30 for v in
                 ([rng.gauss(0.0, 1.0) for _ in range(240)] + [-5.0] * 10)]
+        assert s0 is not None and s2 is not None, "快照序列竟算不出矩"
+        mv = sharpe_moments(vals)
+        assert mv is not None, "注入序列竟算不出矩"
         return (round(s0["sr"], 12), best, round(s2["sr"], 12),
-                round(sharpe_moments(vals)["skew"], 12))
+                round(mv["skew"], 12))
 
     assert snapshot() == snapshot()

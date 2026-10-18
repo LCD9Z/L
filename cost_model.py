@@ -84,7 +84,13 @@ def stamp_rate(spec, as_of=None) -> float:
         # `as_of` 是非空但不可解析的串（如纯空格）⇒ 无可用日期，按现行税率。
         # 不能让 None 参与 `>=` 比较（会抛 TypeError）。
         return sell
-    return sell if d >= norm_date(change) else before
+    dc = norm_date(change)
+    if not dc:
+        # 类型收窄：norm_date 的签名是 Optional[str]，而走到这里 change 已通过
+        # `not change` 校验（非空串）⇒ 运行时此分支不可达。保留是为了让 mypy
+        # 不必假设 None；真出现时按「无分段点 ⇒ 现行税率」处理，与空值同语义。
+        return sell
+    return sell if d >= dc else before
 
 
 def trade_cost(notional, side, spec, trade_date=None) -> float:

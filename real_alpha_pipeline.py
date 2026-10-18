@@ -164,7 +164,7 @@ def embargo_cutoff(data: Dict[str, List[dict]], oos_start: str, embargo_days: in
     if eff <= 0:
         return None
     latest = None
-    for code, bars in data.items():
+    for _code, bars in data.items():
         if not bars:
             continue
         dates = [str(b["date"]) for b in bars]

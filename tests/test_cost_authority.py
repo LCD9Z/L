@@ -11,7 +11,6 @@
 **反向验证纪律**（2026-10-18 记忆）：本文件每个判据都植入过已知问题并确认会红，
 且红的原因是断言本身，不是 `ImportError` / `FileNotFoundError` 之类的假红。
 """
-import math
 import re
 import sqlite3
 from pathlib import Path
@@ -147,7 +146,7 @@ def test_a4_existing_rows_unchanged():
         if recomputed != stored:
             bad.append((rec_date, stored, recomputed))
     assert not bad, (
-        f"A-4：修复改变了存量数字（应为零影响）:\n  "
+        "A-4：修复改变了存量数字（应为零影响）:\n  "
         + "\n  ".join(f"{d}: 库内 {s} → 重算 {r}" for d, s, r in bad[:10])
     )
 
@@ -167,7 +166,10 @@ def test_a4_all_dates_are_post_change():
         dates = [r[0] for r in conn.execute("SELECT rec_date FROM recommendations")]
     finally:
         conn.close()
-    crossing = [d for d in dates if cost_model.norm_date(d) < cost_model.norm_date(cost_model.STAMP_DUTY_CHANGE_DATE)]
+    change = cost_model.norm_date(cost_model.STAMP_DUTY_CHANGE_DATE)
+    assert change is not None, "印花税生效日常量不可解析"
+    crossing = [d for d in dates
+                if (nd := cost_model.norm_date(d)) is not None and nd < change]
     assert not crossing, (
         f"A-4：出现跨生效日记录 {crossing[:5]} ⇒ 修复会改变存量，"
         "须先重估影响面再继续（见预注册 §五.4）"
@@ -234,6 +236,7 @@ def test_a5_legacy_kwargs_is_a_deliberate_control():
     if not path.is_file():
         pytest.skip("A-5：run_cost_model_check.py 不存在")
     spec = importlib.util.spec_from_file_location("_rcmc", path)
+    assert spec is not None and spec.loader is not None, "无法为 run_cost_model_check.py 创建 loader"
     mod = importlib.util.module_from_spec(spec)
     try:
         spec.loader.exec_module(mod)

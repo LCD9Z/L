@@ -11,7 +11,6 @@
 - B-6 默认值不隐性变更（不传 embargo 时与改造前逐位相同）
 - B-7 horizon 兜底：`max(embargo_days, horizon)`
 """
-import re
 from pathlib import Path
 
 import pytest
@@ -77,8 +76,8 @@ def test_b0_warm_up_comment_still_present():
 # ---------------------------------------------------------------------------
 def test_b1_embargo_actually_removes():
     data = {"600000": _bars(40)}
-    t0, o0 = split_chronological(data, OOS, embargo_days=0)
-    t5, o5 = split_chronological(data, OOS, embargo_days=5)
+    t0, _o0 = split_chronological(data, OOS, embargo_days=0)
+    t5, _o5 = split_chronological(data, OOS, embargo_days=5)
     last0 = t0["600000"][-1]["date"]
     last5 = t5["600000"][-1]["date"]
     assert last5 < last0, f"B-1：embargo 未剔除（末日 {last5} vs {last0}）"
@@ -191,7 +190,7 @@ def test_b7_horizon_takes_max():
 
 def test_b7_horizon_larger_than_embargo_is_enforced():
     data = {"600000": _bars(40)}
-    _, o = split_chronological(data, OOS, embargo_days=1, horizon=7)
+    _, _o = split_chronological(data, OOS, embargo_days=1, horizon=7)
     t, _ = split_chronological(data, OOS, embargo_days=7, horizon=1)
     assert t == split_chronological(data, OOS, embargo_days=7)[0]
 
