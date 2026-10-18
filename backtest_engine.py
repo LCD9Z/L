@@ -5,14 +5,20 @@
 import math
 from dataclasses import dataclass
 from exchange_rules import limit_ratio as _exchange_limit_ratio, limit_prices as _exchange_limit_prices
+import cost_model as _cm
 
 # A股费用规则口径（权威出处，勿凭记忆改动）：
 # - 印花税：财政部/税务总局公告，自 2023-08-28 起减半征收，卖出单边 0.5‰；
 #   此前为卖出单边 1‰。回测跨越生效日时按交易日分段计费。
 # - 过户费：中国结算公告，自 2022-04-29 起沪深两市 A股统一按成交金额 0.01‰ 双向收取。
-STAMP_DUTY_CHANGE_DATE = "2023-08-28"
-STAMP_DUTY_SELL_BEFORE = 0.001          # 旧税率：卖出单边 1‰（2023-08-28 之前）
-TRANSFER_FEE_RATE = 0.00001             # 过户费 0.01‰ 双向（沪深两市均收）
+#
+# ⚠️ 2026-10-18：费用分段逻辑已下沉到 `cost_model`（单一事实来源）。
+# 本文件保留 `_norm_date` / `_stamp_rate` / `_trade_cost` 三个名字，
+# 仅为兼容 `walk_forward.py` / `portfolio_backtest.py` 的既有 import；
+# **新增代码请直接用 `cost_model`**，不要再复制这段逻辑。
+STAMP_DUTY_CHANGE_DATE = _cm.STAMP_DUTY_CHANGE_DATE
+STAMP_DUTY_SELL_BEFORE = _cm.STAMP_DUTY_SELL_BEFORE
+TRANSFER_FEE_RATE = _cm.TRANSFER_FEE_RATE
 
 @dataclass
 class Costs:
@@ -25,7 +31,7 @@ class Costs:
     stamp_duty_sell_before: float = STAMP_DUTY_SELL_BEFORE
 
 
-def _norm_date(d) -> str:
+def _norm_date(d):
     """把日期统一成 YYYYMMDD（去横杠）。
 
     ⚠️ 2026-10-13 修：原实现直接 `str(trade_date) >= str(change)`，
@@ -33,25 +39,26 @@ def _norm_date(d) -> str:
     K 线的 `"20230825"`（不带）→ **字符串比较时 '-' < '0'**，
     使 `"20230825" >= "2023-08-28"` 恒为 True → **印花税分段完全失效**。
     （由 `tests/test_execution_stress.py` 当场抓出。）
+
+    ⚠️ 2026-10-18：实现已下沉到 `cost_model.norm_date`，此处仅委托。
     """
-    return str(d).replace("-", "").replace("/", "").strip()[:8]
+    return _cm.norm_date(d)
 
 
 def _stamp_rate(c, trade_date=None):
-    """卖出印花税率：trade_date 早于生效日时用旧税率；未提供日期按现行税率。"""
-    change = getattr(c, 'stamp_duty_change_date', None)
-    if not trade_date or not change:
-        return c.stamp_duty_sell
-    if _norm_date(trade_date) >= _norm_date(change):
-        return c.stamp_duty_sell
-    return c.stamp_duty_sell_before
+    """卖出印花税率：trade_date 早于生效日时用旧税率；未提供日期按现行税率。
+
+    2026-10-18 起委托 `cost_model.stamp_rate`（权威实现）。
+    """
+    return _cm.stamp_rate(c, trade_date)
 
 
 def _trade_cost(notional, side, c, trade_date=None):
-    commission = max(c.min_commission, notional * c.commission_rate)
-    tax = notional * _stamp_rate(c, trade_date) if side == 'sell' else 0.0
-    transfer = notional * c.transfer_fee_rate if getattr(c, 'transfer_fee_rate', 0.0) else 0.0
-    return commission + tax + transfer
+    """单笔成本（元）= 佣金 + 印花税（仅卖出）+ 过户费。
+
+    2026-10-18 起委托 `cost_model.trade_cost`（权威实现）。
+    """
+    return _cm.trade_cost(notional, side, c, trade_date)
 
 
 def _valid_bar(b):

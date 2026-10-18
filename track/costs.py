@@ -5,6 +5,8 @@
 """
 from dataclasses import dataclass
 
+import cost_model as _cm
+
 
 
 @dataclass
@@ -29,10 +31,25 @@ class TrackingCosts:
     position_notional: float = 100_000.0   # 基准仓位（元），与 backtest_engine 默认初始资金一致
 
     def _stamp_rate(self, as_of=None) -> float:
-        """卖出印花税率：as_of 早于生效日用旧税率；未提供日期按现行税率。"""
-        if not as_of or not self.stamp_duty_change_date or str(as_of) >= self.stamp_duty_change_date:
-            return self.stamp_duty_sell
-        return self.stamp_duty_sell_before
+        """卖出印花税率：as_of 早于生效日用旧税率；未提供日期按现行税率。
+
+        ⚠️ 2026-10-18 修（缺陷 #15，登记于 HANDOVER §3）：
+
+        原实现是 `str(as_of) >= self.stamp_duty_change_date` **逐字符比较**，
+        而 `as_of` 可能来自 K 线的 `"20230825"`（无横线）。
+        字符序上 `'-'`(0x2D) < `'0'`(0x30) ⇒ `"20230825" >= "2023-08-28"`
+        **恒为 True** ⇒ 生效日前的记录按现行 0.5‰ 而非旧 1‰ 计费，
+        **单边成本低估 0.5‰**。
+
+        现委托 `cost_model.stamp_rate`（先 `norm_date()` 归一化再比较）。
+
+        **影响面已量化，对存量零影响**：`tracking.db` 存量 13 行的
+        `rec_date` 全为 `YYYY-MM-DD` 且均在 2026 年（远晚于 2023-08-28）
+        ⇒ 无论修与不修都走现行税率。属**防御性修复**。
+        判据 A-4 要求修后重算这 13 行必须逐位相同。
+        详见 `COST_AUTHORITY_AND_EMBARGO_PREREG.md` §二.2。
+        """
+        return _cm.stamp_rate(self, as_of)
 
     def buy_cost(self, notional):
         """买入总成本 = 名义金额 + 佣金 + 过户费"""

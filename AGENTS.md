@@ -99,6 +99,17 @@ C20 分散（top_n=20） + V1 尾部剔除（剔除当日 ret20 最高 20%）
 > （正文结论 / 最新审计 / 在研 / 外部借鉴）。三个数字可用
 > `ls *.md | wc -l` 与「是否含 `_PREREG`/`_VERDICT`」直接复算。
 >
+> **同日 12:09 追加一份**：`COST_AUTHORITY_AND_EMBARGO_PREREG.md`
+> （成本口径权威化 + 时序切分 embargo 的预注册）—— 属「预注册与判定」档，
+> 故根目录 **63 份**：导航/规范 **12** · 预注册与判定 **35** · 其余 **16**。
+> 同步把 `test_root_count_is_reported` 的登记值 62 改为 63（该守卫要求
+> 「数字不能悄悄漂」，显式变更并在此说明理由）。
+>
+> **同日 12:40 再追加一份**：`COST_AUTHORITY_AND_EMBARGO_VERDICT.md`
+> —— 守卫 `test_experiment_status` 要求「已执行」的预注册必须有**独立判定**
+> （预注册与判定分离）。根目录 **64 份**：导航/规范 **12** ·
+> 预注册与判定 **36** · 其余 **16**。登记值同步改为 64。
+>
 > **纪律**：往根目录新增 `.md` 必须先想清楚它属于哪一档 ——
 > 守卫 `tests/test_doc_layout.py::test_root_md_allowlist` 会拒绝未登记的新文件，
 > `test_md_relative_links_resolve` 会拒绝任何悬空链接。

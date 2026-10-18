@@ -33,23 +33,27 @@ def test_stamp_rate_dashed_format(as_of, expect):
 
 @pytest.mark.parametrize("as_of", ["20230103", "20230827"])
 def test_stamp_rate_undashed_format_is_wrong(as_of):
-    """⚠️ **已登记缺陷 #15**：`YYYYMMDD`（无连字符）被**恒判为现行税率**。
+    """⚠️ **缺陷 #15（2026-10-18 已修）**：`YYYYMMDD`（无连字符）曾被**恒判为现行税率**。
 
-    根因：`str(as_of) >= "2023-08-28"` 是**字符串**比较。
+    根因（已修）：`str(as_of) >= "2023-08-28"` 是**字符串**比较。
     `"20230103"` 与 `"2023-08-28"` 逐字符比，第 5 位 `'0'`(0x30) > `'-'`(0x2D)
     ⇒ 恒为 True ⇒ 走现行税率分支。
 
     **影响方向明确**：跨生效日前的记录若以该格式传入，印花税按 0.05%
     而非 0.1% ⇒ **成本低估 0.05%**（单边）。
 
-    **当前影响面**：`track/store._today()` 产出 `YYYY-MM-DD`，默认路径
-    **不触发**；但 `rec_date` 可由调用方传入（`track/stats.backfill_pending`
-    原样 `as_of=r["rec_date"]`），若上游给 YYYYMMDD 即触发。
+    **修复方式**：`_stamp_rate` 委托 `cost_model.stamp_rate`，
+    先 `norm_date()` 归一化为 `YYYYMMDD` 再比较 ⇒ 三种格式
+    （`20230825` / `2023-08-25` / `2023/08/25`）结果一致。
 
-    本测试按 characterization **锁定当前（错误的）行为**；
-    修好后须改为 `== 0.001`。
+    **影响面已量化，对存量零影响**：`tracking.db` 13 行 `rec_date`
+    全为 `YYYY-MM-DD` 且在 2026 年 ⇒ 修与不修都走现行税率。
+    判据 A-4（重算 13 行逐位相同）见 `tests/test_cost_authority.py`。
+
+    本测试原为 characterization（锁定错误的现状），2026-10-18 随修复
+    改为断言**正确**行为 `== 0.001`。
     """
-    assert TrackingCosts()._stamp_rate(as_of) == 0.0005, "现状：无连字符格式被误判为现行税率"
+    assert TrackingCosts()._stamp_rate(as_of) == 0.001, "已修：无连字符格式应正确判为旧税率"
 
 
 def test_stamp_rate_change_date_empty_means_always_current():

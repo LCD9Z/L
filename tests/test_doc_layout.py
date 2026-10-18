@@ -107,9 +107,16 @@ def test_root_count_is_reported():
 
     不是断言「必须 ≤62」，而是钉死当前值：变成 63 时要么归档，
     要么改这里并说明理由（数字不能悄悄漂）。
+
+    2026-10-18 12:09：62 → 63，新增 `COST_AUTHORITY_AND_EMBARGO_PREREG.md`；
+    12:40 63 → 64，新增 `COST_AUTHORITY_AND_EMBARGO_VERDICT.md`（守卫要求
+    「已执行」的预注册必须有独立判定，见 test_experiment_status）。
+    （属「预注册与判定」档，非过程记录）。变更理由已写入 AGENTS.md §4。
+    本次改的是**常数**，判据本身（「根目录 md 数必须等于登记值」）未变；
+    反向验证：把常量改成 64 时本测试必须失败，且失败信息含 `len(_root_mds())`。
     """
-    assert len(_root_mds()) == 62, (
-        f"根目录 md 数 = {len(_root_mds())}，与登记的 62 不符。\n"
+    assert len(_root_mds()) == 64, (
+        f"根目录 md 数 = {len(_root_mds())}，与登记的 64 不符。\n"
         "新增结论源文档请改本断言并在提交信息里说明；"
         "过程记录请归档到 docs/archive/。")
 

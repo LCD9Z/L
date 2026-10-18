@@ -9,8 +9,8 @@
 | 指标 | 值 |
 |------|----|
 | 子包数 | **21** |
-| 已入包模块 | **92**（约 12,703 行） |
-| 根目录 `.py` | **57**（约 6,262 行） |
+| 已入包模块 | **92**（约 13,035 行） |
+| 根目录 `.py` | **58**（约 6,474 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -447,7 +447,7 @@ HTML 研究报告生成子包。
 | `reporting/report_markdown.py` | 90 |
 | `reporting/report_styles.py` | 463 |
 
-### `risk/`　（8 模块，约 1,076 行）
+### `risk/`　（8 模块，约 1,377 行）
 
 **职责**：风险与可执行性子包。
 
@@ -484,7 +484,7 @@ HTML 研究报告生成子包。
 | 模块 | 行数 |
 |------|-----:|
 | `risk/a_share_risk.py` | 46 |
-| `risk/expert_filter.py` | 286 |
+| `risk/expert_filter.py` | 587 |
 | `risk/liquidity.py` | 59 |
 | `risk/market_risk_gate.py` | 311 |
 | `risk/risk_budget.py` | 22 |
@@ -616,7 +616,7 @@ Stage-2 Alpha 重排 / 富集 / 消融实验。
 | `tdx/tdx_inventory.py` | 22 |
 | `tdx/tdx_lifecycle.py` | 82 |
 
-### `tdx_native/`　（10 模块，约 1,866 行）
+### `tdx_native/`　（10 模块，约 1,880 行）
 
 **职责**：tdx_native 测试包：把五因子研究接入通达信原生 `.day` 数据。
 
@@ -632,16 +632,16 @@ tdx_native 测试包：把五因子研究接入通达信原生 `.day` 数据。
 |------|-----:|
 | `tdx_native/adjust.py` | 81 |
 | `tdx_native/backfill.py` | 327 |
-| `tdx_native/daily_report.py` | 172 |
+| `tdx_native/daily_report.py` | 175 |
 | `tdx_native/day_reader.py` | 178 |
 | `tdx_native/fetch_names.py` | 120 |
 | `tdx_native/five_factor.py` | 85 |
 | `tdx_native/gbbq_reader.py` | 81 |
 | `tdx_native/run_daily.py` | 493 |
-| `tdx_native/screen.py` | 219 |
+| `tdx_native/screen.py` | 230 |
 | `tdx_native/smoke_test.py` | 110 |
 
-### `track/`　（4 模块，约 359 行）
+### `track/`　（4 模块，约 376 行）
 
 **职责**：L3 回测闭环 · 实现层（由 tracking.py 拆分）。
 
@@ -672,7 +672,7 @@ L3 回测闭环 · 实现层（由 tracking.py 拆分）。
 
 | 模块 | 行数 |
 |------|-----:|
-| `track/costs.py` | 81 |
+| `track/costs.py` | 98 |
 | `track/schema.py` | 46 |
 | `track/stats.py` | 163 |
 | `track/store.py` | 69 |
@@ -780,7 +780,7 @@ TuShare 数据接入（可选依赖）。
 | `data_fetcher.py` | 101 | 8 | 0 |
 | `main.py` | 158 | 0 | 1 |
 | `paper_trading.py` | 16 | 0 | 0 |
-| `run_ci.py` | 303 | 0 | 0 |
+| `run_ci.py` | 308 | 0 | 0 |
 | `stock_god.py` | 71 | 0 | 0 |
 
 ### 高耦合核心（被多处依赖或依赖多处）
@@ -792,7 +792,7 @@ TuShare 数据接入（可选依赖）。
 | `agents_base.py` | 89 | 4 | 1 |
 | `agents_decision.py` | 153 | 1 | 1 |
 | `agents_researchers.py` | 192 | 1 | 1 |
-| `backtest_engine.py` | 130 | 3 | 2 |
+| `backtest_engine.py` | 137 | 3 | 3 |
 | `cycle_price_action.py` | 63 | 2 | 0 |
 | `daily_stock_pick.py` | 242 | 0 | 6 |
 | `execution_rules.py` | 18 | 2 | 1 |
@@ -806,7 +806,7 @@ TuShare 数据接入（可选依赖）。
 | `portfolio_backtest.py` | 189 | 1 | 3 |
 | `professional_committee.py` | 90 | 1 | 1 |
 | `prompt_engine.py` | 187 | 0 | 3 |
-| `real_alpha_pipeline.py` | 206 | 0 | 4 |
+| `real_alpha_pipeline.py` | 308 | 0 | 4 |
 | `real_data_collector.py` | 115 | 0 | 1 |
 | `release_gate.py` | 156 | 1 | 1 |
 | `stock_scoring.py` | 173 | 2 | 2 |
@@ -818,6 +818,7 @@ TuShare 数据接入（可选依赖）。
 | 模块 | 行数 | 入边 | 出边(根) |
 |------|-----:|-----:|--------:|
 | `candidate_prefilter.py` | 40 | 1 | 0 |
+| `cost_model.py` | 98 | 1 | 0 |
 | `crawl4ai_fetcher.py` | 370 | 0 | 0 |
 | `daily_csv_adapter.py` | 74 | 0 | 0 |
 | `data_contracts.py` | 123 | 1 | 0 |

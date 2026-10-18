@@ -60,7 +60,7 @@
 | 38 | `run_concentration_study.py` | 持仓分散度研究：提高分散度能否降低抽样噪声？ | `python scripts/run_concentration_study.py` | `tests/test_annualization_conventions.py`、`tests/test_research_artifacts.py`、`tests/test_study_common.py` | `active` |
 | 39 | `run_contrarian_portfolio.py` | 组合层面对照实验：基线动量(A) vs H-C1 反转复合(B)，**同一框架** A/B。 | `python scripts/run_contrarian_portfolio.py` | `tests/test_annualization_conventions.py`、`tests/test_contrarian_costs.py`、`tests/test_research_artifacts.py` +4 | `active` |
 | 40 | `run_contrarian_study.py` | 复合「反转 + 低波 + 小规模 + 非流动性」打分假设检验。 | `python scripts/run_contrarian_study.py` | `tests/test_study_common.py` | `active` |
-| 41 | `run_cost_model_check.py` | 成本模型修正的敏感性检查（真实 TDX 数据，观察性对照）。 | `python scripts/run_cost_model_check.py` | `tests/test_research_artifacts.py`、`ENTRYPOINTS.md` | `active` |
+| 41 | `run_cost_model_check.py` | 成本模型修正的敏感性检查（真实 TDX 数据，观察性对照）。 | `python scripts/run_cost_model_check.py` | `tests/test_cost_authority.py`、`tests/test_research_artifacts.py`、`ENTRYPOINTS.md` | `active` |
 | 42 | `run_daily_factor_screen.py` | 五因子日度选股（v2 认证数据源版，零第三方依赖）。 | `python scripts/run_daily_factor_screen.py` | `factors/factor_ic_lab.py` | `active` |
 | 43 | `run_daily_screening.py` | AI股神团队 - 每日选股执行脚本 | `python scripts/run_daily_screening.py` | —（无可执行引用） | `one-off` |
 | 44 | `run_delta_statistics_audit.py` | Δ 型策略结论的配对统计量补记。 | `python scripts/run_delta_statistics_audit.py` | —（无可执行引用） | `one-off` |
@@ -83,7 +83,7 @@
 | 61 | `run_pit_snapshot_ingest.py` | PIT 快照采集：L1 上市/退市日（baostock）+ L2 申万行业变迁史（申万官网 xls）。 | `python scripts/run_pit_snapshot_ingest.py` | `tests/test_data_contracts_num.py`、`tests/test_pit_snapshot_scripts.py` | `active` |
 | 62 | `run_portfolio_backtest.py` | 多股组合回测 CLI（Phase 5，L1/L2 遗留）：读 universe JSON，逐股取数后跑组合回测。 | `python scripts/run_portfolio_backtest.py` | `tests/test_scripts_registry.py` | `active` |
 | 63 | `run_real_data_collection.py` | 真实行情采集 CLI（L1 遗留）：按 `--symbols` 列表取材并落盘到 `real_data/`。 | `python scripts/run_real_data_collection.py` | `tests/test_scripts_registry.py` | `active` |
-| 64 | `run_recompute.py` | 成本口径重算 · 驱动脚本（方案③下半场）。 | `python scripts/run_recompute.py` | `tests/test_check_recompute_caliber.py`、`tests/test_recompute_baseline_stamp.py` | `active` |
+| 64 | `run_recompute.py` | 成本口径重算 · 驱动脚本（方案③下半场）。 | `python scripts/run_recompute.py` | `tests/test_check_recompute_caliber.py`、`tests/test_no_foreign_pyc.py`、`tests/test_recompute_baseline_stamp.py` | `active` |
 | 65 | `run_regime_overlay_study.py` | ADX 市场状态仓位叠加层 · 观察性检验（真实 TDX 数据）。 | `python scripts/run_regime_overlay_study.py` | `tests/test_research_artifacts.py`、`ENTRYPOINTS.md` | `active` |
 | 66 | `run_sampling_sensitivity_study.py` | 采样敏感性研究：提高持仓分散度能否让回测结论稳定下来？ | `python scripts/run_sampling_sensitivity_study.py` | `tests/test_annualization_conventions.py`、`tests/test_study_regressions.py` | `active` |
 | 67 | `run_signal_diagnosis.py` | 基线策略的因子暴露诊断：把"策略亏钱"与"因子暴露"连成因果链。 | `python scripts/run_signal_diagnosis.py` | `ENTRYPOINTS.md` | `active` |

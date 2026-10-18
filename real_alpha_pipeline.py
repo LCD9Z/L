@@ -16,7 +16,7 @@ import csv, json
 from pathlib import Path
 from datetime import datetime, timezone
 from itertools import pairwise
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 from portfolio_backtest import portfolio_backtest
 from professional_audit import audit_research_evidence
@@ -67,16 +67,118 @@ def load_certified_csv(path: str | Path, metadata_path: str | Path | None = None
     return rows
 
 
-def split_chronological(data: Dict[str, List[dict]], oos_start: str) -> tuple[Dict[str,List[dict]], Dict[str,List[dict]]]:
-    train={}; oos={}
-    for code,bars in data.items():
-        a=[b for b in bars if str(b["date"]) < oos_start]
-        b=[x for x in bars if str(x["date"]) >= oos_start]
-        if a: train[code]=a
-        if b: oos[code]=b
+def split_chronological(
+    data: Dict[str, List[dict]],
+    oos_start: str,
+    embargo_days: int = 0,
+    horizon: Optional[int] = None,
+) -> tuple[Dict[str,List[dict]], Dict[str,List[dict]]]:
+    """按 `oos_start` 切分训练/测试集，可选 embargo。
+
+    Parameters
+    ----------
+    data:
+        ``{code: bars}``，每个 ``bars`` 必须已按日期升序（本函数会校验）。
+    oos_start:
+        样本外起点（`YYYY-MM-DD` 或 `YYYYMMDD`）。
+    embargo_days:
+        在 `oos_start` 之前额外剔除的**交易日**数。默认 **0** ——
+        即与改造前逐位相同的行为（见下「为什么默认是 0」）。
+    horizon:
+        标签持有期（交易日）。若提供，实际 embargo 取
+        ``max(embargo_days, horizon)``：**小于 horizon 的 embargo 挡不住泄漏** ——
+        训练集末尾第 1 个样本的标签仍会跨越 `oos_start`。
+
+    Returns
+    -------
+    ``(train, oos)``；`oos` 为空时抛 ``ValueError``。
+
+    Raises
+    ------
+    ValueError
+        - ``data_not_sorted``：某只标的的 bars 非升序；
+        - ``no_out_of_sample_data``：测试集为空（既有行为）；
+        - ``embargo_exceeds_train``：embargo 把训练集清空了
+          —— **不静默返回空训练集**，那会让调用方误以为「无训练数据」
+          而不是「切分参数不合理」。
+
+    Notes
+    -----
+    **为什么需要 embargo**：若不剔除，训练集的最后一天与测试集的第一天
+    紧邻。若标签持有期为 `horizon`，训练集末尾的信号要用到 `oos_start`
+    **之后**的价格才能知道结果 ⇒ **标签泄漏**（purged CV 的对偶问题）。
+    `embargo_days` 就是在两者之间留出间隔。
+
+    **为什么默认是 0**：默认值就是一处口径。本函数改造前零调用方，
+    但「静默把默认行为改成带 embargo」会让将来第一个调用方在不知情的
+    情况下拿到与旧版不同的切分。故保持 0，由调用方显式启用；
+    启用时的最小安全值由 ``max(embargo_days, horizon)`` 保证。
+    详见 `COST_AUTHORITY_AND_EMBARGO_PREREG.md` §三。
+
+    ⚠️ **与 `run_real_alpha_pipeline` 的关系**：那个 pipeline 是**纯样本外**
+    设计（pre-OOS bars 仅作因子 warm-up，不拟合参数），**不需要 embargo**，
+    本函数的改动不影响它。见预注册 §1b 的作用对象检查。
+    """
+    eff_embargo = int(embargo_days or 0)
+    if horizon is not None:
+        eff_embargo = max(eff_embargo, int(horizon))
+    if eff_embargo < 0:
+        raise ValueError("embargo_days_must_be_non_negative")
+
+    train: Dict[str, List[dict]] = {}
+    oos: Dict[str, List[dict]] = {}
+    for code, bars in data.items():
+        if not bars:
+            continue
+        dates = [str(b["date"]) for b in bars]
+        if dates != sorted(dates):
+            raise ValueError(f"data_not_sorted:{code}")
+        # 第一个 >= oos_start 的位置（bars 已校验升序）
+        i_oos = 0
+        while i_oos < len(bars) and dates[i_oos] < str(oos_start):
+            i_oos += 1
+        cut = i_oos - eff_embargo
+        if cut < 0:
+            raise ValueError(
+                f"embargo_exceeds_train:{code}:"
+                f"train_len={i_oos},embargo={eff_embargo}"
+            )
+        a = bars[:cut]
+        b = bars[i_oos:]
+        if a:
+            train[code] = a
+        if b:
+            oos[code] = b
     if not oos:
         raise ValueError("no_out_of_sample_data")
-    return train,oos
+    return train, oos
+
+
+def embargo_cutoff(data: Dict[str, List[dict]], oos_start: str, embargo_days: int) -> Optional[str]:
+    """训练集允许的最后交易日（加 embargo 后），供日志/产物留痕。
+
+    跨标的取**最早**的那个截止日（保守：宁可多剔，不可少剔）。
+    无可用训练集时返回 None。
+    """
+    eff = int(embargo_days or 0)
+    if eff <= 0:
+        return None
+    latest = None
+    for code, bars in data.items():
+        if not bars:
+            continue
+        dates = [str(b["date"]) for b in bars]
+        i_oos = 0
+        while i_oos < len(bars) and dates[i_oos] < str(oos_start):
+            i_oos += 1
+        cut = i_oos - eff
+        if cut < 0:
+            return None
+        d = dates[cut - 1] if cut > 0 else None
+        if d is None:
+            return None
+        latest = d if latest is None else min(latest, d)
+    return latest
 
 
 def _curve_returns(curve: List[dict]) -> Dict[str,float]:
