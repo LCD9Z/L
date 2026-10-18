@@ -281,13 +281,29 @@ def test_filter_unknown_day_is_kept():
 
 
 def test_filter_defaults_enable_all_conditions(monkeypatch):
-    """默认**全部开启**（避免"忘记开条件"导致对照组与实验组混淆）。
+    """默认开启的条件集合 —— 改这里必须留痕。
 
-    打桩 `compute_factors`，避免走真实因子计算（那需要完整的
-    open/high/low 行情，与本文件关注的条件组合无关）。
+    ## 变更留痕（2026-10-18）
+
+    原断言为**恰好 4 项**（`market` / `turnover` / `streak` / `tail`）。
+    新增的两个条件（`industry_crowding` 簇拥挤度、`valuation_cap` 估值上轨）
+    **默认 False**，故断言扩为 6 项。
+
+    **为什么新条件不默认开**（理由全文见 `EXPERT_FILTER_C2_PREREG.md` §四）：
+
+    - 条件 A–C 默认开，是因为它们已跑过、结论在案（尾部剔除 t = +8.35/+3.62/+2.52）；
+    - 条件 D/E 是 2026-10-18 才落地的处方，默认开会**静默改写**
+      `scripts/run_expert_filter_study.py` 的既有配置 → 历史数字不可复现；
+    - 正确路径是预注册 A/B（D 单开 / E 单开 / D+E），有增量结论再改默认。
+
+    ⚠️ 所以这条测试的名字「defaults enable all」现在**名不副实**：
+    它守的是「默认集合**恰好是这 6 项、且新两项为关**」——
+    真正的意图是「谁改默认值必须同步改这里」。名字保留以维持 git 历史可追溯。
     """
     monkeypatch.setattr(ef, "compute_factors", lambda bars, i: {"ret_20": 1.0})
     data = {"A": _hist(30)}
     _, stats = ef.build_expert_filter(data)
     assert stats["enabled"] == {"market": True, "turnover": True,
-                                "streak": True, "tail": True}
+                                "streak": True, "tail": True,
+                                "industry_crowding": False,
+                                "valuation_cap": False}
