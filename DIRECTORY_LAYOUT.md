@@ -10,7 +10,7 @@
 |------|----|
 | 子包数 | **21** |
 | 已入包模块 | **97**（约 14,467 行） |
-| 根目录 `.py` | **58**（约 6,625 行） |
+| 根目录 `.py` | **58**（约 6,653 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -808,7 +808,7 @@ TuShare 数据接入（可选依赖）。
 | `phase22_alpha_runner.py` | 15 | 0 | 2 |
 | `phase41_data_workbench.py` | 123 | 0 | 2 |
 | `pool_manager.py` | 166 | 1 | 1 |
-| `portfolio_backtest.py` | 189 | 1 | 3 |
+| `portfolio_backtest.py` | 217 | 1 | 3 |
 | `professional_committee.py` | 90 | 1 | 1 |
 | `prompt_engine.py` | 187 | 0 | 3 |
 | `real_alpha_pipeline.py` | 308 | 0 | 4 |

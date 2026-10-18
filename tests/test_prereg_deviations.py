@@ -65,9 +65,9 @@ def _section_rows(text: str):
 
 
 def test_every_prereg_has_deviation_section():
-    """E-1：31 份全覆盖 + 表头逐字一致。"""
+    """E-1：32 份全覆盖 + 表头逐字一致。"""
     files = _preregs()
-    assert len(files) == 31, f"预期 31 份 *_PREREG*.md，实际 {len(files)}"
+    assert len(files) == 32, f"预期 32 份 *_PREREG*.md，实际 {len(files)}"
     missing = [f.name for f in files if _section_rows(f.read_text(encoding="utf-8")) is None]
     assert missing == [], f"以下预注册缺少 {SECTION} 节: {missing}"
     bad_header = [
