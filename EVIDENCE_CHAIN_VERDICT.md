@@ -18,7 +18,7 @@
 
 | 编号 | 判据 | 结果 | 复算 |
 |---|---|---|---|
-| E-1 | 全覆盖 + 表头逐字一致 | ✅ | 28 份全部含行首零列 `## 偏离登记`；`pytest tests/test_prereg_deviations.py -k e1 或首测` |
+| E-1 | 全覆盖 + 表头逐字一致 | ✅ | 28 份全部含行首零列 `## 偏离登记`（本文件写定时 28 份；同日 `DATA_SNOOPING_PREREG.md` 落盘后为 29，守卫常量已同步改 29，新文件自带非空区块——机制**自举成立**）；`pytest tests/test_prereg_deviations.py -k e1 或首测` |
 | E-2 | 行完整（5 非空格、至少一行） | ✅ | `test_deviation_rows_are_well_formed` |
 | E-3 | 真实记账（偏离行 ↔ VERDICT 同源） | ✅ | `test_deviations_are_backed_by_verdict`（3 份参数化，关键词交叉） |
 | E-4 | 新文件自带 | ✅ | `test_self_carrying_prereg_has_nonempty_block` |

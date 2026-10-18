@@ -130,6 +130,12 @@ C20 分散（top_n=20） + V1 尾部剔除（剔除当日 ret20 最高 20%）
 > 根目录 **71 份**：导航/规范 **12** · 预注册与判定 **42** · 登记册 **1** ·
 > 其余 **16**。登记值同步改为 71。
 >
+> **同日 17:5x 再追加两份**：`DATA_SNOOPING_PREREG.md` +
+> `DATA_SNOOPING_VERDICT.md`（A2 PBO via CSCV + A3 SPA/StepM 的预注册与判定，
+> survey §8.7 第 4 档）—— 属「预注册与判定」档。
+> 根目录 **73 份**：导航/规范 **12** · 预注册与判定 **44** · 登记册 **1** ·
+> 其余 **16**。登记值同步改为 73。
+>
 > **纪律**：往根目录新增 `.md` 必须先想清楚它属于哪一档 ——
 > 守卫 `tests/test_doc_layout.py::test_root_md_allowlist` 会拒绝未登记的新文件，
 > `test_md_relative_links_resolve` 会拒绝任何悬空链接。

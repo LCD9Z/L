@@ -57,7 +57,7 @@ PACKAGES = {
     "validation": [
         "validation_suite", "performance", "phase13_risk", "robustness",
         "strategy_validation", "benchmark", "stress_test", "health_monitor",
-        "multiple_testing",
+        "multiple_testing", "data_snooping",
     ],
     "stage2": ["stage2_scoring", "stage2_ablation", "stage2_enrichment"],
     "alpha": ["alpha_experiment", "alpha_survival_lab"],

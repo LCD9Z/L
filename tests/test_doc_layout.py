@@ -121,11 +121,13 @@ def test_root_count_is_reported():
     （A5+A6+A12 的预注册与判定）+ `REJECTED_EXPERIMENTS.md`（A12 登记册，
     survey §8.4-A12；条目数与 n_trials 来源对账，属「登记册」档）。
     变更理由已写入 AGENTS.md §4。
+    17:5x 71 → 73，新增 `DATA_SNOOPING_PREREG.md` + `DATA_SNOOPING_VERDICT.md`
+    （A2 PBO via CSCV + A3 SPA/StepM 的预注册与判定，survey §8.7 第 4 档）。
     本次改的是**常数**，判据本身（「根目录 md 数必须等于登记值」）未变；
     反向验证：把常量改成 64 时本测试必须失败，且失败信息含 `len(_root_mds())`。
     """
-    assert len(_root_mds()) == 71, (
-        f"根目录 md 数 = {len(_root_mds())}，与登记的 71 不符。\n"
+    assert len(_root_mds()) == 73, (
+        f"根目录 md 数 = {len(_root_mds())}，与登记的 73 不符。\n"
         "新增结论源文档请改本断言并在提交信息里说明；"
         "过程记录请归档到 docs/archive/。")
 

@@ -9,8 +9,8 @@
 | 指标 | 值 |
 |------|----|
 | 子包数 | **21** |
-| 已入包模块 | **95**（约 13,814 行） |
-| 根目录 `.py` | **58**（约 6,480 行） |
+| 已入包模块 | **96**（约 14,171 行） |
+| 根目录 `.py` | **58**（约 6,625 行） |
 | 分层前（起点） | 188 个平铺在根目录，零子目录 |
 | `tests/` / `scripts/` | 第一轮迁出 |
 
@@ -705,7 +705,7 @@ TuShare 数据接入（可选依赖）。
 | `tushare_client/tushare_ashare_events.py` | 65 |
 | `tushare_client/tushare_provider.py` | 56 |
 
-### `validation/`　（9 模块，约 771 行）
+### `validation/`　（10 模块，约 1,128 行）
 
 **职责**：回测与策略结果的验证子包。
 
@@ -760,6 +760,7 @@ TuShare 数据接入（可选依赖）。
 | 模块 | 行数 |
 |------|-----:|
 | `validation/benchmark.py` | 143 |
+| `validation/data_snooping.py` | 357 |
 | `validation/health_monitor.py` | 17 |
 | `validation/multiple_testing.py` | 490 |
 | `validation/performance.py` | 16 |
@@ -824,7 +825,7 @@ TuShare 数据接入（可选依赖）。
 | `cost_model.py` | 104 | 1 | 0 |
 | `crawl4ai_fetcher.py` | 370 | 0 | 0 |
 | `daily_csv_adapter.py` | 74 | 0 | 0 |
-| `data_contracts.py` | 123 | 1 | 0 |
+| `data_contracts.py` | 268 | 1 | 0 |
 | `data_quality.py` | 111 | 0 | 0 |
 | `exchange_rules.py` | 127 | 1 | 0 |
 | `industry_strength.py` | 44 | 1 | 0 |
