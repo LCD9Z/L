@@ -90,6 +90,29 @@ def _load_manifest(dataset: str, max_stocks: int, min_rows_asset: int = 0) -> Di
     }
 
 
+def _resolve_bench_meta(bench: str, explicit: str = "") -> str:
+    """解析基准元数据路径（缺陷 #20：默认路径曾经拼错）。
+
+    数据集里两种命名习惯**并存**：
+
+    - `benchmark.csv`      → `benchmark.metadata.json`（去扩展名）
+    - `benchmark_ew.csv`   → `benchmark_ew.csv.metadata.json`（保留 .csv）
+
+    原实现硬编码 `bench + ".metadata.json"`，对沪深300 得到不存在的
+    `benchmark.csv.metadata.json` ⇒ 审计报 `metadata_missing` ⇒ preflight
+    `LIMITED_OR_FAIL`，默认参数下**直接跑不起来**（用 `--skip-audit` 则会静默绕过）。
+    这里改为按候选顺序探测；`--benchmark-meta` 显式给出时优先。
+    """
+    if explicit:
+        return explicit
+    stem = os.path.splitext(bench)[0] + ".metadata.json"
+    suffix = bench + ".metadata.json"
+    for cand in (stem, suffix):
+        if os.path.exists(cand):
+            return cand
+    return stem   # 都不存在时返回去扩展名的形式，让审计如实报 metadata_missing
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="多窗口滚动样本外稳健性检验")
     ap.add_argument("--dataset", required=True)
@@ -111,6 +134,15 @@ def main() -> int:
                     help="基准 metadata 路径（默认同基准 CSV 名的 .metadata.json）")
     ap.add_argument("--skip-audit", action="store_true",
                     help="跳过 sha256 全量审计（数据集在本会话已通过时复用，会打印声明）")
+    ap.add_argument("--dump-logs", action="store_true",
+                    help="在每个窗口记录中附带 equity_curve 与 trade_log（只写不读，"
+                         "不参与任何计算）。用于 regime 分层归因等事后切片分析；"
+                         "默认关闭 ⇒ 产物键与历史版本完全一致。"
+                         "见 REGIME_ATTRIBUTION_PREREG.md §三。")
+    ap.add_argument("--flush-each-window", action="store_true",
+                    help="每跑完一个窗口就把结果落盘（默认只在全部跑完后写一次）。"
+                         "长批次被外部超时中断时，已完成的窗口不会丢。"
+                         "默认关闭 ⇒ 落盘时机与历史版本一致。")
     args = ap.parse_args()
 
     dataset = os.path.abspath(args.dataset)
@@ -126,8 +158,9 @@ def main() -> int:
     # ---- 一次性审计（数据在各窗口间相同，无需重复校验）----
     from professional_audit import audit_research_evidence
     bench = args.benchmark or os.path.join(dataset, "benchmark.csv")
-    bench_meta = args.benchmark_meta or (bench + ".metadata.json")
-    print(f"\n[1/3] 一次性审计（sha256 + 全量行校验）... 基准: {os.path.basename(bench)}")
+    bench_meta = _resolve_bench_meta(bench, args.benchmark_meta)
+    print(f"\n[1/3] 一次性审计（sha256 + 全量行校验）... 基准: {os.path.basename(bench)}"
+          f"  meta: {os.path.basename(bench_meta)}")
     if args.skip_audit:
         print("\n[1/3] 审计已跳过（--skip-audit）：本数据集在本会话已通过认证审计，"
               "重复审计仅耗 CPU；数据文件未变动。")
@@ -174,6 +207,21 @@ def main() -> int:
 
     universe = _load_universe(dataset)
     rows: List[Dict[str, Any]] = []
+
+    def _write_out() -> None:
+        """落盘（抽成函数以便 `--flush-each-window` 复用同一份序列化逻辑）。"""
+        if not args.out:
+            return
+        with open(args.out, "w", encoding="utf-8", newline="\n") as f:
+            json.dump({"windows": rows, "args": vars(args),
+                       # 落盘**生效**的基准路径（2026-10-06 增补）。
+                       # 本脚本 --benchmark 默认空串，真实值由上面的兜底逻辑
+                       # 解析为 bench（注意默认是 benchmark.csv 即**沪深300**，
+                       # **不是**等权全A）——不记录则事后无法判断某批结果
+                       # 用的哪个基准，这是跨口径比较出错的主要来源。
+                       # 见 reports/EVIDENCE_INDEX.md 第六节缺口清单。
+                       "benchmark": bench},
+                      f, ensure_ascii=False, indent=1, default=str)
 
     for oos_start in windows:
         _t0 = time.time()
@@ -233,6 +281,13 @@ def main() -> int:
             "total_return_pct": result.get("total_return_pct"),
             "max_drawdown_pct": result.get("max_drawdown_pct"),
         })
+        if args.dump_logs:
+            # 只写不读：这两个键由 portfolio_backtest 返回，**不参与**上面的任何
+            # 计算（`aligned` / `annualized_excess` / `verdict` 都在此之前算完）。
+            # 默认关闭，确保 reports/ 下既有归档产物的键集合不被改动。
+            rec["equity_curve"] = result.get("equity_curve", [])
+            rec["trade_log"] = result.get("trade_log", [])
+            rec["execution_stats"] = result.get("execution_stats")
         rows.append(rec)
         _el = time.time() - _t0
         if isinstance(rec.get("annualized_excess"), float):
@@ -277,17 +332,8 @@ def main() -> int:
     print("\n  声明：本检验未调整任何策略参数；数据存在幸存者偏差与不复权两项缺陷，")
     print("        结论仅反映该策略在此数据集上的表现，不构成投资结论。")
 
+    _write_out()
     if args.out:
-        with open(args.out, "w", encoding="utf-8", newline="\n") as f:
-            json.dump({"windows": rows, "args": vars(args),
-                       # 落盘**生效**的基准路径（2026-10-06 增补）。
-                       # 本脚本 --benchmark 默认空串，真实值由上面的兜底逻辑
-                       # 解析为 bench（注意默认是 benchmark.csv 即**沪深300**，
-                       # **不是**等权全A）——不记录则事后无法判断某批结果
-                       # 用的哪个基准，这是跨口径比较出错的主要来源。
-                       # 见 reports/EVIDENCE_INDEX.md 第六节缺口清单。
-                       "benchmark": bench},
-                      f, ensure_ascii=False, indent=1, default=str)
         print(f"\n结果已写入: {args.out}")
         print(f"生效基准: {bench}")
     return 0

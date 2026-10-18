@@ -126,11 +126,13 @@ def test_root_count_is_reported():
     18:2x 73 → 75，新增 `RECEIPT_PREREG.md` + `RECEIPT_VERDICT.md`
     （A7 收据升级的预注册与判定，survey §8.7 第 5 档）。
     20:2x 75 → 76，新增 `REGIME_ATTRIBUTION_PREREG.md`（regime 分层归因预注册）。
+    21:0x 76 → 77，新增 `REGIME_ATTRIBUTION_VERDICT.md`（同上立项的判定；
+    预注册 §八 要求「已执行」的预注册必须有独立判定）。
     本次改的是**常数**，判据本身（「根目录 md 数必须等于登记值」）未变；
     反向验证：把常量改成 64 时本测试必须失败，且失败信息含 `len(_root_mds())`。
     """
-    assert len(_root_mds()) == 76, (
-        f"根目录 md 数 = {len(_root_mds())}，与登记的 76 不符。\n"
+    assert len(_root_mds()) == 77, (
+        f"根目录 md 数 = {len(_root_mds())}，与登记的 77 不符。\n"
         "新增结论源文档请改本断言并在提交信息里说明；"
         "过程记录请归档到 docs/archive/。")
 

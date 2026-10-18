@@ -58,6 +58,17 @@ def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000
     costs=costs or Costs(); cash=float(initial_capital); positions: List[Dict[str, Any]]=[]; trades: List[Dict[str, Any]]=[]; curve: List[Dict[str, Any]]=[]
     capacity_capped=0
     stop_triggered=0; stop_days: List[int]=[]
+    # ---- 执行侧拒单计数（REGIME_ATTRIBUTION_PREREG §三.0-A）----
+    # **纯计数**：只累加整数/明细，不改变任何 `continue`/`break` 的条件与顺序，
+    # 因此不改变交易序列、不改变收益。存在意义：此前「一字涨停买不进」在第 128 行
+    # 直接 `continue`，事后无法回答「有多少信号被可执行性挡掉」，Critic 的失败单
+    # 惩罚统计也就无从做起。
+    rejects: Dict[str, int]={'limit_up':0,'shares_zero':0,'cash_short':0,'no_cash':0,
+                             'exit_deferred_days':0}
+    limit_up_skips: List[Dict[str, Any]]=[]
+    _MAX_SKIP_DETAIL=5000   # 上限：防止极端参数下明细无限增长
+    n_opened=0              # 实际建仓笔数（与 rejects 一起构成「拒单率」的分母）
+
     # sqrt 冲击成本的**实际取值**记录（H-IMPACT 登记 §四「必报」项）：
     # 只在 impact_model=True 时累积，单位 bps。默认关闭 → 行为与历史版本完全一致。
     impact_buy_bps: List[float]=[]; impact_sell_bps: List[float]=[]
@@ -84,7 +95,7 @@ def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000
             if b and (day>=p['exit_due'] or stop_hit):
                 bars=data[p['code']]; pos=next((i for i,x in enumerate(bars) if str(x['date'])==day),None)
                 prev=float(bars[pos-1]['close']) if pos and pos>0 else None
-                if prev and _is_unsellable_limit(b,prev,p['code']): p['exit_deferred']=True; still.append(p); continue
+                if prev and _is_unsellable_limit(b,prev,p['code']): p['exit_deferred']=True; rejects['exit_deferred_days']+=1; still.append(p); continue
                 slip=dynamic_slippage([x for x in bars if str(x['date'])<=day],costs.slippage_rate)
                 if impact_model:
                     slip=sqrt_impact([x for x in bars if str(x['date'])<=day],
@@ -124,8 +135,13 @@ def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000
         slots=max(0,top_n-len(positions))
         if scale<=0: slots=0  # 状态路由要求当日停开新仓
         for score,risk,code,hist,nxt in candidates[:slots]:
-            if cash<=0: break
-            if _is_unbuyable_limit(nxt,hist[-1]['close'],code): continue
+            if cash<=0: rejects['no_cash']+=1; break
+            if _is_unbuyable_limit(nxt,hist[-1]['close'],code):
+                rejects['limit_up']+=1
+                if len(limit_up_skips)<_MAX_SKIP_DETAIL:
+                    limit_up_skips.append({'date':day,'code':code,'score':round(score,2),
+                                           'next_date':str(nxt['date'])})
+                continue
             slip=dynamic_slippage(hist,costs.slippage_rate)
             if impact_model:
                 # 买入冲击用目标仓位预算作名义（initial_capital×max_position_pct），
@@ -144,12 +160,13 @@ def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000
                 if cap_notional>0 and cap_notional<budget:
                     budget=cap_notional; capped=True
             shares=math.floor(budget/entry/100)*100
-            if shares<=0: continue
+            if shares<=0: rejects['shares_zero']+=1; continue
             if capped: capacity_capped+=1
             gross=shares*entry; total=gross+_trade_cost(gross,'buy',costs,nxt['date'])
-            if total>cash: continue
+            if total>cash: rejects['cash_short']+=1; continue
             if impact_model: impact_buy_bps.append(slip*10000.0)
             cash-=total; entry_date=str(nxt['date']); due=_horizon_date(data[code],entry_date,horizon)
+            n_opened+=1
             positions.append({'code':code,'signal_date':day,'entry_date':entry_date,'entry_price':round(entry,4),'shares':shares,'score':round(score,2),'risk':round(risk,2),'cost_basis':total,'exit_due':due,'last_close':float(nxt['close']),
                               'peak_close':float(nxt['close'])})
         equity=cash+sum(p['shares']*p['last_close'] for p in positions); curve.append({'date':day,'equity':round(equity,2),'cash':round(cash,2),'positions':len(positions)})
@@ -177,6 +194,17 @@ def portfolio_backtest(data,threshold=70,top_n=5,horizon=5,initial_capital=1_000
         'impact_model':impact_model,
         'buy':_bps(impact_buy_bps),
         'sell':_bps(impact_sell_bps),
+    }
+    # 执行侧拒单统计（REGIME_ATTRIBUTION_PREREG §三.0-A）：恒返回，字段只增不改。
+    # `limit_up_rate_pct` = 涨停被拒 / (涨停被拒 + 实际建仓) —— 回答「策略收益里
+    # 有多少是被可执行性挡掉后才得到的结果」，是本轮归因的必要背景，不进任何判据。
+    _denom=rejects['limit_up']+n_opened
+    out['execution_stats']={
+        'rejects':dict(rejects),
+        'opened':n_opened,
+        'limit_up_rate_pct':round(rejects['limit_up']/_denom*100,2) if _denom else None,
+        'limit_up_skips':limit_up_skips,
+        'limit_up_skips_truncated':rejects['limit_up']>len(limit_up_skips),
     }
     return out
 
