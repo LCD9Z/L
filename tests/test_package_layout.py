@@ -51,7 +51,7 @@ PACKAGES = {
         "ashare_event_engine", "ashare_flow_engine", "ashare_universe",
     ],
     "reporting": ["report_generator", "report_markdown", "report_styles"],
-    "runtime": ["runtime_env", "runtime_profile"],
+    "runtime": ["runtime_env", "runtime_profile", "receipt"],
     "risk": ["a_share_risk", "risk_engine", "risk_budget", "liquidity", "var_calculator",
              "market_risk_gate", "expert_filter", "valuation_weight"],
     "validation": [

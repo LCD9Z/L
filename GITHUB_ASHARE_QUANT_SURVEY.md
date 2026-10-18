@@ -431,14 +431,16 @@ Gharghori & Nguyen（PBFJ 2026，DOI `10.1016/j.pacfin.2025.103012`）
 | **6** | **A11：purged CV / embargo** | 需要动切分逻辑，触及既有实验，故靠后 |
 | 暂缓 | A8（公告日）/ A9（sqrt）/ A10（CNE6） | 成本高，且**当前结论未必需要**：A9 我们是散户资金、A10 中性化已证伪、A8 待数据通道 |
 
-> **执行状态（2026-10-18 收尾）**：顺序 1、2、3、4、6 均已执行（对应
+> **执行状态（2026-10-18 收尾）**：顺序 1、2、3、4、5、6 **均已执行**（对应
 > `DSR_IC_FAMILY_VERDICT.md`、`EVIDENCE_CHAIN_VERDICT.md`、
-> `DATA_SNOOPING_VERDICT.md`、`COST_AUTHORITY_AND_EMBARGO_VERDICT.md`）；
-> A8 已判定「**不接线**」（`DATA_CHANNEL_VERDICT.md`：双源一致率 99.99% 但补缺仅 1.12%）。
-> 顺序 **5（A7 收据）** 是 §8.7 唯一未做的档位。
-> ⚠️ A2 本轮只交付库与对照，**未应用到归档数据**（归档无逐期序列）；
+> `DATA_SNOOPING_VERDICT.md`、`RECEIPT_VERDICT.md`、
+> `COST_AUTHORITY_AND_EMBARGO_VERDICT.md`）；A8 已判定「**不接线**」
+> （`DATA_CHANNEL_VERDICT.md`：双源一致率 99.99% 但补缺仅 1.12%）。
+> ⚠️ A2 只交付库与对照，**未应用到归档数据**（归档无逐期序列）；
 > 顺序 6（A11）已执行的是**加固零调用方 API** 版，主 pipeline 仍无 embargo——见
 > `COST_AUTHORITY_AND_EMBARGO_VERDICT.md` 的偏离登记。
+> A7 落地时抓到**缺陷 #19**（研究生成器把墙钟写进产物 ⇒ 字节级不可复现），
+> 已修 1 处、登记 3 处欠账（`HANDOVER.md`）。
 
 **一句话**：**先把「已经写好的显著性检验接上，再证明它在该显著时确实显著」**，
 这两步做完了，前面所有 V1–V5 的验收才真正闭环——

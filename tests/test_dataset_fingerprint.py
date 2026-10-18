@@ -151,11 +151,19 @@ def _payload_keys_from_source() -> list:
     raise AssertionError("脚本中未找到 payload 赋值")
 
 
+#: 已**刻意移除**的归档键（不是丢失）。`elapsed_sec` 于 2026-10-18 由 RECEIPT
+#: 立项删除：墙钟写进产物使「干净目录重跑字节级相同」永远不成立（A7 判据 T-11），
+#: 实测两次运行唯一差异就是它。耗时仍由 stdout 打印 `用时 Ns`，不进产物。
+#: 登记为缺陷 #19（HANDOVER）。此处**白名单化**而非放宽断言：删任何一个别的键仍红。
+RETIRED_KEYS = {"elapsed_sec"}
+
+
 def test_f5_payload_keys_are_archived_plus_fingerprint():
     """接入后 payload 顶层键 = 归档产物的键 + 且仅 + dataset_fingerprint（F-5）。
 
     归档产物 `reports/v3_fundamental_factor_study.json` 是接入前的真实输出
     （18 键）。本测试防「顺手改口径」：除了新增指纹键，一个键都不许动。
+    `RETIRED_KEYS` 是**显式登记**的例外（每个都要有理由与被引用的缺陷号）。
     """
     if not ARCHIVED_OUTPUT.exists():  # pragma: no cover - 归档产物在仓库内
         pytest.skip("归档产物缺失（应随仓库分发）")
@@ -163,8 +171,15 @@ def test_f5_payload_keys_are_archived_plus_fingerprint():
     current = set(_payload_keys_from_source())
     assert current - archived == {"dataset_fingerprint"}, (
         f"payload 新增了非指纹键：{sorted(current - archived)}")
-    assert archived - current == set(), (
-        f"payload 丢了归档键：{sorted(archived - current)}")
+    assert archived - current == RETIRED_KEYS, (
+        f"payload 丢了未登记的归档键：{sorted((archived - current) - RETIRED_KEYS)}")
+
+
+def test_f5_retired_keys_stay_retired():
+    """`elapsed_sec` 不许被「顺手加回来」——加回来就破坏 A7 的 T-11。"""
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert '"elapsed_sec"' not in text, (
+        "墙钟回到产物会让「干净目录重跑字节级相同」失效（缺陷 #19）")
 
 
 def test_f5_fingerprint_wired_once():

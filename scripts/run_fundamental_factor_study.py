@@ -542,7 +542,10 @@ def main() -> int:
                                  "bonferroni_rejected": bonf["k"],
                                  "fwer_uncorrected": 1 - 0.95 ** len(names),
                                  "deflated": deflated},
-            "args": vars(args), "elapsed_sec": round(time.time() - t0, 1),
+            # ⚠️ 不在产物里写 `elapsed_sec`（墙钟）：它使「干净目录重跑 ⇒ 字节级相同」
+            # 永远不成立，收据（runtime/receipt.py，A7）会因此无法比对。
+            # 耗时已由 stdout 打印（见本函数末尾），诊断信息不需要进产物。
+            "args": vars(args),
             "caveats": [
                 "roe 为 YTD 累计口径，非 TTM",
                 "可用日优先取巨潮资讯真实披露日（A 股池内覆盖 86.8%），"

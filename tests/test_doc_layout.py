@@ -123,11 +123,13 @@ def test_root_count_is_reported():
     变更理由已写入 AGENTS.md §4。
     17:5x 71 → 73，新增 `DATA_SNOOPING_PREREG.md` + `DATA_SNOOPING_VERDICT.md`
     （A2 PBO via CSCV + A3 SPA/StepM 的预注册与判定，survey §8.7 第 4 档）。
+    18:2x 73 → 75，新增 `RECEIPT_PREREG.md` + `RECEIPT_VERDICT.md`
+    （A7 收据升级的预注册与判定，survey §8.7 第 5 档）。
     本次改的是**常数**，判据本身（「根目录 md 数必须等于登记值」）未变；
     反向验证：把常量改成 64 时本测试必须失败，且失败信息含 `len(_root_mds())`。
     """
-    assert len(_root_mds()) == 73, (
-        f"根目录 md 数 = {len(_root_mds())}，与登记的 73 不符。\n"
+    assert len(_root_mds()) == 75, (
+        f"根目录 md 数 = {len(_root_mds())}，与登记的 75 不符。\n"
         "新增结论源文档请改本断言并在提交信息里说明；"
         "过程记录请归档到 docs/archive/。")
 
