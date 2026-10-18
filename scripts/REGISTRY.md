@@ -4,7 +4,7 @@
 > 改了脚本或引用关系后跑一次 `python scripts/gen_scripts_registry.py`；
 > 守卫 `tests/test_scripts_registry.py` 会重算判据并比对，不一致即失败。
 
-**总数 89**　·　`active` 58　·　`one-off` 30　·　`deprecated` 1
+**总数 90**　·　`active` 59　·　`one-off` 30　·　`deprecated` 1
 
 ## 一、状态判据（可自动重算）
 
@@ -49,66 +49,67 @@
 | 27 | `gen_scripts_registry.py` | 生成 `scripts/REGISTRY.md` —— `scripts/` 下每个脚本的**逐份**登记（A2）。 | `python scripts/gen_scripts_registry.py` | `tests/test_scripts_registry.py` | `active` |
 | 28 | `list_uncovered_modules.py` | 列出**无直接测试覆盖**的源码模块（HANDOVER §7 第 4 项：剩余 9 个）。 | `python scripts/list_uncovered_modules.py` | —（无可执行引用） | `one-off` |
 | 29 | `merge_delisted_into_dataset.py` | 把窗口内退市股并入 TDX 认证数据集。 | `python scripts/merge_delisted_into_dataset.py` | —（无可执行引用） | `one-off` |
-| 30 | `migrate_root_docs.py` | 根目录文档收敛（B3）：把历史报告移入 `docs/archive/`，并**重写全部相对链接**。 | `python scripts/migrate_root_docs.py` | `tests/test_doc_layout.py` | `active` |
-| 31 | `migrate_tracking_records.py` | 迁移 lost 系工作目录的 L3 推荐记录到本项目 tracking.db。 | `python scripts/migrate_tracking_records.py` | —（无可执行引用） | `one-off` |
-| 32 | `patch_limit_ratio.py` | 把已构建数据集里的 ``limit_ratio`` 按 **PIT 正确规则**重算并回写。 | `python scripts/patch_limit_ratio.py` | —（无可执行引用） | `one-off` |
-| 33 | `regime_attribution.py` | Regime 分层归因：把「六窗口全负超额」按市场状态切片（**只做尸检**）。 | `python scripts/regime_attribution.py` | `tests/test_regime_attribution.py` | `active` |
-| 34 | `repair_tdx_metadata.py` | 为已导出的每股 CSV 重建 .metadata.json（修复用）。 | `python scripts/repair_tdx_metadata.py` | `tests/test_package_layout.py` | `active` |
-| 35 | `rerun_studies_corrected.py` | 用修正后的数据集（含 180 只退市股）重跑全部既有研究。 | `python scripts/rerun_studies_corrected.py` | —（无可执行引用） | `one-off` |
-| 36 | `run_adjusted_factor_study.py` | 复权价格 vs 原始价格的因子对比研究。 | `python scripts/run_adjusted_factor_study.py` | —（无可执行引用） | `one-off` |
-| 37 | `run_alpha_gap_probe.py` | Alpha 能力缺口探查：基准错配与因子冗余的实测。 | `python scripts/run_alpha_gap_probe.py` | —（无可执行引用） | `one-off` |
-| 38 | `run_analysis.py` | run_analysis.py - AI股神系统 · 分析入口（L2 落地） | `python scripts/run_analysis.py` | `daily_stock_pick.py`、`prompt_engine.py` | `active` |
-| 39 | `run_astock_reconciliation.py` | 抽样对账：`a-stock-data` 的行情层 vs 我方通达信原生 `.day`。 | `python scripts/run_astock_reconciliation.py` | —（无可执行引用） | `one-off` |
-| 40 | `run_backtest.py` | 单股日线回测 CLI（L1 遗留）：给定 code + 区间，跑 `backtest_engine.backtest`。 | `python scripts/run_backtest.py` | —（无可执行引用） | `one-off` |
-| 41 | `run_c2_ab.py` | C2 条件 A/B —— 产业策略师「风格拥挤度 gate」与估值分析师「上轨排除」。 | `python scripts/run_c2_ab.py` | `tests/test_c2_ab_variants.py` | `active` |
-| 42 | `run_combo_study.py` | 组合层研究：**尾部剔除 × 持仓分散度** 的联合效果。 | `python scripts/run_combo_study.py` | —（无可执行引用） | `one-off` |
-| 43 | `run_concentration_study.py` | 持仓分散度研究：提高分散度能否降低抽样噪声？ | `python scripts/run_concentration_study.py` | `tests/test_annualization_conventions.py`、`tests/test_research_artifacts.py`、`tests/test_study_common.py` | `active` |
-| 44 | `run_contrarian_portfolio.py` | 组合层面对照实验：基线动量(A) vs H-C1 反转复合(B)，**同一框架** A/B。 | `python scripts/run_contrarian_portfolio.py` | `tests/test_annualization_conventions.py`、`tests/test_contrarian_costs.py`、`tests/test_research_artifacts.py` +4 | `active` |
-| 45 | `run_contrarian_study.py` | 复合「反转 + 低波 + 小规模 + 非流动性」打分假设检验。 | `python scripts/run_contrarian_study.py` | `tests/test_study_common.py` | `active` |
-| 46 | `run_cost_model_check.py` | 成本模型修正的敏感性检查（真实 TDX 数据，观察性对照）。 | `python scripts/run_cost_model_check.py` | `tests/test_cost_authority.py`、`tests/test_research_artifacts.py`、`ENTRYPOINTS.md` | `active` |
-| 47 | `run_daily_factor_screen.py` | 五因子日度选股（v2 认证数据源版，零第三方依赖）。 | `python scripts/run_daily_factor_screen.py` | `factors/factor_ic_lab.py` | `active` |
-| 48 | `run_daily_screening.py` | AI股神团队 - 每日选股执行脚本 | `python scripts/run_daily_screening.py` | —（无可执行引用） | `one-off` |
-| 49 | `run_delta_statistics_audit.py` | Δ 型策略结论的配对统计量补记。 | `python scripts/run_delta_statistics_audit.py` | —（无可执行引用） | `one-off` |
-| 50 | `run_disclosure_factor_study.py` | H-D2 检验：定期报告**预约披露日变更次数**是否预示负面收益。 | `python scripts/run_disclosure_factor_study.py` | `tests/test_disclosure_factor_study.py` | `active` |
-| 51 | `run_expert_filter_study.py` | 专家组合过滤器研究：逐条件归因 + 组合对比。 | `python scripts/run_expert_filter_study.py` | `tests/test_expert_filter.py`、`tests/test_expert_filter_c2.py`、`tests/test_study_common.py` +1 | `active` |
-| 52 | `run_factor_correlation.py` | 五因子截面相关性与组合增量检验（v2 数据源，零第三方依赖）。 | `python scripts/run_factor_correlation.py` | `ENTRYPOINTS.md` | `active` |
-| 53 | `run_factor_orthogonality.py` | 因子正交化后的方向稳健性（H-ORTH） | `python scripts/run_factor_orthogonality.py` | `tests/test_p3_equivalence_baseline.py`、`ENTRYPOINTS.md` | `active` |
-| 54 | `run_factor_study.py` | 在 TDX 数据集上检验经济逻辑驱动的因子假设。 | `python scripts/run_factor_study.py` | —（无可执行引用） | `one-off` |
-| 55 | `run_feishu_acceptance.py` | 飞书 notify 模块真实凭据验收（不接触明文）。 | `python scripts/run_feishu_acceptance.py` | —（无可执行引用） | `one-off` |
-| 56 | `run_five_factor_ab.py` | H-F5 五因子组合 A/B 实验（事前登记见 `FIVE_FACTOR_PREREG.md`）。 | `python scripts/run_five_factor_ab.py` | `ENTRYPOINTS.md` | `active` |
-| 57 | `run_fundamental_factor_study.py` | 基本面因子横截面 IC 检验（PIT 财务数据）。 | `python scripts/run_fundamental_factor_study.py` | `tests/test_dataset_fingerprint.py`、`tests/test_deflated_family.py`、`tests/test_receipt.py` | `active` |
-| 58 | `run_horizon_study.py` | 持有期净效果研究：5 / 10 / 20 / 40 日持有的**组合层面净收益**对比。 | `python scripts/run_horizon_study.py` | —（无可执行引用） | `one-off` |
-| 59 | `run_ic_diagnosis.py` | IC 虚高诊断（H-ICX，登记见 `IC_DIAGNOSIS_PREREG.md`）。 | `python scripts/run_ic_diagnosis.py` | `ENTRYPOINTS.md` | `active` |
-| 60 | `run_industry_ic_attribution.py` | 行业分层 IC 归因：直接检验「IC 强显著但组合不赚钱」的产业解释。 | `python scripts/run_industry_ic_attribution.py` | `tests/test_pit_snapshot_scripts.py` | `active` |
-| 61 | `run_l3_valuation_reconciliation.py` | L3 估值历史的**抽样对账**（设计文档规定的「接入前必过闸门」）。 | `python scripts/run_l3_valuation_reconciliation.py` | `tests/test_pit_snapshot_scripts.py` | `active` |
-| 62 | `run_limit_structure_study.py` | H-D4 检验：涨跌停结构（一字涨停占比）是否预示负面收益。 | `python scripts/run_limit_structure_study.py` | —（无可执行引用） | `one-off` |
-| 63 | `run_multiple_testing_audit.py` | 多重检验校正审计：把「跑了很多次」算进已发布结论的显著性里。 | `python scripts/run_multiple_testing_audit.py` | `tests/test_rejected_registry.py` | `active` |
-| 64 | `run_pipeline.py` | V3.4 market-wide runner. | `python scripts/run_pipeline.py` | —（无可执行引用） | `one-off` |
-| 65 | `run_pit_gap_check.py` | PIT 快照断更检测 + 告警。 | `python scripts/run_pit_gap_check.py` | `tests/test_pit_snapshot_scripts.py` | `active` |
-| 66 | `run_pit_snapshot_ingest.py` | PIT 快照采集：L1 上市/退市日（baostock）+ L2 申万行业变迁史（申万官网 xls）。 | `python scripts/run_pit_snapshot_ingest.py` | `tests/test_data_contracts_num.py`、`tests/test_pit_snapshot_scripts.py` | `active` |
-| 67 | `run_portfolio_backtest.py` | 多股组合回测 CLI（Phase 5，L1/L2 遗留）：读 universe JSON，逐股取数后跑组合回测。 | `python scripts/run_portfolio_backtest.py` | `tests/test_scripts_registry.py` | `active` |
-| 68 | `run_real_data_collection.py` | 真实行情采集 CLI（L1 遗留）：按 `--symbols` 列表取材并落盘到 `real_data/`。 | `python scripts/run_real_data_collection.py` | `tests/test_scripts_registry.py` | `active` |
-| 69 | `run_recompute.py` | 成本口径重算 · 驱动脚本（方案③下半场）。 | `python scripts/run_recompute.py` | `tests/test_check_recompute_caliber.py`、`tests/test_no_foreign_pyc.py`、`tests/test_recompute_baseline_stamp.py` | `active` |
-| 70 | `run_regime_overlay_study.py` | ADX 市场状态仓位叠加层 · 观察性检验（真实 TDX 数据）。 | `python scripts/run_regime_overlay_study.py` | `tests/test_research_artifacts.py`、`ENTRYPOINTS.md` | `active` |
-| 71 | `run_sampling_sensitivity_study.py` | 采样敏感性研究：提高持仓分散度能否让回测结论稳定下来？ | `python scripts/run_sampling_sensitivity_study.py` | `tests/test_annualization_conventions.py`、`tests/test_study_regressions.py` | `active` |
-| 72 | `run_signal_diagnosis.py` | 基线策略的因子暴露诊断：把"策略亏钱"与"因子暴露"连成因果链。 | `python scripts/run_signal_diagnosis.py` | `ENTRYPOINTS.md` | `active` |
-| 73 | `run_st_reversal_study.py` | H-D3 检验：ST 困境反转（ST 组未来收益是否高于非 ST 组）。 | `python scripts/run_st_reversal_study.py` | `tests/test_st_reversal_study.py` | `active` |
-| 74 | `run_stop_loss_ab.py` | ATR 移动止损 A/B 研究：把「能力孤岛」接进回测闭环后的实证。 | `python scripts/run_stop_loss_ab.py` | —（无可执行引用） | `one-off` |
-| 75 | `run_survivorship_study.py` | 幸存者偏差对因子研究的影响：把退市股并入数据集，对比因子 IC。 | `python scripts/run_survivorship_study.py` | —（无可执行引用） | `one-off` |
-| 76 | `run_tail_exclusion_study.py` | 尾部剔除实验：把因子结论转化为**事前设定**的单一修改并检验。 | `python scripts/run_tail_exclusion_study.py` | `tests/test_annualization_conventions.py`、`tests/test_research_artifacts.py`、`tests/test_study_common.py` +2 | `active` |
-| 77 | `run_tdx_evaluation.py` | 在 TDX 数据集上运行真实 Alpha 评估。 | `python scripts/run_tdx_evaluation.py` | —（无可执行引用） | `one-off` |
-| 78 | `run_tdx_rolling_eval.py` | 多窗口滚动样本外稳健性检验。 | `python scripts/run_tdx_rolling_eval.py` | `tests/test_alpha_release_gate.py`、`tests/test_bench_meta_resolution.py`、`conftest.py` +1 | `active` |
-| 79 | `run_tdx_universe_ic.py` | 全市场五因子 IC 研究（原生 TDX 数据，原始价 vs 前复权对照）。 | `python scripts/run_tdx_universe_ic.py` | `tests/test_cross_decade_consistency.py`、`tests/test_p3_equivalence_baseline.py`、`ENTRYPOINTS.md` | `active` |
-| 80 | `run_tracking.py` | run_tracking.py - L3 回测闭环 CLI | `python scripts/run_tracking.py` | `tracking.py` | `active` |
-| 81 | `run_universe_replication.py` | 多股票池独立重复验证：V0（基线）vs V1（剔除 ret_20 尾部）是否可复现。 | `python scripts/run_universe_replication.py` | `tests/test_annualization_conventions.py`、`tests/test_study_common.py` | `active` |
-| 82 | `run_valuation_weight_ab.py` | 估值权重调节器 A/B：把 `pb`/`pe_ttm` 从「排序因子」升级为「仓位权重」的实证。 | `python scripts/run_valuation_weight_ab.py` | —（无可执行引用） | `one-off` |
-| 83 | `run_walk_forward.py` | 单股 walk-forward 对比 CLI（L1 遗留）：`walk_forward.compare` 的前后段对照。 | `python scripts/run_walk_forward.py` | `tests/test_scripts_registry.py` | `active` |
-| 84 | `run_xsrc_daemon.py` | H-XSRC 拉取守护：低频重试直至完成（应对 IP 级限流）。 | `python scripts/run_xsrc_daemon.py` | `ENTRYPOINTS.md` | `active` |
-| 85 | `run_xsrc_fetch.py` | H-XSRC 拉取协调器：并行启动 N 个分片并等待全部结束。 | `python scripts/run_xsrc_fetch.py` | `ENTRYPOINTS.md` | `active` |
-| 86 | `run_xsrc_ic.py` | H-XSRC：跨源验证 —— 在独立源（腾讯）上重算因子 IC，对比主干符号。 | `python scripts/run_xsrc_ic.py` | `tests/test_p3_equivalence_baseline.py`、`ENTRYPOINTS.md` | `active` |
-| 87 | `scan_silent_failures.py` | 静默失效扫描器（silent-failure scanner）。 | `python scripts/scan_silent_failures.py` | —（无可执行引用） | `one-off` |
-| 88 | `summarize_cross_decade.py` | 跨年代方向验证 · 判定汇总（H-CD） | `python scripts/summarize_cross_decade.py` | —（无可执行引用） | `one-off` |
-| 89 | `update_certified_dataset.py` | 认证数据集**增量更新**：用新快照追加交易日。 | `python scripts/update_certified_dataset.py` | `tests/test_dataset_incremental_update.py` | `active` |
+| 30 | `microstructure_ic.py` | PREREG_02 的执行脚本：量价微观结构因子的 IC 检验与 Double Sort。 | `python scripts/microstructure_ic.py` | `tests/test_microstructure_ic.py` | `active` |
+| 31 | `migrate_root_docs.py` | 根目录文档收敛（B3）：把历史报告移入 `docs/archive/`，并**重写全部相对链接**。 | `python scripts/migrate_root_docs.py` | `tests/test_doc_layout.py` | `active` |
+| 32 | `migrate_tracking_records.py` | 迁移 lost 系工作目录的 L3 推荐记录到本项目 tracking.db。 | `python scripts/migrate_tracking_records.py` | —（无可执行引用） | `one-off` |
+| 33 | `patch_limit_ratio.py` | 把已构建数据集里的 ``limit_ratio`` 按 **PIT 正确规则**重算并回写。 | `python scripts/patch_limit_ratio.py` | —（无可执行引用） | `one-off` |
+| 34 | `regime_attribution.py` | Regime 分层归因：把「六窗口全负超额」按市场状态切片（**只做尸检**）。 | `python scripts/regime_attribution.py` | `tests/test_regime_attribution.py` | `active` |
+| 35 | `repair_tdx_metadata.py` | 为已导出的每股 CSV 重建 .metadata.json（修复用）。 | `python scripts/repair_tdx_metadata.py` | `tests/test_package_layout.py` | `active` |
+| 36 | `rerun_studies_corrected.py` | 用修正后的数据集（含 180 只退市股）重跑全部既有研究。 | `python scripts/rerun_studies_corrected.py` | —（无可执行引用） | `one-off` |
+| 37 | `run_adjusted_factor_study.py` | 复权价格 vs 原始价格的因子对比研究。 | `python scripts/run_adjusted_factor_study.py` | —（无可执行引用） | `one-off` |
+| 38 | `run_alpha_gap_probe.py` | Alpha 能力缺口探查：基准错配与因子冗余的实测。 | `python scripts/run_alpha_gap_probe.py` | —（无可执行引用） | `one-off` |
+| 39 | `run_analysis.py` | run_analysis.py - AI股神系统 · 分析入口（L2 落地） | `python scripts/run_analysis.py` | `daily_stock_pick.py`、`prompt_engine.py` | `active` |
+| 40 | `run_astock_reconciliation.py` | 抽样对账：`a-stock-data` 的行情层 vs 我方通达信原生 `.day`。 | `python scripts/run_astock_reconciliation.py` | —（无可执行引用） | `one-off` |
+| 41 | `run_backtest.py` | 单股日线回测 CLI（L1 遗留）：给定 code + 区间，跑 `backtest_engine.backtest`。 | `python scripts/run_backtest.py` | —（无可执行引用） | `one-off` |
+| 42 | `run_c2_ab.py` | C2 条件 A/B —— 产业策略师「风格拥挤度 gate」与估值分析师「上轨排除」。 | `python scripts/run_c2_ab.py` | `tests/test_c2_ab_variants.py` | `active` |
+| 43 | `run_combo_study.py` | 组合层研究：**尾部剔除 × 持仓分散度** 的联合效果。 | `python scripts/run_combo_study.py` | —（无可执行引用） | `one-off` |
+| 44 | `run_concentration_study.py` | 持仓分散度研究：提高分散度能否降低抽样噪声？ | `python scripts/run_concentration_study.py` | `tests/test_annualization_conventions.py`、`tests/test_research_artifacts.py`、`tests/test_study_common.py` | `active` |
+| 45 | `run_contrarian_portfolio.py` | 组合层面对照实验：基线动量(A) vs H-C1 反转复合(B)，**同一框架** A/B。 | `python scripts/run_contrarian_portfolio.py` | `tests/test_annualization_conventions.py`、`tests/test_contrarian_costs.py`、`tests/test_research_artifacts.py` +4 | `active` |
+| 46 | `run_contrarian_study.py` | 复合「反转 + 低波 + 小规模 + 非流动性」打分假设检验。 | `python scripts/run_contrarian_study.py` | `tests/test_study_common.py` | `active` |
+| 47 | `run_cost_model_check.py` | 成本模型修正的敏感性检查（真实 TDX 数据，观察性对照）。 | `python scripts/run_cost_model_check.py` | `tests/test_cost_authority.py`、`tests/test_research_artifacts.py`、`ENTRYPOINTS.md` | `active` |
+| 48 | `run_daily_factor_screen.py` | 五因子日度选股（v2 认证数据源版，零第三方依赖）。 | `python scripts/run_daily_factor_screen.py` | `factors/factor_ic_lab.py` | `active` |
+| 49 | `run_daily_screening.py` | AI股神团队 - 每日选股执行脚本 | `python scripts/run_daily_screening.py` | —（无可执行引用） | `one-off` |
+| 50 | `run_delta_statistics_audit.py` | Δ 型策略结论的配对统计量补记。 | `python scripts/run_delta_statistics_audit.py` | —（无可执行引用） | `one-off` |
+| 51 | `run_disclosure_factor_study.py` | H-D2 检验：定期报告**预约披露日变更次数**是否预示负面收益。 | `python scripts/run_disclosure_factor_study.py` | `tests/test_disclosure_factor_study.py` | `active` |
+| 52 | `run_expert_filter_study.py` | 专家组合过滤器研究：逐条件归因 + 组合对比。 | `python scripts/run_expert_filter_study.py` | `tests/test_expert_filter.py`、`tests/test_expert_filter_c2.py`、`tests/test_study_common.py` +1 | `active` |
+| 53 | `run_factor_correlation.py` | 五因子截面相关性与组合增量检验（v2 数据源，零第三方依赖）。 | `python scripts/run_factor_correlation.py` | `ENTRYPOINTS.md` | `active` |
+| 54 | `run_factor_orthogonality.py` | 因子正交化后的方向稳健性（H-ORTH） | `python scripts/run_factor_orthogonality.py` | `tests/test_p3_equivalence_baseline.py`、`ENTRYPOINTS.md` | `active` |
+| 55 | `run_factor_study.py` | 在 TDX 数据集上检验经济逻辑驱动的因子假设。 | `python scripts/run_factor_study.py` | —（无可执行引用） | `one-off` |
+| 56 | `run_feishu_acceptance.py` | 飞书 notify 模块真实凭据验收（不接触明文）。 | `python scripts/run_feishu_acceptance.py` | —（无可执行引用） | `one-off` |
+| 57 | `run_five_factor_ab.py` | H-F5 五因子组合 A/B 实验（事前登记见 `FIVE_FACTOR_PREREG.md`）。 | `python scripts/run_five_factor_ab.py` | `ENTRYPOINTS.md` | `active` |
+| 58 | `run_fundamental_factor_study.py` | 基本面因子横截面 IC 检验（PIT 财务数据）。 | `python scripts/run_fundamental_factor_study.py` | `tests/test_dataset_fingerprint.py`、`tests/test_deflated_family.py`、`tests/test_receipt.py` | `active` |
+| 59 | `run_horizon_study.py` | 持有期净效果研究：5 / 10 / 20 / 40 日持有的**组合层面净收益**对比。 | `python scripts/run_horizon_study.py` | —（无可执行引用） | `one-off` |
+| 60 | `run_ic_diagnosis.py` | IC 虚高诊断（H-ICX，登记见 `IC_DIAGNOSIS_PREREG.md`）。 | `python scripts/run_ic_diagnosis.py` | `ENTRYPOINTS.md` | `active` |
+| 61 | `run_industry_ic_attribution.py` | 行业分层 IC 归因：直接检验「IC 强显著但组合不赚钱」的产业解释。 | `python scripts/run_industry_ic_attribution.py` | `tests/test_pit_snapshot_scripts.py` | `active` |
+| 62 | `run_l3_valuation_reconciliation.py` | L3 估值历史的**抽样对账**（设计文档规定的「接入前必过闸门」）。 | `python scripts/run_l3_valuation_reconciliation.py` | `tests/test_pit_snapshot_scripts.py` | `active` |
+| 63 | `run_limit_structure_study.py` | H-D4 检验：涨跌停结构（一字涨停占比）是否预示负面收益。 | `python scripts/run_limit_structure_study.py` | —（无可执行引用） | `one-off` |
+| 64 | `run_multiple_testing_audit.py` | 多重检验校正审计：把「跑了很多次」算进已发布结论的显著性里。 | `python scripts/run_multiple_testing_audit.py` | `tests/test_rejected_registry.py` | `active` |
+| 65 | `run_pipeline.py` | V3.4 market-wide runner. | `python scripts/run_pipeline.py` | —（无可执行引用） | `one-off` |
+| 66 | `run_pit_gap_check.py` | PIT 快照断更检测 + 告警。 | `python scripts/run_pit_gap_check.py` | `tests/test_pit_snapshot_scripts.py` | `active` |
+| 67 | `run_pit_snapshot_ingest.py` | PIT 快照采集：L1 上市/退市日（baostock）+ L2 申万行业变迁史（申万官网 xls）。 | `python scripts/run_pit_snapshot_ingest.py` | `tests/test_data_contracts_num.py`、`tests/test_pit_snapshot_scripts.py` | `active` |
+| 68 | `run_portfolio_backtest.py` | 多股组合回测 CLI（Phase 5，L1/L2 遗留）：读 universe JSON，逐股取数后跑组合回测。 | `python scripts/run_portfolio_backtest.py` | `tests/test_scripts_registry.py` | `active` |
+| 69 | `run_real_data_collection.py` | 真实行情采集 CLI（L1 遗留）：按 `--symbols` 列表取材并落盘到 `real_data/`。 | `python scripts/run_real_data_collection.py` | `tests/test_scripts_registry.py` | `active` |
+| 70 | `run_recompute.py` | 成本口径重算 · 驱动脚本（方案③下半场）。 | `python scripts/run_recompute.py` | `tests/test_check_recompute_caliber.py`、`tests/test_no_foreign_pyc.py`、`tests/test_recompute_baseline_stamp.py` | `active` |
+| 71 | `run_regime_overlay_study.py` | ADX 市场状态仓位叠加层 · 观察性检验（真实 TDX 数据）。 | `python scripts/run_regime_overlay_study.py` | `tests/test_research_artifacts.py`、`ENTRYPOINTS.md` | `active` |
+| 72 | `run_sampling_sensitivity_study.py` | 采样敏感性研究：提高持仓分散度能否让回测结论稳定下来？ | `python scripts/run_sampling_sensitivity_study.py` | `tests/test_annualization_conventions.py`、`tests/test_study_regressions.py` | `active` |
+| 73 | `run_signal_diagnosis.py` | 基线策略的因子暴露诊断：把"策略亏钱"与"因子暴露"连成因果链。 | `python scripts/run_signal_diagnosis.py` | `ENTRYPOINTS.md` | `active` |
+| 74 | `run_st_reversal_study.py` | H-D3 检验：ST 困境反转（ST 组未来收益是否高于非 ST 组）。 | `python scripts/run_st_reversal_study.py` | `tests/test_st_reversal_study.py` | `active` |
+| 75 | `run_stop_loss_ab.py` | ATR 移动止损 A/B 研究：把「能力孤岛」接进回测闭环后的实证。 | `python scripts/run_stop_loss_ab.py` | —（无可执行引用） | `one-off` |
+| 76 | `run_survivorship_study.py` | 幸存者偏差对因子研究的影响：把退市股并入数据集，对比因子 IC。 | `python scripts/run_survivorship_study.py` | —（无可执行引用） | `one-off` |
+| 77 | `run_tail_exclusion_study.py` | 尾部剔除实验：把因子结论转化为**事前设定**的单一修改并检验。 | `python scripts/run_tail_exclusion_study.py` | `tests/test_annualization_conventions.py`、`tests/test_research_artifacts.py`、`tests/test_study_common.py` +2 | `active` |
+| 78 | `run_tdx_evaluation.py` | 在 TDX 数据集上运行真实 Alpha 评估。 | `python scripts/run_tdx_evaluation.py` | —（无可执行引用） | `one-off` |
+| 79 | `run_tdx_rolling_eval.py` | 多窗口滚动样本外稳健性检验。 | `python scripts/run_tdx_rolling_eval.py` | `tests/test_alpha_release_gate.py`、`tests/test_bench_meta_resolution.py`、`conftest.py` +1 | `active` |
+| 80 | `run_tdx_universe_ic.py` | 全市场五因子 IC 研究（原生 TDX 数据，原始价 vs 前复权对照）。 | `python scripts/run_tdx_universe_ic.py` | `tests/test_cross_decade_consistency.py`、`tests/test_p3_equivalence_baseline.py`、`ENTRYPOINTS.md` | `active` |
+| 81 | `run_tracking.py` | run_tracking.py - L3 回测闭环 CLI | `python scripts/run_tracking.py` | `tracking.py` | `active` |
+| 82 | `run_universe_replication.py` | 多股票池独立重复验证：V0（基线）vs V1（剔除 ret_20 尾部）是否可复现。 | `python scripts/run_universe_replication.py` | `tests/test_annualization_conventions.py`、`tests/test_study_common.py` | `active` |
+| 83 | `run_valuation_weight_ab.py` | 估值权重调节器 A/B：把 `pb`/`pe_ttm` 从「排序因子」升级为「仓位权重」的实证。 | `python scripts/run_valuation_weight_ab.py` | —（无可执行引用） | `one-off` |
+| 84 | `run_walk_forward.py` | 单股 walk-forward 对比 CLI（L1 遗留）：`walk_forward.compare` 的前后段对照。 | `python scripts/run_walk_forward.py` | `tests/test_scripts_registry.py` | `active` |
+| 85 | `run_xsrc_daemon.py` | H-XSRC 拉取守护：低频重试直至完成（应对 IP 级限流）。 | `python scripts/run_xsrc_daemon.py` | `ENTRYPOINTS.md` | `active` |
+| 86 | `run_xsrc_fetch.py` | H-XSRC 拉取协调器：并行启动 N 个分片并等待全部结束。 | `python scripts/run_xsrc_fetch.py` | `ENTRYPOINTS.md` | `active` |
+| 87 | `run_xsrc_ic.py` | H-XSRC：跨源验证 —— 在独立源（腾讯）上重算因子 IC，对比主干符号。 | `python scripts/run_xsrc_ic.py` | `tests/test_p3_equivalence_baseline.py`、`ENTRYPOINTS.md` | `active` |
+| 88 | `scan_silent_failures.py` | 静默失效扫描器（silent-failure scanner）。 | `python scripts/scan_silent_failures.py` | —（无可执行引用） | `one-off` |
+| 89 | `summarize_cross_decade.py` | 跨年代方向验证 · 判定汇总（H-CD） | `python scripts/summarize_cross_decade.py` | —（无可执行引用） | `one-off` |
+| 90 | `update_certified_dataset.py` | 认证数据集**增量更新**：用新快照追加交易日。 | `python scripts/update_certified_dataset.py` | `tests/test_dataset_incremental_update.py` | `active` |
 
 ## 三、治理结论
 

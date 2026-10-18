@@ -129,12 +129,14 @@ def test_root_count_is_reported():
     21:0x 76 → 77，新增 `REGIME_ATTRIBUTION_VERDICT.md`（同上立项的判定；
     预注册 §八 要求「已执行」的预注册必须有独立判定）。
     22:3x 77 → 78，新增 `MICROSTRUCTURE_FACTORS_PREREG.md`（PREREG_02
-    量价微观结构因子的预注册；同名判定尚未落盘，故只 +1）。
+    量价微观结构因子的预注册）。
+    22:5x 78 → 79，新增 `MICROSTRUCTURE_FACTORS_VERDICT.md`（同上立项的判定；
+    预注册 §九 要求判定独立落盘）。
     本次改的是**常数**，判据本身（「根目录 md 数必须等于登记值」）未变；
     反向验证：把常量改成 64 时本测试必须失败，且失败信息含 `len(_root_mds())`。
     """
-    assert len(_root_mds()) == 78, (
-        f"根目录 md 数 = {len(_root_mds())}，与登记的 78 不符。\n"
+    assert len(_root_mds()) == 79, (
+        f"根目录 md 数 = {len(_root_mds())}，与登记的 79 不符。\n"
         "新增结论源文档请改本断言并在提交信息里说明；"
         "过程记录请归档到 docs/archive/。")
 
