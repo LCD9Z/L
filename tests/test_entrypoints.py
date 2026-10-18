@@ -7,7 +7,7 @@
 
 ## 防什么
 
-项目有 **67 个可执行入口**（根目录 15 + scripts/ 52），是历史积累的结果。
+项目有 **97 个可执行入口**（根目录 15 + `scripts/` 82），是历史积累的结果。
 发散本身不是错（历史脚本是凭据），**但「不知道哪个是正式的」是错的** ——
 新人接手会随手跑一个诊断脚本当生产用，或者引用一个已被取代的版本。
 
@@ -34,8 +34,10 @@
 
 ## 已知局限
 
-- 不检查 scripts/ 下每个脚本都被分类（52 个里多数是一次性工具，
-  逐个登记成本高于收益）；只要求**根目录**入口被覆盖
+- 本测试只管「根目录入口」与「本文件提到的脚本是否存在」；
+  `scripts/` 下**每个**脚本被逐份分类由 `tests/test_scripts_registry.py` 覆盖
+  （2026-10-18 之前此处写的是「逐个登记成本高于收益」—— 那个判断错了：
+  成本是一次性的，收益是「谁在用」从猜变成查）。
 """
 
 from __future__ import annotations
@@ -121,6 +123,24 @@ def test_root_main_files_are_all_listed():
 def test_authoritative_handover_doc_exists():
     """权威交接文档必须存在（清单 §八 指定为 AGENTS.md）。"""
     assert (ROOT / "AGENTS.md").is_file(), "AGENTS.md 缺失"
+
+
+def test_listed_scripts_exist():
+    """⚠️ 本文件提到的每个 `scripts/*.py` 必须**真实存在**。
+
+    2026-10-18 发现 §三 登记了 **3 个从未存在**的脚本
+    （`run_w1_split.py` / `run_portfolio_ab.py` / `run_adx_*`），
+    存在了数周无人发现 —— 因为「登记」只是往表格写个名字，
+    **没有任何守卫去核文件是否存在**。这与 `reports/` 白名单制同型：
+    记账与实物脱钩，而所有检查都只看记账。
+
+    历史注记里的删除线（`~~...~~`）不算「提到」—— 那是**已修正**的记录。
+    """
+    text = re.sub(r"~~.*?~~", "", _entry_text(), flags=re.S)
+    refs = sorted(set(re.findall(r"scripts/([A-Za-z0-9_]+)\.py", text)))
+    missing = [r for r in refs if not (ROOT / "scripts" / f"{r}.py").is_file()]
+    assert missing == [], (
+        "ENTRYPOINTS.md 引用了不存在的脚本（幽灵条目）:\n  " + "\n  ".join(missing))
 
 
 def test_config_values_not_tracked():

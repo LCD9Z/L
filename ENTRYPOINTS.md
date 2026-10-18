@@ -10,8 +10,13 @@
 | 位置 | 可执行入口数 |
 |---|---|
 | 项目根目录（含 `__main__`） | **15** |
-| `scripts/` 下脚本 | **52** |
-| **合计** | **67** |
+| `scripts/` 下脚本 | **82**（逐份清单见 [`scripts/REGISTRY.md`](scripts/REGISTRY.md)） |
+| **合计** | **97** |
+
+> **2026-10-18 订正**：本表此前写「`scripts/` 52 个 / 合计 67」，
+> 那是 **2026-10-13 的快照**。脚本数已增长到 82，而**没有任何机制提醒过这件事** ——
+> 因为当时只有一句「§6.2 另有 34 个」的**命名规则**在替代清单。
+> 逐份登记与守卫现由 `scripts/REGISTRY.md` + `tests/test_scripts_registry.py` 承担。
 
 → **这是「发散」而非「收敛」**。本文件的目标是**给定权威清单**，
 使「哪些是正式的、哪些是一次性的」不再靠猜。
@@ -37,14 +42,25 @@
 
 | 脚本 | 对应预注册 | 状态 |
 |---|---|---|
-| `scripts/run_tdx_universe_ic.py` | `CROSS_DECADE_PREREG.md` | 已执行 |
+| `scripts/run_tdx_universe_ic.py` | `CROSS_DECADE_PREREG.md`（W1-SR 复用同脚本，只换窗口） | 已执行 |
 | `scripts/run_factor_orthogonality.py` | `FACTOR_ORTHOGONALITY_PREREG.md` | 已执行 |
 | `scripts/run_factor_correlation.py` | （同上，H-ORTH 附属） | 已执行 |
-| `scripts/run_w1_split.py` | `W1_SPLIT_PREREG.md` | 已执行 |
 | `scripts/run_five_factor_ab.py` | `FIVE_FACTOR_PREREG.md` | 已执行 |
-| `scripts/run_portfolio_ab.py` | `PORTFOLIO_AB_PREREG*.md` | 已执行 |
+| `scripts/run_contrarian_portfolio.py` | `PORTFOLIO_AB_PREREG*.md` | 已执行 |
 | `scripts/run_xsrc_ic.py` | **`XSOURCE_VALIDATION_PREREG.md`** | **进行中**（P0-1） |
-| `scripts/run_adx_*` | `ALPHA_HYPOTHESIS_PREREG.md` | 已执行 |
+| `scripts/run_regime_overlay_study.py` | `ALPHA_HYPOTHESIS_PREREG.md`（ADX 仓位叠加层） | 已执行 |
+
+> **⚠️ 2026-10-18 移除 3 个幽灵条目**（下表）。它们**从未存在**过，
+> 却在此表登记了数周 —— 因为「登记」只是往表格里写个名字，没有守卫去核文件是否存在。
+>
+> | 幽灵条目 | 真实实现（据判定文档） |
+> |---|---|
+> | ~~`scripts/run_w1_split.py`~~ | `scripts/run_tdx_universe_ic.py`（`W1_SPLIT_VERDICT.md` L5：「复用，仅换窗口」） |
+> | ~~`scripts/run_portfolio_ab.py`~~ | `scripts/run_contrarian_portfolio.py`（`PORTFOLIO_AB_REPORT_3.md` L5） |
+> | ~~`scripts/run_adx_*`~~ | `scripts/run_regime_overlay_study.py`（ADX 三档路由仓位叠加层） |
+>
+> 守卫 `tests/test_entrypoints.py::test_listed_scripts_exist` 直接查文件是否存在，
+> 同一形态不再复发。
 
 > **纪律**：研究脚本**必须先有预注册**才允许运行（`AGENTS.md` §2.2）。
 
@@ -91,16 +107,26 @@
 - 被 `tdx_native.run_daily` 取代的（`main.py` / `stock_god.py` /
   `daily_stock_pick.py`）**明确标注取代关系**，防止误用旧版
 
-### 6.2 `scripts/` 下一次性工具（34 个）
+### 6.2 `scripts/` 下的其余脚本（**逐份清单见 `scripts/REGISTRY.md`**）
 
-`scripts/` 下另有 **34 个**，多为**建库 / 转换 / 迁移**类，
-属**历史一次性**（如 `build_tdx_dataset.py`、`csv_to_tdx_day.py`）。
+2026-10-18 之前，本节写的是「另有 **34 个**，多为建库 / 转换 / 迁移类」，
+并用一条**命名规则**代替清单：
 
-**判定规则**：
+> ~~名字含 `build_` / `migrate_` / `convert_` / `backfill_` 且不在 §二~§五 表中 → 默认视为一次性~~
 
-- 名字含 **`build_` / `migrate_` / `convert_` / `backfill_`** 且
-  **不在 §二~§五 表中** → 默认视为一次性
-- 一次性脚本**允许存在**（它们是历史凭据），但**不得被当作入口引用**
+**这条规则本身就是静默失效面**：它只能回答「名字像不像一次性」，
+回答不了「`run_pipeline.py` 还在不在跑」「`_audit_l3_tail_gap.py` 是谁在用」——
+而 `run_*` 占 `scripts/` 的一半以上。
+
+现在改为**逐份登记**：[`scripts/REGISTRY.md`](scripts/REGISTRY.md) 列出全部 82 个脚本的
+「职责 / 入口 / 被谁调用 / 状态」，状态由**可执行引用**自动判定
+（`tests/`、`scripts/` 外的生产代码、运行配置、本文件 §二–§五），
+守卫 `tests/test_scripts_registry.py` 重算并比对。
+
+**仍然成立的纪律**（与命名无关）：
+
+- 一次性脚本**允许存在** —— 它们是历史凭据，删除会破坏可追溯性；
+- 一次性脚本**不得被当作入口引用**（即：不出现在 `run_daily.bat` / `run_ci.py` / 本文件 §二）。
 
 ## 七、正式配置（一套）
 
@@ -139,11 +165,25 @@
 
 ## 九、已知缺口（如实记录）
 
-- **67 个入口是历史积累的结果**，本文件**没有删除任何脚本**
+- **97 个入口是历史积累的结果**，本文件**没有删除任何脚本**
   （它们是历史凭据，删除会破坏可追溯性）
 - 本文件的作用是**给定权威清单 + 判定规则**，使新增入口必须显式登记
 - 守卫 `tests/test_entrypoints.py` 检查：
-  ① 正式入口存在且可导入；② 清单覆盖根目录所有 `__main__` 文件
+  ① 正式入口存在且可导入；② 清单覆盖根目录所有 `__main__` 文件；
+  ③ **本文件提到的每个 `scripts/*.py` 必须真实存在**（2026-10-18 新增，
+  针对 §三 的 3 个幽灵条目 —— 见该节注记）
+- 守卫 `tests/test_scripts_registry.py` 检查 `scripts/` 下每个脚本都被逐份登记
+
+### 9.1 已修正的记账错误（留作教训）
+
+| 日期 | 错误 | 根因 | 兜底 |
+|---|---|---|---|
+| 2026-10-18 | §一「52 个 / 合计 67」是 10-13 快照，实际 82 个 | 脚本数无任何守卫追踪 | `REGISTRY.md` 守卫重算总数 |
+| 2026-10-18 | §三 登记 3 个**从未存在**的脚本（`run_w1_split.py` / `run_portfolio_ab.py` / `run_adx_*`） | 往表格写名字，不核文件是否存在 | `test_listed_scripts_exist` |
+| 2026-10-18 | 3 个脚本无 `__main__` 守卫（`import` 即执行 argparse） | `scripts/` 从未被要求可导入 | `test_non_helper_scripts_have_main_guard` |
+
+> **共同根因**：用「命名规则」和「人写表格」代替**逐份清单 + 可重算判据**。
+> 这与 `reports/` 白名单制（新建子目录不登记就静默不入库）是同一形态。
 
 ---
 

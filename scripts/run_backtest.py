@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
+r"""单股日线回测 CLI（L1 遗留）：给定 code + 区间，跑 `backtest_engine.backtest`。
 
-# 脚本位于 scripts/ 下，需把项目根目录加入导入路径
+依赖 `data_fetcher.fetch_kline`（腾讯源，需网络），与 `tdx_native` 生产链**无关**。
+保留为历史凭据；正式回测走 `scripts/run_tdx_rolling_eval.py`。
+"""
 import os as _os
 import sys as _sys
 _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
