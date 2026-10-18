@@ -1,0 +1,313 @@
+{
+  "generated_at": "2026-10-18 11:24:22",
+  "prereg": "EXPERT_FILTER_C2_PREREG.md §五",
+  "args": {
+    "dataset": "D:/tdx_dataset_v3",
+    "windows": "2024-01-02",
+    "max_stocks": 300,
+    "horizon": 20,
+    "top_n": 5,
+    "out": "reports/c2_ab_study.json"
+  },
+  "rows": [
+    {
+      "variant": "base",
+      "window": "2024-01-02",
+      "annualized_excess_pct": 4.02,
+      "trades": 158,
+      "max_drawdown_pct": 34.631,
+      "filter_stats": {
+        "market_blocked_days": 10,
+        "turnover_excl_days": 2349,
+        "turnover_excl_pairs": 106516,
+        "streak_excl_days": 1334,
+        "streak_excl_pairs": 2060,
+        "tail_excl_days": 2574,
+        "tail_excl_pairs": 184091,
+        "industry_crowd_excl_days": 0,
+        "industry_crowd_excl_pairs": 0,
+        "valuation_cap_excl_days": 0,
+        "valuation_cap_excl_pairs": 0,
+        "enabled": {
+          "market": true,
+          "turnover": true,
+          "streak": true,
+          "tail": true,
+          "industry_crowding": false,
+          "valuation_cap": false
+        },
+        "caliber": {
+          "ind_crowd_pct": 0.8,
+          "ind_crowd_lookback": 250,
+          "ind_n_clusters": 20,
+          "ind_normalize": "level",
+          "valuation_metric": "pe_ttm",
+          "valuation_high_pct": 0.67
+        }
+      }
+    },
+    {
+      "variant": "D_level",
+      "window": "2024-01-02",
+      "annualized_excess_pct": 2.05,
+      "trades": 156,
+      "max_drawdown_pct": 30.935,
+      "filter_stats": {
+        "market_blocked_days": 10,
+        "turnover_excl_days": 2349,
+        "turnover_excl_pairs": 106516,
+        "streak_excl_days": 1334,
+        "streak_excl_pairs": 2060,
+        "tail_excl_days": 2574,
+        "tail_excl_pairs": 184091,
+        "industry_crowd_excl_days": 1776,
+        "industry_crowd_excl_pairs": 92328,
+        "valuation_cap_excl_days": 0,
+        "valuation_cap_excl_pairs": 0,
+        "enabled": {
+          "market": true,
+          "turnover": true,
+          "streak": true,
+          "tail": true,
+          "industry_crowding": true,
+          "valuation_cap": false
+        },
+        "caliber": {
+          "ind_crowd_pct": 0.8,
+          "ind_crowd_lookback": 250,
+          "ind_n_clusters": 20,
+          "ind_normalize": "level",
+          "valuation_metric": "pe_ttm",
+          "valuation_high_pct": 0.67
+        }
+      }
+    },
+    {
+      "variant": "D_ratio",
+      "window": "2024-01-02",
+      "annualized_excess_pct": 3.24,
+      "trades": 157,
+      "max_drawdown_pct": 30.895,
+      "filter_stats": {
+        "market_blocked_days": 10,
+        "turnover_excl_days": 2349,
+        "turnover_excl_pairs": 106516,
+        "streak_excl_days": 1334,
+        "streak_excl_pairs": 2060,
+        "tail_excl_days": 2574,
+        "tail_excl_pairs": 184091,
+        "industry_crowd_excl_days": 1515,
+        "industry_crowd_excl_pairs": 76212,
+        "valuation_cap_excl_days": 0,
+        "valuation_cap_excl_pairs": 0,
+        "enabled": {
+          "market": true,
+          "turnover": true,
+          "streak": true,
+          "tail": true,
+          "industry_crowding": true,
+          "valuation_cap": false
+        },
+        "caliber": {
+          "ind_crowd_pct": 0.8,
+          "ind_crowd_lookback": 250,
+          "ind_n_clusters": 20,
+          "ind_normalize": "ratio",
+          "valuation_metric": "pe_ttm",
+          "valuation_high_pct": 0.67
+        }
+      }
+    },
+    {
+      "variant": "E_pe",
+      "window": "2024-01-02",
+      "annualized_excess_pct": -10.35,
+      "trades": 156,
+      "max_drawdown_pct": 38.527,
+      "filter_stats": {
+        "market_blocked_days": 10,
+        "turnover_excl_days": 2349,
+        "turnover_excl_pairs": 106516,
+        "streak_excl_days": 1334,
+        "streak_excl_pairs": 2060,
+        "tail_excl_days": 2574,
+        "tail_excl_pairs": 184091,
+        "industry_crowd_excl_days": 0,
+        "industry_crowd_excl_pairs": 0,
+        "valuation_cap_excl_days": 2297,
+        "valuation_cap_excl_pairs": 137837,
+        "enabled": {
+          "market": true,
+          "turnover": true,
+          "streak": true,
+          "tail": true,
+          "industry_crowding": false,
+          "valuation_cap": true
+        },
+        "caliber": {
+          "ind_crowd_pct": 0.8,
+          "ind_crowd_lookback": 250,
+          "ind_n_clusters": 20,
+          "ind_normalize": "level",
+          "valuation_metric": "pe_ttm",
+          "valuation_high_pct": 0.67
+        }
+      }
+    },
+    {
+      "variant": "E_pb",
+      "window": "2024-01-02",
+      "annualized_excess_pct": 5.21,
+      "trades": 147,
+      "max_drawdown_pct": 24.476,
+      "filter_stats": {
+        "market_blocked_days": 10,
+        "turnover_excl_days": 2349,
+        "turnover_excl_pairs": 106516,
+        "streak_excl_days": 1334,
+        "streak_excl_pairs": 2060,
+        "tail_excl_days": 2574,
+        "tail_excl_pairs": 184091,
+        "industry_crowd_excl_days": 0,
+        "industry_crowd_excl_pairs": 0,
+        "valuation_cap_excl_days": 2523,
+        "valuation_cap_excl_pairs": 183263,
+        "enabled": {
+          "market": true,
+          "turnover": true,
+          "streak": true,
+          "tail": true,
+          "industry_crowding": false,
+          "valuation_cap": true
+        },
+        "caliber": {
+          "ind_crowd_pct": 0.8,
+          "ind_crowd_lookback": 250,
+          "ind_n_clusters": 20,
+          "ind_normalize": "level",
+          "valuation_metric": "pb",
+          "valuation_high_pct": 0.67
+        }
+      }
+    }
+  ],
+  "deltas_vs_base": [
+    {
+      "variant": "base",
+      "d_excess_pp": 0.0,
+      "d_max_drawdown_pp": 0.0,
+      "d_trades": 0,
+      "panel": null
+    },
+    {
+      "variant": "D_level",
+      "d_excess_pp": -1.97,
+      "d_max_drawdown_pp": -3.7,
+      "d_trades": -2,
+      "panel": {
+        "excl_days": 1776,
+        "excl_pairs": 92328,
+        "hit_share": 0.1583,
+        "shrink_p50": 0.0933,
+        "shrink_p90": 0.363,
+        "shrink_max": 0.9422,
+        "streak_max": 101,
+        "streak_p90": 65.0
+      }
+    },
+    {
+      "variant": "D_ratio",
+      "d_excess_pp": -0.78,
+      "d_max_drawdown_pp": -3.74,
+      "d_trades": -1,
+      "panel": {
+        "excl_days": 1515,
+        "excl_pairs": 76212,
+        "hit_share": 0.1306,
+        "shrink_p50": 0.0524,
+        "shrink_p90": 0.3441,
+        "shrink_max": 0.9422,
+        "streak_max": 75,
+        "streak_p90": 64.0
+      }
+    },
+    {
+      "variant": "E_pe",
+      "d_excess_pp": -14.37,
+      "d_max_drawdown_pp": 3.9,
+      "d_trades": -2,
+      "panel": {
+        "excl_days": 2297,
+        "excl_pairs": 137837,
+        "hit_share": 0.2363,
+        "shrink_p50": 0.2567,
+        "shrink_p90": 0.2791,
+        "shrink_max": 0.2959,
+        "streak_max": 1735,
+        "streak_p90": 684.0
+      }
+    },
+    {
+      "variant": "E_pb",
+      "d_excess_pp": 1.19,
+      "d_max_drawdown_pp": -10.16,
+      "d_trades": -11,
+      "panel": {
+        "excl_days": 2523,
+        "excl_pairs": 183263,
+        "hit_share": 0.3141,
+        "shrink_p50": 0.316,
+        "shrink_p90": 0.3309,
+        "shrink_max": 0.3321,
+        "streak_max": 2521,
+        "streak_p90": 1138.0
+      }
+    }
+  ],
+  "panels": {
+    "D_level": {
+      "excl_days": 1776,
+      "excl_pairs": 92328,
+      "hit_share": 0.1583,
+      "shrink_p50": 0.0933,
+      "shrink_p90": 0.363,
+      "shrink_max": 0.9422,
+      "streak_max": 101,
+      "streak_p90": 65.0
+    },
+    "D_ratio": {
+      "excl_days": 1515,
+      "excl_pairs": 76212,
+      "hit_share": 0.1306,
+      "shrink_p50": 0.0524,
+      "shrink_p90": 0.3441,
+      "shrink_max": 0.9422,
+      "streak_max": 75,
+      "streak_p90": 64.0
+    },
+    "E_pe": {
+      "excl_days": 2297,
+      "excl_pairs": 137837,
+      "hit_share": 0.2363,
+      "shrink_p50": 0.2567,
+      "shrink_p90": 0.2791,
+      "shrink_max": 0.2959,
+      "streak_max": 1735,
+      "streak_p90": 684.0
+    },
+    "E_pb": {
+      "excl_days": 2523,
+      "excl_pairs": 183263,
+      "hit_share": 0.3141,
+      "shrink_p50": 0.316,
+      "shrink_p90": 0.3309,
+      "shrink_max": 0.3321,
+      "streak_max": 2521,
+      "streak_p90": 1138.0
+    }
+  },
+  "verdict_policy": "Δ超额>0 且 Δ回撤<=0 才可纳入；15 次比较须 BH/Bonferroni 校正",
+  "note": "只产数字，不做纳入判断；两个归一化口径各自报告，不得挑选",
+  "complete": true,
+  "panels_note": "streak 首版按日期字符串判等（去重后恒不相等→恒为1），已改用交易日索引重算"
+}
